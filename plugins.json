@@ -2,8 +2,8 @@
   "version": 1,
   "plugins": [
     {
-      "id": "NguonC1",
-      "name": "NguonC1",
+      "id": "NguonCVip",
+      "name": "NguonCVip",
       "version": "1.5.4",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncHT_plugin.js",
       "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/nguonC.png"
@@ -107,14 +107,7 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Vidgodnew_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vidgod.png"
     },
-    {
-      "id": "bilutv",
-      "name": "Nguồn Bilutv",
-      "version": "1.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/bilutv_plugin.js",
-      "iconUrl": "https://bilutv.asia/img/bilutvlogo-ngang.jpg"
-    },
-    {
+     {
       "id": "phimfun",
       "name": "Nguồn Phim Fun",
       "version": "1.0.4",
