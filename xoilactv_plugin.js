@@ -1,5 +1,5 @@
 // =============================================================================
-// PLUGIN VAX: XOILAC TV (NATIVE HLS SIÊU TỐC + CATEGORIES MÔN THỂ THAO)
+// PLUGIN VAX: XOILAC TV (NATIVE HLS + TỰ ĐỘNG CHIA NHÓM THỂ THAO)
 // =============================================================================
 
 var DOMAIN = "xoilaczzssz.tv";
@@ -10,14 +10,14 @@ function getManifest() {
     return JSON.stringify({
         "id": "XoilacTV",
         "name": "XoilacZ TV",
-        "description": "Hệ thống trực tiếp Đa Thể Thao Xoilac. Tốc độ cao, không quảng cáo.",
-        "version": "2.0.0",
+        "description": "Lọc chính xác từng môn thể thao. Phát M3U8 Native tốc độ cao.",
+        "version": "2.1.0",
         "baseUrl": BASEURL,
         "iconUrl": DEFAULT_POSTER,
         "isEnabled": true,
         "layoutType": "LIST",
         "type": "MOVIE",
-        "playerType": "auto" // Hỗ trợ linh hoạt cả ExoPlayer và Webview nếu cần
+        "playerType": "exoplayer" // Ưu tiên phát trực tiếp bằng Native Player
     });
 }
 
@@ -36,17 +36,17 @@ function decodeEntities(str) {
 }
 
 // =============================================================================
-// MENU & TRANG CHỦ (Đã chia danh mục theo đúng ảnh yêu cầu)
+// MENU & TRANG CHỦ (Tạo danh mục chính xác)
 // =============================================================================
 
 function getHomeSections() {
     return JSON.stringify([
         { slug: 'live-now', title: '🔥 LIVE NOW (Tất Cả)', type: 'Grid' },
-        { slug: 'bong-da', title: '⚽ Bóng Đá', type: 'Horizontal' },
-        { slug: 'bong-ro', title: '🏀 Bóng Rổ', type: 'Horizontal' },
+        { slug: 'football', title: '⚽ Bóng Đá', type: 'Horizontal' },
+        { slug: 'basketball', title: '🏀 Bóng Rổ', type: 'Horizontal' },
         { slug: 'tennis', title: '🎾 Tennis', type: 'Horizontal' },
-        { slug: 'cau-long', title: '🏸 Cầu Lông', type: 'Horizontal' },
-        { slug: 'bong-chuyen', title: '🏐 Bóng Chuyền', type: 'Horizontal' },
+        { slug: 'badminton', title: '🏸 Cầu Lông', type: 'Horizontal' },
+        { slug: 'volleyball', title: '🏐 Bóng Chuyền', type: 'Horizontal' },
         { slug: 'esports', title: '🎮 E-Sports', type: 'Horizontal' }
     ]);
 }
@@ -54,11 +54,11 @@ function getHomeSections() {
 function getPrimaryCategories() {
     return JSON.stringify([
         { slug: 'live-now', name: '🔥 Live Now' },
-        { slug: 'bong-da', name: '⚽ Bóng Đá' },
-        { slug: 'bong-ro', name: '🏀 Bóng Rổ' },
+        { slug: 'football', name: '⚽ Bóng Đá' },
+        { slug: 'basketball', name: '🏀 Bóng Rổ' },
         { slug: 'tennis', name: '🎾 Tennis' },
-        { slug: 'cau-long', name: '🏸 Cầu Lông' },
-        { slug: 'bong-chuyen', name: '🏐 Bóng Chuyền' },
+        { slug: 'badminton', name: '🏸 Cầu Lông' },
+        { slug: 'volleyball', name: '🏐 Bóng Chuyền' },
         { slug: 'esports', name: '🎮 E-Sports' }
     ]);
 }
@@ -70,20 +70,18 @@ function getFilterConfig() { return JSON.stringify({}); }
 // =============================================================================
 
 function getUrlList(slug, filtersJson) { 
-    // Trỏ đúng về các thư mục của Xoilac để quét HTML
-    if (slug === 'live-now' || !slug) return BASEURL + "/";
-    return BASEURL + "/" + slug + "/"; 
+    // Gắn thêm "filter=" vào URL để hàm parseListResponse biết đang ở mục nào
+    return BASEURL + "/?filter=" + (slug || "live-now"); 
 }
 
-// ĐÃ TẮT TÍNH NĂNG TÌM KIẾM
-function getUrlSearch(keyword, filtersJson) { return ""; }
+function getUrlSearch(keyword, filtersJson) { return ""; } // Tắt tìm kiếm
 function getUrlDetail(slug) { return slug; }
 function getUrlCategories() { return BASEURL + "/"; }
 function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; }
 
 // =============================================================================
-// PARSE DANH SÁCH TỪ HTML GỐC
+// PARSE DANH SÁCH (LỌC THEO MÔN THỂ THAO VÀ TÁCH RÁC)
 // =============================================================================
 
 function parseListResponse(html, url) {
@@ -91,47 +89,91 @@ function parseListResponse(html, url) {
         var items = [];
         var added = {};
         
-        // Cào dữ liệu cực kỳ mạnh mẽ: Tìm toàn bộ thẻ <a> có chứa đường dẫn "/truc-tiep/"
-        var linkRegex = /<a[^>]*href=["']((?:https?:\/\/[^"']*)?\/truc-tiep\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        // Xác định đang ở mục (folder) nào dựa vào url
+        var currentFilter = "live-now";
+        var filterMatch = url.match(/filter=([^&]+)/i);
+        if (filterMatch && filterMatch[1]) {
+            currentFilter = filterMatch[1];
+        }
+        
+        // Quét cấu trúc thẻ chứa trận đấu mới nhất của Xoilac: <div class="grid-matches__item ... data-sport="football">
+        var itemRegex = /<div([^>]*grid-matches__item-match[^>]*)>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/gi;
         var match;
         
-        while ((match = linkRegex.exec(html)) !== null) {
-            var href = match[1];
-            if (href.indexOf('http') === -1) href = BASEURL + href; // Bọc domain nếu là path tương đối
-            if (added[href]) continue;
-            
+        while ((match = itemRegex.exec(html)) !== null) {
+            var attrBlock = match[1];
             var innerHtml = match[2];
+            
+            // 1. Lọc theo Môn Thể Thao
+            var sportMatch = attrBlock.match(/data-sport=["']([^"']+)["']/i);
+            var sportType = sportMatch ? sportMatch[1].toLowerCase() : "football";
+            
+            // Nếu không phải Live Now, bỏ qua các trận không thuộc môn đang chọn
+            if (currentFilter !== 'live-now' && sportType !== currentFilter) {
+                continue;
+            }
+
+            // Nếu đang xem mục "esports" nhưng thuộc "lol", "csgo", "dota2" thì vẫn cho qua
+            if (currentFilter === 'esports') {
+                if (sportType !== 'esports' && sportType !== 'lol' && sportType !== 'csgo' && sportType !== 'dota2') {
+                    continue;
+                }
+            }
+
+            // 2. Lấy Tên Trận Đấu
             var cleanTitle = "Trận Đấu Đang Cập Nhật";
+            var linkMatch = innerHtml.match(/<a[^>]*href=["']((?:https?:\/\/[^"']*)?\/truc-tiep\/[^"']+)["'][^>]*title=["']([^"']+)["']/i);
+            var href = "";
             
-            // Lấy tên trận bằng cách bóc tách từ phần đuôi của URL (Ví dụ: chelsea-vs-arsenal-luc-20h)
-            var slugMatch = href.match(/\/truc-tiep\/([^-]+(?:-[^-]+)*)-luc-/i) || href.match(/\/truc-tiep\/([^\/]+)/i);
-            if (slugMatch) {
-                cleanTitle = slugMatch[1].replace(/-vs-/gi, ' vs ').replace(/-/g, ' ').toUpperCase();
-                cleanTitle = decodeURIComponent(cleanTitle);
+            if (linkMatch) {
+                href = linkMatch[1];
+                cleanTitle = decodeEntities(linkMatch[2]);
+            } else {
+                continue;
             }
 
-            // Loại bỏ các mục rác quảng cáo
-            if (cleanTitle.toLowerCase().indexOf('xoilac') !== -1 || cleanTitle.indexOf('IP') !== -1) continue;
+            if (href.indexOf('http') === -1) href = BASEURL + href;
+            if (added[href]) continue;
 
-            // Tìm thông tin thời gian hoặc chữ LIVE
+            // Dọn rác
+            var cleanTitleLower = cleanTitle.toLowerCase();
+            if (cleanTitleLower.indexOf('xoilac') !== -1 || 
+                cleanTitleLower.indexOf('địa chỉ ip') !== -1 || 
+                cleanTitleLower.indexOf('chào khách lạ') !== -1) {
+                continue;
+            }
+
+            // 3. Trích xuất thời gian và Trạng Thái
             var timeText = "LIVE";
-            var timeMatch = innerHtml.match(/(?:>)([\d]{2}:[\d]{2}[^<]*)(?:<)/i) || innerHtml.match(/LIVE/i);
-            if (timeMatch && timeMatch[1]) {
-                timeText = timeMatch[1].trim();
+            var timeTagMatch = innerHtml.match(/class=["']t_time time["'][^>]*>([^<]+)<\/text>/i);
+            if (timeTagMatch && timeTagMatch[1]) {
+                timeText = timeTagMatch[1].trim();
             }
+
+            var isLive = innerHtml.toUpperCase().indexOf('ĐANG LIVE') !== -1 || innerHtml.toUpperCase().indexOf('HT') !== -1 || timeText.indexOf('LIVE') !== -1;
             
-            // Tìm ảnh logo/poster
+            // Nếu là mục Live Now, chỉ lấy các trận ĐANG ĐÁ
+            if (currentFilter === 'live-now' && !isLive) {
+                continue; 
+            }
+
+            // 4. Lấy Poster
             var poster = DEFAULT_POSTER;
-            var imgMatch = innerHtml.match(/<img[^>]*src=["']([^"']+)["']/i) || innerHtml.match(/data-src=["']([^"']+)["']/i);
-            if (imgMatch) poster = imgMatch[1];
+            var imgMatches = innerHtml.match(/<img[^>]*src=["']([^"']+)["']/gi);
+            if (imgMatches && imgMatches.length > 0) {
+                 var firstImg = imgMatches[0].match(/src=["']([^"']+)["']/i);
+                 if(firstImg && firstImg[1] && firstImg[1].indexOf('http') !== -1) {
+                     poster = firstImg[1];
+                 }
+            }
             
             added[href] = true;
             items.push({
                 id: href,
-                title: cleanTitle,
+                title: cleanTitle.replace(/lúc.*/i, '').trim(),
                 posterUrl: poster,
                 backdropUrl: poster,
-                quality: innerHtml.toUpperCase().indexOf('LIVE') !== -1 ? "🔴 ĐANG LIVE" : "SẮP CHIẾU",
+                quality: isLive ? "🔴 ĐANG LIVE" : "SẮP CHIẾU",
                 episode_current: timeText
             });
         }
@@ -155,21 +197,18 @@ function parseMovieDetail(html, url) {
     try {
         var doc = _$(html);
         
-        // Lấy tên trận đấu
         var titleMatch = html.match(/<h1[^>]*>Phát trực tiếp ([^<]+)<\/h1>/i) || html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
         var title = titleMatch ? decodeEntities(titleMatch[1].replace(/hôm nay vào lúc.*/i, '').trim()) : "Trực Tiếp Thể Thao";
 
         var servers = [];
         var episodes = [];
 
-        // 1. Móc toàn bộ mảng JSON chứa biến list_stream của web Xoilac
         var streamArray = [];
         var scriptBlockMatch = html.match(/var\s+list_stream\s*=\s*(\[.*?\]);/is);
         if (scriptBlockMatch && scriptBlockMatch[1]) {
             try { streamArray = JSON.parse(scriptBlockMatch[1]); } catch(e) {}
         }
 
-        // 2. Lấy tên Kênh bình luận viên từ DOM
         var channelNames = {};
         doc.find(".player-link").each(function() {
             var linkId = this.attr("data-link");
@@ -179,19 +218,15 @@ function parseMovieDetail(html, url) {
             }
         });
 
-        // 3. Kết hợp link JSON và tên Kênh để đẩy vào ExoPlayer
         for (var i = 0; i < streamArray.length; i++) {
             var channelLinks = streamArray[i];
             if (channelLinks && channelLinks.length > 0) {
                 var m3u8Url = channelLinks[0];
                 
-                // Tiêm tham số chặn quảng cáo TVC đầu trận của Xoilac
                 if (m3u8Url.indexOf('off-tvc') === -1) m3u8Url += "/off-tvc";
                 m3u8Url += (m3u8Url.indexOf("?") === -1 ? "?" : "&") + "is_off_add=true";
 
                 var epName = channelNames[i] ? "🎙️ " + channelNames[i] : "📺 Kênh " + (i + 1);
-                
-                // Nhúng Header Referer và User-Agent để chống 403 Forbidden
                 var finalUrl = m3u8Url + "|User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36|Referer=" + BASEURL + "/";
 
                 episodes.push({
@@ -206,7 +241,6 @@ function parseMovieDetail(html, url) {
             servers.push({ name: "Danh Sách Kênh Trực Tiếp", episodes: episodes });
         }
 
-        // 4. Kế hoạch dự phòng: Nếu không bắt được script, đọc link từ thẻ HTML bật qua Sniffer Webview
         if (servers.length === 0) {
             var eps = [];
             var count = 1;
@@ -240,7 +274,6 @@ function parseMovieDetail(html, url) {
 function parseDetailResponse(html, url) {
     var cleanUrl = url.split('|')[0];
     
-    // Nếu URL đã là m3u8 (trích từ Json ở bước trước) thì bỏ qua iframe, phát bằng Native ExoPlayer
     var isEmbed = (cleanUrl.indexOf('.m3u8') === -1 && cleanUrl.indexOf('updaterz') === -1);
     
     var customJs = "";
