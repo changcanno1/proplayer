@@ -11,7 +11,7 @@ function getManifest() {
         "id": "XoilacTV_Webview",
         "name": "XoilacZ TV",
         "description": "Giao diện Live Now. Trình phát Webview đã ép Video ra giữa màn hình.",
-        "version": "3.1.0",
+        "version": "3.2.0",
         "baseUrl": BASEURL,
         "iconUrl": DEFAULT_POSTER,
         "isEnabled": true,
@@ -36,7 +36,7 @@ function decodeEntities(str) {
 }
 
 // =============================================================================
-// MENU & TRANG CHỦ (Đã thêm Live Now lên đầu)
+// MENU & TRANG CHỦ
 // =============================================================================
 
 function getHomeSections() {
@@ -197,22 +197,28 @@ function parseMovieDetail(html, url) {
 }
 
 // =============================================================================
-// WEBVIEW: CẮT BỎ QUẢNG CÁO & ĐẨY VIDEO RA GIỮA TRUNG TÂM
+// WEBVIEW: CẮT BỎ QUẢNG CÁO & ĐẨY VIDEO RA GIỮA TRUNG TÂM TRIỆT ĐỂ
 // =============================================================================
 
 function parseDetailResponse(html, url) {
-    // 1. Mã CSS "Tàng hình": Ẩn toàn bộ giao diện thừa thãi, KÉO Player ra chính giữa
+    // 1. Mã CSS "Can thiệp sâu": Ẩn toàn bộ giao diện thừa thãi, Cưỡng chế Player ra giữa màn hình
     var customCss = `
-        body, html { background-color: #000 !important; overflow: hidden !important; }
+        /* Đen toàn bộ nền, khóa cuộn màn hình */
+        body, html { 
+            background-color: #000 !important; 
+            overflow: hidden !important; 
+            margin: 0 !important; 
+            padding: 0 !important; 
+        }
         
-        /* Ép khung Player ra giữa màn hình với tỷ lệ 16:9 chuẩn */
+        /* Bắt cóc và Ép khung Player ra giữa màn hình với tỷ lệ 16:9 chuẩn */
         .embed-responsive {
             position: fixed !important;
             top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
+            left: 0 !important;
+            transform: translateY(-50%) !important;
             width: 100vw !important;
-            height: 56.25vw !important;
+            height: 56.25vw !important; /* Chuẩn 16:9 cho 100vw */
             max-height: 100vh !important;
             z-index: 2147483647 !important;
             margin: 0 !important;
@@ -220,25 +226,39 @@ function parseDetailResponse(html, url) {
             background: #000 !important;
             border: none !important;
         }
-        #iframe-stream { width: 100% !important; height: 100% !important; }
         
-        /* Cắt bỏ sạch sẽ rác, header, menu, quảng cáo 8xbet, vote kèo */
-        header, footer, nav, .match-single-top, .teambox, .team-vote, .teambox__odds, 
-        .marquee-container, .xlz-ads-item, #tv_links, .play_main_right, 
-        #wap_bottombanner, .socialvn-share, .block-k, .title_box, .nav-tabs, 
-        .home-sidebar, .page-breadcrumb, #div_footer1, .bottom-content, .widget {
-            display: none !important; opacity: 0 !important; pointer-events: none !important; height: 0 !important;
+        #iframe-stream, .embed-responsive-item { 
+            width: 100% !important; 
+            height: 100% !important; 
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+        }
+        
+        /* Cắt bỏ sạch sẽ rác, header, menu, quảng cáo 8xbet, vote kèo... */
+        header, footer, nav, .sub-menu, .nav-mobile, .match-single-top, 
+        .teambox, .team-vote, .teambox__odds, .marquee-container, 
+        .xlz-ads-item, #tv_links, .play_main_right, #wap_bottombanner, 
+        .socialvn-share, .block-k, .title_box, .nav-tabs, .home-sidebar, 
+        .page-breadcrumb, #div_footer1, .bottom-content, .widget, .content_post_box {
+            display: none !important; 
+            opacity: 0 !important; 
+            pointer-events: none !important; 
+            height: 0 !important;
+            width: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
     `;
 
-    // 2. Chèn CSS, tự động Click Play và cuộn
+    // 2. Chèn CSS, tự động Click Play để nhả luồng
     var customJs = `
         (function() {
             var style = document.createElement('style');
             style.innerHTML = "${customCss.replace(/\n/g, '')}";
             document.head.appendChild(style);
             
-            // Xoilac đôi khi cần user tương tác để nhả luồng, đoạn code này đóng vai trò nhấp chuột tự động
+            // Xoilac đôi khi cần user click để kích hoạt player
             setInterval(function() {
                 var playBtn = document.querySelector('.jw-icon-display, .vjs-big-play-button, .play-btn');
                 if(playBtn) playBtn.click();
@@ -252,7 +272,7 @@ function parseDetailResponse(html, url) {
         headers: {
             "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Referer": BASEURL + "/",
-            "Block-Ads": "true", // Chặn quảng cáo tích hợp
+            "Block-Ads": "true", // Chặn quảng cáo bằng native Vax
             "Block-Redirects": "true", // Ngăn nhảy trang rác
             "Custom-Js": customJs.replace(/\n/g, "").trim()
         },
