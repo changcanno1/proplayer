@@ -107,13 +107,6 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Vidgodnew_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vidgod.png"
     },
-     {
-      "id": "phimfun",
-      "name": "Nguồn Phim Fun",
-      "version": "1.0.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimfun_plugin.js",
-      "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimFun.png"
-    },
     {
       "id": "ThethaoTV",
       "name": "ThethaoTV",
