@@ -1,5 +1,5 @@
 // =============================================================================
-// PLUGIN VAX: XOILAC TV (GIAO DIỆN CHUẨN + CHẾ ĐỘ WEBVIEW)
+// PLUGIN VAX: XOILAC TV (GIAO DIỆN CHUẨN + TỐI ƯU WEBVIEW PLAYER)
 // =============================================================================
 
 var DOMAIN = "xoilaczzssz.tv";
@@ -10,14 +10,14 @@ function getManifest() {
     return JSON.stringify({
         "id": "XoilacTV_Webview",
         "name": "XoilacZ TV",
-        "description": "Giao diện đa môn thể thao. Chế độ phát Webview chống chặn link.",
-        "version": "3.0.0",
+        "description": "Giao diện Live Now. Trình phát Webview đã ép Video ra giữa màn hình.",
+        "version": "3.1.0",
         "baseUrl": BASEURL,
         "iconUrl": DEFAULT_POSTER,
         "isEnabled": true,
         "layoutType": "LIST",
         "type": "MOVIE",
-        "playerType": "embed" // Ép sử dụng trình phát Webview nguyên bản của App
+        "playerType": "embed" // Ép sử dụng Webview
     });
 }
 
@@ -36,12 +36,13 @@ function decodeEntities(str) {
 }
 
 // =============================================================================
-// MENU & TRANG CHỦ (Bám sát giao diện ảnh yêu cầu)
+// MENU & TRANG CHỦ
 // =============================================================================
 
 function getHomeSections() {
     return JSON.stringify([
-        { slug: 'football', title: '⚽ BÓNG ĐÁ', type: 'Grid' },
+        { slug: 'live-now', title: '🔥 LIVE NOW (Tất Cả)', type: 'Grid' },
+        { slug: 'football', title: '⚽ BÓNG ĐÁ', type: 'Horizontal' },
         { slug: 'basketball', title: '🏀 BÓNG RỔ', type: 'Horizontal' },
         { slug: 'tennis', title: '🎾 TENNIS', type: 'Horizontal' },
         { slug: 'badminton', title: '🏸 CẦU LÔNG', type: 'Horizontal' },
@@ -52,6 +53,7 @@ function getHomeSections() {
 
 function getPrimaryCategories() {
     return JSON.stringify([
+        { name: '🔥 Live Now', slug: 'live-now' },
         { name: '⚽ Bóng Đá', slug: 'football' },
         { name: '🏀 Bóng Rổ', slug: 'basketball' },
         { name: '🎾 Tennis', slug: 'tennis' },
@@ -68,8 +70,7 @@ function getFilterConfig() { return JSON.stringify({}); }
 // =============================================================================
 
 function getUrlList(slug, filtersJson) { 
-    // Trỏ về trang chủ Xoilac, đính kèm slug thể thao qua |data: để parseList phân loại
-    var sportSlug = slug || "football";
+    var sportSlug = slug || "live-now";
     return BASEURL + "/|data:" + sportSlug; 
 }
 
@@ -80,56 +81,74 @@ function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; }
 
 // =============================================================================
-// PARSE DANH SÁCH (Dò và chia folder)
+// PARSE DANH SÁCH (Fix lỗi lọc môn E-sports)
 // =============================================================================
 
 function parseListResponse(html, url) {
     try {
         var items = [];
         
-        // Bóc tách slug môn thể thao từ url
-        var currentSport = "football";
+        var currentFilter = "live-now";
         if (url && url.indexOf("|data:") !== -1) {
-            currentSport = url.split("|data:")[1].trim();
+            currentFilter = url.split("|data:")[1].trim();
         }
 
-        // Regex dò từng khối trận đấu của web
-        var blockRegex = /<div[^>]*data-sport=["']([^"']+)["'][^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/gi;
+        // Quét toàn bộ khối chứa trận đấu
+        var blockRegex = /<div([^>]*grid-matches__item-match[^>]*)>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/gi;
         var match;
 
         while ((match = blockRegex.exec(html)) !== null) {
-            var dataSport = match[1].toLowerCase();
-            
-            // CHỈ lấy các trận đấu khớp với môn thể thao (folder) đang click
-            if (dataSport !== currentSport) continue;
-
+            var attrBlock = match[1];
             var innerHtml = match[2];
+
+            // 1. Phân Loại Thể Thao
+            var sportMatch = attrBlock.match(/data-sport=["']([^"']+)["']/i);
+            var sportType = sportMatch ? sportMatch[1].toLowerCase() : "football";
             
-            // Tìm thẻ A chứa link và tiêu đề chuẩn xác nhất
+            var keep = false;
+            if (currentFilter === 'live-now') {
+                keep = true;
+            } else if (currentFilter === 'esports') {
+                // Đã sửa: Thêm dota2, csgo, lol vào nhóm esports
+                if (['esports', 'lol', 'csgo', 'dota2'].indexOf(sportType) !== -1) keep = true;
+            } else {
+                if (sportType === currentFilter) keep = true;
+            }
+
+            if (!keep) continue;
+
+            // 2. Trích Xuất URL và Title
             var aTagMatch = innerHtml.match(/<a[^>]*href=["']([^"']+)["'][^>]*title=["']([^"']+)["'][^>]*class=["'][^"']*redirectPopup[^"']*["']/i);
             if (!aTagMatch) continue;
 
             var href = aTagMatch[1];
             if (href.indexOf('http') === -1) href = BASEURL + href;
             
-            var fullTitle = decodeEntities(aTagMatch[2]); // VD: "Tokyo Verdy vs Kashiwa Reysol lúc 17:00 ngày 14/08"
-            var cleanTitle = fullTitle.replace(/lúc.*/i, '').trim(); // Cắt bỏ đoạn "lúc..." để tên ngắn gọn hơn
+            var fullTitle = decodeEntities(aTagMatch[2]);
+            var cleanTitle = fullTitle.replace(/lúc.*/i, '').trim(); 
 
-            // Bóc tách Poster (Logo đội chủ nhà làm đại diện)
+            if (cleanTitle.toLowerCase().indexOf('xoilac') !== -1 || cleanTitle.indexOf('IP') !== -1) continue;
+
+            // 3. Poster Logo
             var poster = DEFAULT_POSTER;
             var posterMatch = innerHtml.match(/<img[^>]*src=["']([^"']+)["']/i);
             if (posterMatch && posterMatch[1].indexOf('http') !== -1) {
                 poster = posterMatch[1];
             }
 
-            // Kiểm tra trạng thái trận đấu (Thời gian hoặc tỉ số HT/FT)
-            var timeStatus = "";
-            var timeMatch = innerHtml.match(/<text[^>]*class=["'][^"']*t_time[^"']*["'][^>]*>([^<]+)/i);
-            if (timeMatch && timeMatch[1]) {
-                timeStatus = timeMatch[1].trim(); // VD: 17:00
+            // 4. Trạng Thái Trận (Lọc chuẩn cho LIVE NOW)
+            // Lấy từ data-status của thẻ cha: 1 là chưa đá, các số khác là đang đá hoặc kết thúc
+            var statusMatch = attrBlock.match(/data-status=["'](\d+)["']/i);
+            var statusCode = statusMatch ? statusMatch[1] : "0";
+            var isLive = (statusCode !== "1" && statusCode !== "0"); 
+            
+            if (currentFilter === 'live-now' && !isLive) {
+                continue; 
             }
 
-            var isLive = innerHtml.indexOf('HT') !== -1 || innerHtml.indexOf('Hiệp') !== -1 || innerHtml.toUpperCase().indexOf('LIVE') !== -1;
+            var timeStatus = "";
+            var timeMatch = innerHtml.match(/<text[^>]*class=["'][^"']*t_time[^"']*["'][^>]*>([^<]+)/i);
+            if (timeMatch && timeMatch[1]) timeStatus = timeMatch[1].trim(); 
 
             items.push({
                 id: href,
@@ -153,19 +172,17 @@ function parseSearchResponse(html) {
 }
 
 // =============================================================================
-// CHI TIẾT (TẠO NÚT "XEM TRỰC TIẾP")
+// CHI TIẾT
 // =============================================================================
 
 function parseMovieDetail(html, url) {
     try {
         var doc = _$(html);
-        
         var titleMatch = html.match(/<h1[^>]*>Phát trực tiếp ([^<]+)<\/h1>/i) || html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
         var title = titleMatch ? decodeEntities(titleMatch[1].replace(/hôm nay vào lúc.*/i, '').trim()) : "Trực Tiếp Thể Thao";
 
-        // Trả về trực tiếp URL để phát qua Webview nguyên bản
         var servers = [{
-            name: "Nguồn Trực Tiếp (Webview)",
+            name: "Xoilac TV",
             episodes: [{
                 id: url,
                 name: "🔴 PHÁT TRỰC TIẾP",
@@ -178,7 +195,7 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: DEFAULT_POSTER,
             backdropUrl: DEFAULT_POSTER,
-            description: "Xem trực tiếp thể thao với chế độ Webview. Tự động loại bỏ quảng cáo và popup.",
+            description: "Xem trực tiếp thể thao với chế độ Webview. Tự động loại bỏ quảng cáo và tối ưu hóa màn hình.",
             servers: servers
         });
     } catch (e) {
@@ -187,28 +204,53 @@ function parseMovieDetail(html, url) {
 }
 
 // =============================================================================
-// PHÁT QUA WEBVIEW (TÍCH HỢP CHẶN QUẢNG CÁO)
+// WEBVIEW: DỌN RÁC & CĂN CHỈNH VIDEO RA GIỮA MÀN HÌNH
 // =============================================================================
 
 function parseDetailResponse(html, url) {
-    // Tiêm Custom-Js nhẹ nhàng để ép phát video nếu trình duyệt yêu cầu tương tác
+    // 1. Mã CSS cực mạnh để ẨN tất cả rác, và KÉO Player lên kịch trần
+    var customCss = `
+        header, #header, nav, .nav-mobile, .sub-menu, 
+        .match-single-top, .teambox, .team-vote, .teambox__odds, 
+        .marquee-container, .xlz-ads-item, #footer, .bottom-content, 
+        .home-sidebar, .page-breadcrumb, .title_box, #div_footer1, 
+        .socialvn-share, .block-k, #catfish, .mp-adz { 
+            display: none !important; opacity: 0 !important; height: 0 !important; pointer-events: none !important;
+        }
+        body, html { background: #111 !important; margin: 0 !important; padding: 0 !important; }
+        .section-player { margin-top: 0 !important; padding: 0 !important; }
+        .play_main_left { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; padding: 0 !important; }
+        .embed-responsive { margin-top: 0 !important; border-radius: 0 !important; }
+    `;
+
+    // 2. Chèn CSS, tự động Click Play và cuộn (scroll) trang đến đúng khung Video
     var customJs = `
         (function() {
+            var css = "${customCss.replace(/\n/g, '')}";
+            var style = document.createElement('style');
+            style.innerHTML = css;
+            document.head.appendChild(style);
+            
             setInterval(function() {
                 var playBtn = document.querySelector('.jw-icon-display, .vjs-big-play-button, .play-btn, #resumeBtn');
                 if(playBtn) playBtn.click();
             }, 2000);
+            
+            setTimeout(function() {
+                var player = document.getElementById('play_main') || document.querySelector('.embed-responsive');
+                if(player) player.scrollIntoView({behavior: "smooth", block: "start"});
+            }, 1000);
         })();
     `;
 
     return JSON.stringify({
         url: url,
-        isEmbed: true, // Ép Vax chạy Webview
+        isEmbed: true, 
         headers: {
             "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Referer": BASEURL + "/",
-            "Block-Ads": "true", // Bật tính năng dọn dẹp quảng cáo cực mạnh của Vax Player
-            "Block-Redirects": "true", // Chặn triệt để các mã độc nhảy trang / popup
+            "Block-Ads": "true", // Chặn quảng cáo tích hợp
+            "Block-Redirects": "true", // Ngăn nhảy trang rác
             "Custom-Js": customJs.replace(/\n/g, "").trim()
         },
         subtitles: []
