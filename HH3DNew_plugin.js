@@ -1,5 +1,5 @@
 // =============================================================================
-// CẤU HÌNH TÊN MIỀN (SỬA DÒNG NÀY KHI WEB ĐỔI DOMAIN)
+// CẤU HÌNH TÊN MIỀN (SỬA NHANH Ở ĐÂY KHI WEB ĐỔI DOMAIN)
 // =============================================================================
 var DOMAIN = "yanhh3d.pw";
 var BASEURL = "https://" + DOMAIN;
@@ -9,7 +9,7 @@ function getManifest() {
         "id": "yanhh3d",
         "name": "Yanhh3d",
         "description": "Trang xem phim Hoạt Hình siêu hay.",
-        "info":"Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này.",
+        "info": "Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này.",
         "version": "1.3.5",
         "baseUrl": BASEURL,
         "iconUrl": "https://bilutv.asia/img/bilutvlogo-ngang.jpg",
@@ -345,32 +345,37 @@ function parseMovieDetail(htmlContent, url) {
             var items = [];
             var items4k = [];
             
-            // --- SỬA LỖI TRƯỢT TẬP Ở ĐÂY ---
-            // Dùng Regex để bắt mọi thẻ <a> thay vì dùng _$().find()
+            // --- BẮT ĐẦU SỬA: Dùng Regex quét HTML để chống trượt tập cuối ---
             var tabHtml = $parent.find(idserver).html() || "";
             if (tabHtml) {
-                var epRegex = /<a[^>]+href=["']([^"']+)["'][^>]*title=["']([^"']+)["']/gi;
-                var epMatch;
+                var aTagRegex = /<a\s+[^>]*class=["'][^"']*ep-item[^"']*["'][^>]*>/gi;
+                var aMatch;
                 var added = {};
 
-                while ((epMatch = epRegex.exec(tabHtml)) !== null) {
-                    var epUrl = epMatch[1];
-                    var epName = epMatch[2].trim();
+                while ((aMatch = aTagRegex.exec(tabHtml)) !== null) {
+                    var aTag = aMatch[0];
+                    var hrefM = /href=["']([^"']+)["']/i.exec(aTag);
+                    var titleM = /title=["']([^"']+)["']/i.exec(aTag); // Lấy thuộc tính title
+                    
+                    if (hrefM && titleM) {
+                        var epUrl = hrefM[1];
+                        var epName = titleM[1].trim(); // Tên tập phim cực chuẩn từ title="154"
 
-                    if (!added[epUrl] && epUrl.indexOf('javascript') === -1) {
-                        added[epUrl] = true;
-                        
-                        var displayName = epName;
-                        if (/^\d+(-?\d+)?$/.test(epName)) displayName = "Tập " + epName;
-                        
-                        var slug = "tap-" + epName.replace(/\s+/g, "-");
+                        if (!added[epUrl] && epUrl.indexOf('javascript') === -1) {
+                            added[epUrl] = true;
+                            
+                            var displayName = epName;
+                            if (/^\d+(-?\d+)?$/.test(epName)) displayName = "Tập " + epName;
+                            
+                            var epSlug = "tap-" + epName.replace(/\s+/g, "-");
 
-                        items.push({ id: epUrl, name: displayName, slug: slug });
-                        items4k.push({ id: epUrl + (epUrl.indexOf('?') > -1 ? '&' : '?') + "type=4k", name: displayName, slug: slug });
+                            items.push({ id: epUrl, name: displayName, slug: epSlug });
+                            items4k.push({ id: epUrl + (epUrl.indexOf('?') > -1 ? '&' : '?') + "type=4k", name: displayName, slug: epSlug });
+                        }
                     }
                 }
             }
-            // --- END SỬA LỖI ---
+            // --- KẾT THÚC SỬA ---
 
             if (items.length > 0) {
                 servers.push({
@@ -397,6 +402,20 @@ function parseMovieDetail(htmlContent, url) {
                 });
             }
         });
+
+        // --- BẮT ĐẦU SỬA: Sắp xếp Server theo thứ tự ưu tiên ---
+        servers.sort((a, b) => {
+            const getScore = (name) => {
+                let score = 0;
+                let n = name.toLowerCase();
+                if (n.indexOf('4k') > -1) score += 100;
+                if (n.indexOf('vietsub') > -1) score += 20;
+                if (n.indexOf('thuyết minh') > -1) score += 10;
+                return score;
+            };
+            return getScore(b.name) - getScore(a.name);
+        });
+        // --- KẾT THÚC SỬA ---
 
         var extra = "";
         var isPlayPage = /\/tap-/.test(id);
@@ -441,31 +460,11 @@ function parseDetailResponse(html, url) {
     try {
         log("parseDetailResponse[url]: \n" + url);
         var allLink = [];
-        
-        // --- SỬA LỖI KHÔNG BẮT ĐƯỢC LINK Ở ĐÂY ---
-        // Dùng Regex quét thẳng vào HTML để lấy data-src thay vì _$()
-        var blockMatch = html.match(/class=["'][^"']*list-severs[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
-        var blockHtml = blockMatch ? blockMatch[1] : html;
-        
-        var aRegex = /<a[^>]+data-src=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
-        var match;
-        while ((match = aRegex.exec(blockHtml)) !== null) {
-            var link = match[1];
-            var name = match[2].replace(/<[^>]*>/g, '').trim();
-            if (link) allLink.push({ link: link, name: name });
-        }
-
-        // Vớt vát dự phòng: Lấy thẳng m3u8 nếu không có thẻ a
-        if (allLink.length === 0) {
-            var backupRegex = /data-src=["']([^"']+)["']/gi;
-            var bMatch;
-            while ((bMatch = backupRegex.exec(html)) !== null) {
-                if(bMatch[1].indexOf('m3u8') > -1) {
-                    allLink.push({ link: bMatch[1], name: "Server 1" });
-                }
-            }
-        }
-        // --- END SỬA LỖI ---
+        _$(html).find('div[class*="list-severs"]').find("a").each(function() {
+            var name = this.text();
+            var link = this.attr("data-src");
+            allLink.push({ link: link, name: name });
+        });
 
         let selectedLink = null;
         const pool = { k4: null, hd: null, anyM3u8: null, anyEmbed: null };
@@ -481,14 +480,18 @@ function parseDetailResponse(html, url) {
             }
         });
 
-        selectedLink = pool.hd || pool.k4 || pool.anyM3u8 || pool.anyEmbed || (allLink.length > 0 ? allLink[0].link : "");
+        selectedLink = pool.hd || pool.k4 || pool.anyM3u8 || pool.anyEmbed;
         if (url.indexOf("type=4k") > -1) {
-            selectedLink = pool.k4 || pool.hd || pool.anyM3u8 || pool.anyEmbed || (allLink.length > 0 ? allLink[0].link : "");
+            selectedLink = pool.k4 || pool.hd || pool.anyM3u8 || pool.anyEmbed;
             log("parseDetailResponse[url]: \nĐã chọn 4K: " + selectedLink);
         }
 
-        // ĐÃ XÓA HÀM REPLACE LÀM HỎNG LINK FBCDN Ở ĐÂY
-        var streamlink = selectedLink || "";
+        // --- BẮT ĐẦU SỬA: Bảo vệ Link CDN tránh bị phá hỏng bởi hàm replace ---
+        var streamlink = selectedLink ? selectedLink : "";
+        if (streamlink && streamlink.indexOf("fbcdn") === -1) {
+            streamlink = streamlink.replace(/(https?:\/\/[^\/]+)\/[^]+?\/([^\/]+\.m3u8)$/, '$1/stream/m3u8/$2');
+        }
+        // --- KẾT THÚC SỬA ---
         
         return JSON.stringify({
             "url": streamlink,
@@ -542,6 +545,7 @@ function parseCategoriesResponse(apiResponseJson) {
 
 function parseCountriesResponse(html) { return "[]"; }
 function parseYearsResponse(html) { return "[]"; }
+
 // https://k8s.onflixcdn.com/api/movies?sort=year_desc&limit=24&category=chien-tranh
 function getLISTmenu() {
     return `
