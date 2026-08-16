@@ -58,11 +58,11 @@
       "iconUrl": "https://hoathinh3d.co/wp-content/uploads/2023/09/favicon.png"
     },
      {
-      "id": "Yanhh3D",
-      "name": "Yanhh3D Webview",
+      "id": "HHpandatv",
+      "name": "HHpandatv",
       "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Yanhh3d_plugin.js",
-      "iconUrl": "https://hoathinh3d.co/wp-content/uploads/2023/09/favicon.png"
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/hhpanda_plugin.js",
+      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNZWj2x3KVRTGvKRc6jyinavcjgQxZVTFhzpwtdWyvbB_SfUir-WEHgDc&s=10"
     },
     {
       "id": "AnimeHay09",
