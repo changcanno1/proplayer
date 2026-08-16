@@ -1,7 +1,7 @@
 // =============================================================================
-// CẤU HÌNH TÊN MIỀN (ĐỔI NHANH Ở ĐÂY KHI WEB THAY ĐỔI)
+// CẤU HÌNH TÊN MIỀN (ĐỔI NHANH Ở ĐÂY KHI WEB BỊ CHẶN)
 // =============================================================================
-var DOMAIN = "yanhh3d.pw"; // Sửa chữ yanhh3d.pw thành tên miền mới khi bị chặn
+var DOMAIN = "yanhh3d.pw"; // Chỉ cần sửa dòng này khi đổi tên miền!
 var BASEURL = "https://" + DOMAIN;
 
 function getManifest() {
@@ -9,7 +9,8 @@ function getManifest() {
         "id": "yanhh3d",
         "name": "Yanhh3d",
         "description": "Trang xem phim Hoạt Hình siêu hay.",
-        "version": "1.3.5", // Tăng version để app tự động cập nhật
+        "info": "Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này.",
+        "version": "1.3.6", // Đã tăng version
         "baseUrl": BASEURL,
         "iconUrl": "https://bilutv.asia/img/bilutvlogo-ngang.jpg",
         "isEnabled": true,
@@ -198,60 +199,78 @@ function parseSearchResponse(html) {
     return parseListResponse(html);
 }
 
+// TỐI ƯU CỰC MẠNH: LOẠI BỎ _$, SỬ DỤNG REGEX ĐỂ BẮT CHÍNH XÁC TẬP CUỐI
 function parseMovieDetail(htmlContent, url) {
     try {
-        // === BƯỚC 1: ĐỒNG NHẤT ID PHIM ===
+        log("parseMovieDetail[url]: \n" + url);
+
+        // ĐỒNG NHẤT ID PHIM
         var idMatch = /<link\s+rel="canonical"\s+href="([^"]+)"/i.exec(htmlContent) ||
             /<meta\s+property="og:url"\s+content="([^"]+)"/i.exec(htmlContent);
         var id = idMatch ? idMatch[1] : (url || "");
 
-        // === BƯỚC 2: TRÍCH XUẤT THÔNG TIN PHIM ===
         var lurl = "";
         var limg = "";
         var lname = "Đang cập nhật...";
         var ldes = "Không có mô tả.";
         var lduran = "";
-        var status = "";
-        var category = "";
-        var episode_current = "";
-        var year = "";
-
-        var rmatch = htmlContent.match(/meta\s+property="og:image"\s+content="([^"]+)"/i);
+        
+        var rmatch = htmlContent.match(/meta\s+property="og:url"\s+content="([^"]+)"/i);
+        if (rmatch && rmatch[1]) lurl = rmatch[1];
+        rmatch = htmlContent.match(/meta\s+property="og:image"\s+content="([^"]+)"/i);
         if (rmatch && rmatch[1]) limg = rmatch[1];
-
         rmatch = htmlContent.match(/meta\s+property="og:title"\s+content="([^"]+)"/i);
         if (rmatch && rmatch[1]) lname = rmatch[1];
-
         rmatch = htmlContent.match(/meta\s+property="og:description"\s+content="([^"]+)"/i);
         if (rmatch && rmatch[1]) ldes = rmatch[1];
-
         rmatch = htmlContent.match(/meta\s+property="video:duration"\s+content="([^"]+)"/i);
         if (rmatch && rmatch[1]) lduran = rmatch[1];
 
-        status = _$(htmlContent).find("span:content('Trạng thái:')").next().text();
-        year = _$(htmlContent).find("span:content('Năm:')").next().text();
-        category = _$(htmlContent).find("span:content('Thể loại:')").parent().text(", ").replace('Thể loại:, ', '');
-        episode_current = _$(htmlContent).find("span:content('Tập mới nhất:')").next().text();
+        // Lấy thông tin chung (dùng _$ vẫn ổn ở mức HTML tĩnh đơn giản)
+        var status = _$(htmlContent).find("span:content('Trạng thái:')").next().text();
+        var year = _$(htmlContent).find("span:content('Năm:')").next().text();
+        var category = _$(htmlContent).find("span:content('Thể loại:')").parent().text(", ").replace('Thể loại:, ', '');
+        var episode_current = _$(htmlContent).find("span:content('Tập mới nhất:')").next().text();
 
         var servers = [];
 
-        // === BƯỚC 3: THUẬT TOÁN TÓM GỌN CHÍNH XÁC TẬP PHIM (KHÔNG SÓT TẬP CUỐI) ===
-        var $parent = _$(htmlContent).find('.detail-infor-content');
-        var $child = $parent.find("li");
+        // 1. TÌM TOÀN BỘ CÁC TAB SERVER
+        var tabRegex = /<a[^>]*href=["']#([^"']+)["'][^>]*data-toggle=["']tab["'][^>]*>([^<]+)<\/a>/gi;
+        var tabMatch;
+        var tabs = [];
+        while ((tabMatch = tabRegex.exec(htmlContent)) !== null) {
+            tabs.push({
+                id: tabMatch[1],
+                name: tabMatch[2].replace(/<[^>]*>/g, '').trim()
+            });
+        }
         
-        $child.find("a").each(function() {
-            var nameServer = this.text();
-            var idserver = this.attr("href"); // dạng #top-comment
+        if (tabs.length === 0) {
+            tabs.push({ id: "ss-list", name: "Server 1" });
+        }
+
+        // 2. TÌM TẬP PHIM BẰNG SPLIT CHUỖI GỐC (BỎ QUA LỖI CỦA _$)
+        tabs.forEach(function(tab) {
+            var blockHtml = "";
+            var tabParts = htmlContent.split(new RegExp('id=["\']' + tab.id + '["\']', 'i'));
             
+            if (tabParts.length > 1) {
+                blockHtml = tabParts[1];
+                // Giới hạn vùng HTML của tab này đến tab tiếp theo
+                var endIdx = blockHtml.search(/<div\s+id=["'][a-zA-Z0-9_-]+["'][^>]*class=["'][^"']*tab-pane/i);
+                if (endIdx > -1) {
+                    blockHtml = blockHtml.substring(0, endIdx);
+                }
+            } else if (tab.id === "ss-list") {
+                blockHtml = htmlContent; 
+            }
+
             var items = [];
             var items4k = [];
-            var added = {}; // Bộ lọc chống trùng lặp
+            var added = {};
 
-            // Lấy khối HTML của riêng server này để cào bằng Regex thuần túy
-            var blockHtml = $parent.find(idserver).html();
-            
             if (blockHtml) {
-                // Regex bắt gọn mọi thẻ <a> chứa class ep-item (bất chấp thuộc tính nằm lộn xộn)
+                // Regex bắt gọn mọi thẻ <a> có chứa class ep-item
                 var aTagRegex = /<a\s+[^>]*class=["'][^"']*ep-item[^"']*["'][^>]*>/gi;
                 var aMatch;
                 
@@ -262,7 +281,7 @@ function parseMovieDetail(htmlContent, url) {
                     
                     if (hrefM && titleM) {
                         var epUrl = hrefM[1];
-                        var epName = titleM[2].trim();
+                        var epName = titleM[1].trim();
 
                         if (!added[epUrl] && epUrl.indexOf('javascript') === -1) {
                             added[epUrl] = true;
@@ -280,11 +299,12 @@ function parseMovieDetail(htmlContent, url) {
             }
 
             if (items.length > 0) {
-                servers.push({ name: nameServer, episodes: items });
-                servers.push({ name: nameServer + " [4K]", episodes: items4k });
+                servers.push({ name: tab.name, episodes: items });
+                servers.push({ name: tab.name + " [4K]", episodes: items4k });
             }
         });
 
+        // Sắp xếp
         function getEpisodeNumber(name) {
             var match = name.match(/\d+/);
             return match ? parseInt(match[0], 10) : 0;
@@ -323,29 +343,52 @@ function parseMovieDetail(htmlContent, url) {
         });
 
     } catch (e) {
+        log("parseMovieDetail[err]:\n " + e.message);
         return JSON.stringify({
             id: url || "error",
-            title: "Lỗi phân tích: " + e.message,
+            title: "Lỗi phân tích chi tiết",
             servers: []
         });
     }
 }
 
+// TỐI ƯU CỰC MẠNH: BẮT CHÍNH XÁC LINK MEDIA (BỎ QUA LỖI CỦA _$)
 function parseDetailResponse(html, url) {
     try {
+        log("parseDetailResponse[url]: \n" + url);
         var allLink = [];
-        _$(html).find('div[class*="list-severs"]').find("a").each(function() {
-            var name = this.text();
-            var link = this.attr("data-src");
+        
+        // Cắt lấy cụm HTML chứa danh sách link Server
+        var listSvMatch = /class=["'][^"']*list-severs[^"']*["'][^>]*>([\s\S]*?)<\/div>/i.exec(html);
+        var blockHtml = listSvMatch ? listSvMatch[1] : html;
+        
+        // Quét bằng Regex để tìm toàn bộ data-src
+        var aRegex = /<a[^>]+data-src=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        var aMatch;
+        while ((aMatch = aRegex.exec(blockHtml)) !== null) {
+            var link = aMatch[1];
+            var name = aMatch[2].replace(/<[^>]*>/g, '').trim();
             if (link) {
                 allLink.push({ link: link, name: name });
             }
-        });
+        }
+        
+        // Vớt vát dự phòng: Nếu không bắt được bằng thẻ a, bắt mọi m3u8 có trong thẻ data-src
+        if (allLink.length === 0) {
+            var backupRegex = /data-src=["']([^"']+)["']/gi;
+            var bMatch;
+            while ((bMatch = backupRegex.exec(html)) !== null) {
+                if(bMatch[1].indexOf('m3u8') > -1) {
+                    allLink.push({ link: bMatch[1], name: "Server Backup" });
+                }
+            }
+        }
 
         var selectedLink = null;
         var pool = { k4: null, hd: null, anyM3u8: null, anyEmbed: null };
         
-        allLink.forEach(function(item) {
+        for (var i = 0; i < allLink.length; i++) {
+            var item = allLink[i];
             if (item.name.match(/4k/i) && item.link.indexOf('.m3u8') > -1) {
                 pool.k4 = item.link;
             } else if (item.name.match(/1080/i) && item.link.indexOf('.m3u8') > -1) {
@@ -355,18 +398,15 @@ function parseDetailResponse(html, url) {
             } else if (item.link.indexOf('abyss') > -1) {
                 pool.anyEmbed = item.link;
             }
-        });
-
-        selectedLink = pool.hd || pool.k4 || pool.anyM3u8 || pool.anyEmbed;
-        if (url.indexOf("type=4k") > -1) {
-            selectedLink = pool.k4 || pool.hd || pool.anyM3u8 || pool.anyEmbed;
         }
 
-        // ĐÃ SỬA: Loại bỏ hàm .replace() phá hoại link CDN, giữ nguyên link nguyên gốc để phát
-        var streamlink = selectedLink || "";
+        selectedLink = pool.hd || pool.k4 || pool.anyM3u8 || pool.anyEmbed || (allLink.length > 0 ? allLink[0].link : "");
+        if (url.indexOf("type=4k") > -1) {
+            selectedLink = pool.k4 || pool.hd || pool.anyM3u8 || pool.anyEmbed || (allLink.length > 0 ? allLink[0].link : "");
+        }
         
         return JSON.stringify({
-            "url": streamlink,
+            "url": selectedLink,
             "isEmbed": false,
             "mimeType": "application/x-mpegURL",
             "headers": {
@@ -377,7 +417,7 @@ function parseDetailResponse(html, url) {
         });
 
     } catch (e) {
-        log("parseDetailResponse[err]:\n " + e);
+        log("parseDetailResponse[err]:\n " + e.message);
         return JSON.stringify({ "url": "", "headers": {} });
     }
 }
