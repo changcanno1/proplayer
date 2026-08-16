@@ -1,14 +1,17 @@
-// https://bilutv.asia
-BASEURL = "https://yanhh3d.pw/";
+// =============================================================================
+// CẤU HÌNH TÊN MIỀN (ĐỔI NHANH Ở ĐÂY KHI WEB THAY ĐỔI)
+// =============================================================================
+var DOMAIN = "yanhh3d.pw"; // Sửa chữ yanhh3d.pw thành tên miền mới khi bị chặn
+var BASEURL = "https://" + DOMAIN;
 
 function getManifest() {
     return JSON.stringify({
         "id": "yanhh3d",
         "name": "Yanhh3d",
         "description": "Trang xem phim Hoạt Hình siêu hay.",
-      	"info":"Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này.",
-        "version": "1.3.4",
-        "baseUrl": "https://yanhh3d.pw/",
+        "info": "Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này.",
+        "version": "1.3.5", // Tăng version để app tự động cập nhật
+        "baseUrl": BASEURL,
         "iconUrl": "https://bilutv.asia/img/bilutvlogo-ngang.jpg",
         "isEnabled": true,
         "layoutType": "HORIZONTAL",
@@ -25,8 +28,10 @@ function log(msg) {
     }
 }
 
-// https://yanhh3d.ac/moi-cap-nhat?page=2
-// https://yanhh3d.ac/moi-cap-nhat?page=2
+// =============================================================================
+// MENUS & FILTERS
+// =============================================================================
+
 function getHomeSections() {
     try {
         var listurl = `
@@ -54,7 +59,6 @@ function getPrimaryCategories() {
     }
 }
 
-// ĐÃ SỬA: Lỗi cú pháp khai báo biến trong JSON.stringify
 function getFilterConfig() {
     try {
         var listurl = getLISTmenu();
@@ -74,28 +78,18 @@ function getFilterConfig() {
 
 function getUrlList(slug, filtersJson) {
     try {
-        log("getUrlList[url]: \n" + slug);
-
-        // 1. Kiểm tra nếu slug là link tuyệt đối (chứa http) và không có bộ lọc thì trả về luôn
         if ((slug && slug.indexOf("http") > -1) || (slug && slug.indexOf("search") > -1)) {
-            // thường là link search sẽ bị trả về ở đây
             return slug;
         }
-        let page = 1;
-        let path = slug || "";
+        var page = 1;
+        var path = slug || "";
 
-        // 2. Xử lý an toàn filtersJson nếu có truyền vào
         if (filtersJson) {
-            // Nếu có số trang hoặc có menu categ
-            // Sửa lỗi nếu JSON thiếu dấu ngoặc kép ở key hoặc sai cú pháp cơ bản
-            let fixedJson = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
-                .replace(/:,/g, ':');
-
+            var fixedJson = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":').replace(/:,/g, ':');
             try {
-                let filters = JSON.parse(fixedJson);
+                var filters = JSON.parse(fixedJson);
                 page = parseInt(filters.page) || 1;
 
-                // Nếu có category trong JSON, ưu tiên lấy category làm đường dẫn (path)
                 if (filters.category) {
                     if (Array.isArray(filters.category) && filters.category.length > 0) {
                         path = filters.category[0].slug;
@@ -106,104 +100,56 @@ function getUrlList(slug, filtersJson) {
             } catch (jsonErr) {}
         }
 
-        // 5. Nối chuỗi URL kết quả
-        let resultUrl = BASEURL;
+        var resultUrl = BASEURL;
         if (path) {
-            resultUrl += path;
+            resultUrl += (path.indexOf("/") === 0 ? "" : "/") + path;
         }
-
         if (page > 1) {
             resultUrl += "?page=" + page;
         }
 
-        // Trả về kết quả, chỉ gộp dấu // ở phần path, giữ nguyên https://
         var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
-        log("getUrlList[url]: \n" + finalUrl);
         return finalUrl;
 
     } catch (e) {
-        log("getUrlList[err]:\n " + e);
-        // Trả về URL gốc an toàn nếu có lỗi
-        let fallback = BASEURL + (slug ? "/" + slug : "");
-        var resFallback = fallback.replace(/([^:]\/)\/+/g, "$1");
-        log("getUrlList[url]: \n" + resFallback);
-        return resFallback;
+        var fallback = BASEURL + (slug ? "/" + slug : "");
+        return fallback.replace(/([^:]\/)\/+/g, "$1");
     }
 }
 
 function getUrlSearch(keyword, filtersJson) {
     try {
         var page = 1;
-        var path = "";
-
-        // 2. Xử lý an toàn filtersJson nếu có truyền vào
         if (filtersJson) {
-            var fixedJson = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
-                .replace(/:,/g, ':');
+            var fixedJson = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":').replace(/:,/g, ':');
             try {
                 var filters = JSON.parse(fixedJson);
                 page = parseInt(filters.page) || 1;
             } catch (jsonErr) {}
 
             if (page > 1) {
-                var resUrlPage = BASEURL + "/search?keysearch=" + encodeURIComponent(keyword) + "&page=" + page;
-                log("getUrlSearch[url]: \n" + resUrlPage);
-                return resUrlPage;
+                return BASEURL + "/search?keysearch=" + encodeURIComponent(keyword) + "&page=" + page;
             }
         }
-        var resUrl = BASEURL + "/search?keysearch=" + encodeURIComponent(keyword);
-        log("getUrlSearch[url]: \n" + resUrl);
-        return resUrl;
-
+        return BASEURL + "/search?keysearch=" + encodeURIComponent(keyword);
     } catch (e) {
-        log("getUrlSearch[err]:\n " + e);
-        var fallbackUrl = BASEURL + "/search?keysearch=" + encodeURIComponent(keyword || "");
-        log("getUrlSearch[url]: \n" + fallbackUrl);
-        return fallbackUrl;
+        return BASEURL + "/search?keysearch=" + encodeURIComponent(keyword || "");
     }
 }
 
 function getUrlDetail(slug) {
     try {
-        log("getUrlDetail[url]: \n" + slug);
         if (!slug) return "";
         if (slug.indexOf('http') === 0) return slug;
-        var resUrl = BASEURL + "/" + slug;
-        log("getUrlDetail[url]: \n" + resUrl);
-        return resUrl;
+        return BASEURL + "/" + slug;
     } catch (e) {
-        log("getUrlDetail[err]:\n " + e);
         return "";
     }
 }
 
-function getUrlCategories() {
-    try {
-        log("getUrlCategories[url]: \n" + BASEURL);
-        return BASEURL;
-    } catch (e) {
-        log("getUrlCategories[err]:\n " + e);
-        return "";
-    }
-}
-
-function getUrlCountries() {
-    try {
-        return "";
-    } catch (e) {
-        log("getUrlCountries[err]:\n " + e);
-        return "";
-    }
-}
-
-function getUrlYears() {
-    try {
-        return "";
-    } catch (e) {
-        log("getUrlYears[err]:\n " + e);
-        return "";
-    }
-}
+function getUrlCategories() { return BASEURL; }
+function getUrlCountries() { return ""; }
+function getUrlYears() { return ""; }
 
 // =============================================================================
 // PARSERS
@@ -211,27 +157,23 @@ function getUrlYears() {
 
 function parseListResponse(html, $url) {
     try {
-        log("parseListResponse[url]: \n" + $url);
         var items = [];
-
         _$(html).find(".flw-item").each(function () {
-            var year = "";
-            var lang = "";
             var current = this.find(".tick-rate").text();
             var href = this.find("a").attr("href");
             var quality = this.find(".tick-dub").text();
             var title = this.find("a").attr("title");
             var src = this.find("img").attr("src");
-            if (src.indexOf("http") == -1) {
+            
+            if (src && src.indexOf("http") == -1) {
                 src = BASEURL + src;
             }
 
             if (href && href.indexOf("http") > -1) {
-                var cleanThumb = src.replace(/&amp;/g, '&');
-
+                var cleanThumb = src ? src.replace(/&amp;/g, '&') : "";
                 items.push({
                     "id": href,
-                    "title": title.trim(),
+                    "title": title ? title.trim() : "",
                     "posterUrl": cleanThumb,
                     "backdropUrl": cleanThumb,
                     "quality": quality,
@@ -242,76 +184,40 @@ function parseListResponse(html, $url) {
 
         return JSON.stringify({
             "items": items,
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 999
-            }
+            "pagination": { "currentPage": 1, "totalPages": 999 }
         });
 
     } catch (e) {
-        log("parseListResponse[err]:\n " + e);
         return JSON.stringify({
-            "items": [{
-                "id": $url,
-                "title": "Lỗi: " + e,
-                "posterUrl": "",
-                "backdropUrl": ""
-            }],
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 1
-            }
+            "items": [],
+            "pagination": { "currentPage": 1, "totalPages": 1 }
         });
     }
 }
 
 function parseSearchResponse(html) {
-    try {
-        return parseListResponse(html);
-    } catch (e) {
-        log("parseSearchResponse[err]:\n " + e);
-        return JSON.stringify({
-            "items": [],
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 1
-            }
-        });
-    }
+    return parseListResponse(html);
 }
 
 function parseMovieDetail(htmlContent, url) {
     try {
-        log("parseMovieDetail[url]: \n" + url);
-
-        // === BƯỚC 1: ĐỒNG NHẤT ID PHIM BẰNG REGEX META ===
+        // === BƯỚC 1: ĐỒNG NHẤT ID PHIM ===
         var idMatch = /<link\s+rel="canonical"\s+href="([^"]+)"/i.exec(htmlContent) ||
             /<meta\s+property="og:url"\s+content="([^"]+)"/i.exec(htmlContent);
         var id = idMatch ? idMatch[1] : (url || "");
-
-        var slug = "";
-        if (id) {
-            var slugMatch = /\/phim\/([^/_.]+)/.exec(id) || /\/([a-zA-Z0-9_-]+)$/.exec(id);
-            slug = slugMatch ? slugMatch[1] : id;
-        }
 
         // === BƯỚC 2: TRÍCH XUẤT THÔNG TIN PHIM ===
         var lurl = "";
         var limg = "";
         var lname = "Đang cập nhật...";
         var ldes = "Không có mô tả.";
-        var ldirec = "";
-        var lactor = "";
         var lduran = "";
         var status = "";
         var category = "";
         var episode_current = "";
         var year = "";
 
-        var rmatch = htmlContent.match(/meta\s+property="og:url"\s+content="([^"]+)"/i);
-        if (rmatch && rmatch[1]) lurl = rmatch[1];
-
-        rmatch = htmlContent.match(/meta\s+property="og:image"\s+content="([^"]+)"/i);
+        var rmatch = htmlContent.match(/meta\s+property="og:image"\s+content="([^"]+)"/i);
         if (rmatch && rmatch[1]) limg = rmatch[1];
 
         rmatch = htmlContent.match(/meta\s+property="og:title"\s+content="([^"]+)"/i);
@@ -330,102 +236,61 @@ function parseMovieDetail(htmlContent, url) {
 
         var servers = [];
 
-        // === BƯỚC 3: XỬ LÝ SERVER VÀ TẬP PHIM (TỐI ƯU CHỐNG MẤT TẬP CUỐI) ===
-        // 1. Tìm toàn bộ các Tab server (Thuyết Minh, Vietsub...)
-        var tabRegex = /<a[^>]+data-toggle="tab"[^>]+href=["']#([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
-        var tabMatch;
-        var tabList = [];
+        // === BƯỚC 3: THUẬT TOÁN TÓM GỌN CHÍNH XÁC TẬP PHIM (KHÔNG SÓT TẬP CUỐI) ===
+        var $parent = _$(htmlContent).find('.detail-infor-content');
+        var $child = $parent.find("li");
         
-        while ((tabMatch = tabRegex.exec(htmlContent)) !== null) {
-            tabList.push({
-                id: tabMatch[1], // ví dụ: "top-comment"
-                name: tabMatch[2].replace(/<[^>]*>/g, '').trim()
-            });
-        }
-
-        // Nếu web không dùng tab, vét cạn bằng class
-        if (tabList.length === 0) {
-            tabList.push({ id: "ss-list", name: "Server" });
-        }
-
-        // 2. Lặp qua từng tab để quét tập phim
-        tabList.forEach(function(tab) {
-            var blockHtml = "";
-
-            if (tab.id === "ss-list") {
-                var listMatch = /class="[^"]*ss-list[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i.exec(htmlContent);
-                if (listMatch) blockHtml = listMatch[1];
-            } else {
-                // Chặt lấy đoạn HTML của riêng tab này
-                var parts = htmlContent.split(new RegExp('id=["\']' + tab.id + '["\']', 'i'));
-                if (parts.length > 1) {
-                    blockHtml = parts[1];
-                    var nextPaneIndex = blockHtml.search(/id=["'][a-zA-Z0-9_-]+["'][^>]*class=["'][^"']*tab-pane/i);
-                    if (nextPaneIndex > -1) {
-                        blockHtml = blockHtml.substring(0, nextPaneIndex);
-                    }
-                }
-            }
-
+        $child.find("a").each(function() {
+            var nameServer = this.text();
+            var idserver = this.attr("href"); // dạng #top-comment
+            
             var items = [];
             var items4k = [];
-            var added = {}; // Chống trùng lặp
+            var added = {}; // Bộ lọc chống trùng lặp
 
+            // Lấy khối HTML của riêng server này để cào bằng Regex thuần túy
+            var blockHtml = $parent.find(idserver).html();
+            
             if (blockHtml) {
-                // SỬ DỤNG REGEX THUẦN: Lấy link từ href và tên từ title
-                var epRegex = /<a[^>]+href=["']([^"']+)["'][^>]*title=["']([^"']+)["']/gi;
-                var epMatch;
+                // Regex bắt gọn mọi thẻ <a> chứa class ep-item (bất chấp thuộc tính nằm lộn xộn)
+                var aTagRegex = /<a\s+[^>]*class=["'][^"']*ep-item[^"']*["'][^>]*>/gi;
+                var aMatch;
                 
-                while ((epMatch = epRegex.exec(blockHtml)) !== null) {
-                    var epUrl = epMatch[1];
-                    var epName = epMatch[2].trim();
+                while ((aMatch = aTagRegex.exec(blockHtml)) !== null) {
+                    var aTag = aMatch[0];
+                    var hrefM = /href=["']([^"']+)["']/i.exec(aTag);
+                    var titleM = /title=["']([^"']+)["']/i.exec(aTag);
+                    
+                    if (hrefM && titleM) {
+                        var epUrl = hrefM[1];
+                        var epName = titleM[2].trim();
 
-                    if (!added[epUrl] && epUrl.indexOf('javascript') === -1) {
-                        added[epUrl] = true;
+                        if (!added[epUrl] && epUrl.indexOf('javascript') === -1) {
+                            added[epUrl] = true;
 
-                        var displayName = epName;
-                        // Nếu tên chỉ có mỗi số, tự động thêm chữ "Tập "
-                        if (/^\d+(-?\d+)?$/.test(epName)) {
-                            displayName = "Tập " + epName;
+                            var displayName = epName;
+                            if (/^\d+(-?\d+)?$/.test(epName)) displayName = "Tập " + epName;
+                            
+                            var slug = "tap-" + epName.replace(/\s+/g, "-");
+
+                            items.push({ id: epUrl, name: displayName, slug: slug });
+                            items4k.push({ id: epUrl + (epUrl.indexOf('?') > -1 ? '&' : '?') + "type=4k", name: displayName, slug: slug });
                         }
-                        
-                        // Bắt buộc slug của mỗi tập phải duy nhất
-                        var slug = "tap-" + epName.replace(/\s+/g, "-");
-
-                        items.push({
-                            id: epUrl,
-                            name: displayName,
-                            slug: slug
-                        });
-
-                        items4k.push({
-                            id: epUrl + (epUrl.indexOf('?') > -1 ? '&' : '?') + "type=4k",
-                            name: displayName,
-                            slug: slug
-                        });
                     }
                 }
             }
 
             if (items.length > 0) {
-                servers.push({
-                    name: tab.name,
-                    episodes: items
-                });
-                servers.push({
-                    name: tab.name + " [4K]",
-                    episodes: items4k
-                });
+                servers.push({ name: nameServer, episodes: items });
+                servers.push({ name: nameServer + " [4K]", episodes: items4k });
             }
         });
 
-        // Hàm giúp lấy số tập phim để sắp xếp
         function getEpisodeNumber(name) {
             var match = name.match(/\d+/);
             return match ? parseInt(match[0], 10) : 0;
         }
 
-        // Sắp xếp các tập phim đúng thứ tự
         servers.forEach(function(server) {
             if (server.episodes && Array.isArray(server.episodes)) {
                 server.episodes.sort(function(a, b) {
@@ -436,12 +301,9 @@ function parseMovieDetail(htmlContent, url) {
 
         var extra = "";
         var isPlayPage = /\/tap-/.test(id);
-
         if (!isPlayPage) {
             var playBtnMatch = _$(htmlContent).find(".film-buttons").find("a").attr("href");
-            if (playBtnMatch) {
-                extra = playBtnMatch;
-            }
+            if (playBtnMatch) extra = playBtnMatch;
         }
 
         return JSON.stringify({
@@ -458,16 +320,13 @@ function parseMovieDetail(htmlContent, url) {
             episode_current: episode_current,
             servers: servers,
             duration: lduran || "",
-            casts: lactor || "",
-            director: ldirec || "",
             extra: extra
         });
 
     } catch (e) {
-        log("parseMovieDetail[err]:\n " + e);
         return JSON.stringify({
-            id: slug || url || "error",
-            title: "error",
+            id: url || "error",
+            title: "Lỗi phân tích: " + e.message,
             servers: []
         });
     }
@@ -475,24 +334,26 @@ function parseMovieDetail(htmlContent, url) {
 
 function parseDetailResponse(html, url) {
     try {
-        log("parseDetailResponse[url]: \n" + url);
         var allLink = [];
         _$(html).find('div[class*="list-severs"]').find("a").each(function() {
             var name = this.text();
             var link = this.attr("data-src");
-            allLink.push({ link: link, name: name });
+            if (link) {
+                allLink.push({ link: link, name: name });
+            }
         });
 
-        let selectedLink = null;
-        const pool = { k4: null, hd: null, anyM3u8: null, anyEmbed: null };
-        allLink.forEach((item) => {
-            if (item.name.match(/4k/i) && item.link.endsWith('.m3u8')) {
+        var selectedLink = null;
+        var pool = { k4: null, hd: null, anyM3u8: null, anyEmbed: null };
+        
+        allLink.forEach(function(item) {
+            if (item.name.match(/4k/i) && item.link.indexOf('.m3u8') > -1) {
                 pool.k4 = item.link;
-            } else if (item.name.match(/1080/i) && item.link.endsWith('.m3u8')) {
+            } else if (item.name.match(/1080/i) && item.link.indexOf('.m3u8') > -1) {
                 pool.hd = item.link;
-            } else if (item.link.endsWith('.m3u8')) {
+            } else if (item.link.indexOf('.m3u8') > -1) {
                 pool.anyM3u8 = item.link;
-            } else if (item.link.includes('abyss')) {
+            } else if (item.link.indexOf('abyss') > -1) {
                 pool.anyEmbed = item.link;
             }
         });
@@ -500,10 +361,10 @@ function parseDetailResponse(html, url) {
         selectedLink = pool.hd || pool.k4 || pool.anyM3u8 || pool.anyEmbed;
         if (url.indexOf("type=4k") > -1) {
             selectedLink = pool.k4 || pool.hd || pool.anyM3u8 || pool.anyEmbed;
-            log("parseDetailResponse[url]: \nĐã chọn 4K: " + selectedLink);
         }
 
-        var streamlink = selectedLink ? selectedLink.replace(/(https?:\/\/[^\/]+)\/[^]+?\/([^\/]+\.m3u8)$/, '$1/stream/m3u8/$2') : "";
+        // ĐÃ SỬA: Loại bỏ hàm .replace() phá hoại link CDN, giữ nguyên link nguyên gốc để phát
+        var streamlink = selectedLink || "";
         
         return JSON.stringify({
             "url": streamlink,
@@ -524,22 +385,19 @@ function parseDetailResponse(html, url) {
 
 function sortEpisodesByName(data) {
     try {
-        data.forEach(server => {
+        data.forEach(function(server) {
             if (server.episodes && Array.isArray(server.episodes)) {
-                server.episodes.sort((a, b) => {
-                    const matchA = a.name.match(/Tập\s*(\d+)/i);
-                    const matchB = b.name.match(/Tập\s*(\d+)/i);
-
-                    const numA = matchA ? parseInt(matchA[1], 10) : 0;
-                    const numB = matchB ? parseInt(matchB[1], 10) : 0;
-
+                server.episodes.sort(function(a, b) {
+                    var matchA = a.name.match(/Tập\s*(\d+)/i);
+                    var matchB = b.name.match(/Tập\s*(\d+)/i);
+                    var numA = matchA ? parseInt(matchA[1], 10) : 0;
+                    var numB = matchB ? parseInt(matchB[1], 10) : 0;
                     return numA - numB;
                 });
             }
         });
         return data;
     } catch (e) {
-        log("sortEpisodesByName[err]:\n " + e);
         return data;
     }
 }
@@ -550,14 +408,13 @@ function parseCategoriesResponse(apiResponseJson) {
         var menulist = buildMenu(listurl);
         return JSON.stringify(menulist);
     } catch (e) {
-        log("parseCategoriesResponse[err]:\n " + e);
         return JSON.stringify([]);
     }
 }
 
 function parseCountriesResponse(html) { return "[]"; }
 function parseYearsResponse(html) { return "[]"; }
-// https://k8s.onflixcdn.com/api/movies?sort=year_desc&limit=24&category=chien-tranh
+
 function getLISTmenu() {
     return `
 /the-loai/huyen-huyen@@Huyền Huyễn
@@ -571,5 +428,5 @@ function getLISTmenu() {
 `
 }
 
-function buildMenu(listurl){let menulist=[];if (!listurl)return menulist;let lines=listurl.split('\n');for (let i=0;i < lines.length;i++){let line=lines[i].trim();if (!line||line.indexOf('@@')===-1)continue;let parts=line.split('@@');let link=parts[0]?parts[0].trim():"";let name=parts[1]?parts[1].trim():"";let check=parts[2]?parts[2].trim():undefined;if (!link||!name)continue;let item={};if (check==="false"){item={"slug":link,"title":name,"type":"Horizontal"};}else if (check==="true"){item={"slug":link,"title":name,"type":"Grid"};}else{item={"slug":link,"name":name};}menulist.push(item);}return menulist;}
+function buildMenu(listurl){var menulist=[];if (!listurl)return menulist;var lines=listurl.split('\n');for (var i=0;i < lines.length;i++){var line=lines[i].trim();if (!line||line.indexOf('@@')===-1)continue;var parts=line.split('@@');var link=parts[0]?parts[0].trim():"";var name=parts[1]?parts[1].trim():"";var check=parts[2]?parts[2].trim():undefined;if (!link||!name)continue;var item={};if (check==="false"){item={"slug":link,"title":name,"type":"Horizontal"};}else if (check==="true"){item={"slug":link,"title":name,"type":"Grid"};}else{item={"slug":link,"name":name};}menulist.push(item);}return menulist;}
 function _$(htmlOrBlock){if (htmlOrBlock && typeof htmlOrBlock === 'object' && htmlOrBlock.elements) {return htmlOrBlock;} var instance = {sourceHtml: typeof htmlOrBlock === 'string' ? htmlOrBlock : '',elements: Array.isArray(htmlOrBlock) ? htmlOrBlock : (htmlOrBlock ? [htmlOrBlock] : []),find: function (selector) {if (selector.indexOf(',') !== -1) {var results = [];var selectors = selector.split(',').map(function (s) {return s.trim();});for (var s = 0;s < selectors.length;s++) {if (selectors[s] === "") continue;var subInstance = this.find(selectors[s]);for (var r = 0;r < subInstance.elements.length;r++) {var element = subInstance.elements[r];if (results.indexOf(element) === -1) {results.push(element);}}} var multiInstance = _$(results);multiInstance.sourceHtml = this.sourceHtml;return multiInstance;} var results = [];var contentFilter = "";if (selector.indexOf(":content(") !== -1) {var contentMatch = selector.match(/:content\((?:"([^"]*)"|'([^']*)'|([^)]*))\)/);if (contentMatch) {contentFilter = contentMatch[1] || contentMatch[2] || contentMatch[3] || "";selector = selector.replace(/:content\((?:"[^"]*"|'[^']*'|[^)]*)\)/,"");}} var attrNameFilter = "";var attrValueFilter = "";var attrOperator = "=";var hasAttrFilter = false;var attrMatch = selector.match(/\[([a-zA-Z0-9_-]+)\s*([*^$]?=)\s*(?:"([^"]*)"|'([^']*)'|([^\]"']*))\]/);if (attrMatch) {hasAttrFilter = true;attrNameFilter = attrMatch[1];attrOperator = attrMatch[2];attrValueFilter = attrMatch[3] || attrMatch[4] || attrMatch[5] || "";selector = selector.replace(/\[.*?\]/,"");} var notSelector = "";if (selector.indexOf(":not(") !== -1) {var notMatch = selector.match(/:not\(([^)]+)\)/);if (notMatch) {notSelector = notMatch[1];selector = selector.replace(/:not\([^)]+\)/,"");}} var isFirstFilter = selector.indexOf(":first") !== -1;var isLastFilter = selector.indexOf(":last") !== -1;selector = selector.replace(/:first|:last/g,"");var targetTagName = "";var targetId = "";var targetClasses = [];var selectorToParse = selector.trim();if (selectorToParse !== "") {var idIndex = selectorToParse.indexOf('#');if (idIndex !== -1) {var afterId = selectorToParse.substring(idIndex + 1);var nextDot = afterId.indexOf('.');targetId = nextDot === -1 ? afterId : afterId.substring(0,nextDot);selectorToParse = selectorToParse.substring(0,idIndex) + (nextDot === -1 ? "" : "." + afterId.substring(nextDot + 1));} var classParts = selectorToParse.split('.');var possibleTag = classParts.shift();if (possibleTag) {targetTagName = possibleTag.toLowerCase();} targetClasses = classParts.filter(function (c) {return c.length > 0;});} for (var i = 0;i < this.elements.length;i++) {var currentHtml = this.elements[i];var pos = 0;var subResults = [];while ((pos = currentHtml.indexOf('<',pos)) !== -1) {if (currentHtml.charAt(pos + 1) === '/' || currentHtml.charAt(pos + 1) === '!') {pos++;continue;} var endOpenTag = -1;var insideQuote = false;var quoteChar = '';for (var j = pos + 1;j < currentHtml.length;j++) {var char = currentHtml.charAt(j);if ((char === '"' || char === "'") && currentHtml.charAt(j - 1) !== '\\') {if (!insideQuote) {insideQuote = true;quoteChar = char;} else if (char === quoteChar) {insideQuote = false;}} if (char === '>' && !insideQuote) {endOpenTag = j;break;}} if (endOpenTag === -1) break;var fullOpenTag = currentHtml.substring(pos,endOpenTag + 1);var tagMatch = fullOpenTag.match(/^<([a-zA-Z0-9_-]+)/);var currentTagName = tagMatch ? tagMatch[1].toLowerCase() : "";var isMatched = true;if (targetTagName && targetTagName !== currentTagName) {isMatched = false;} var getClassAttr = fullOpenTag.match(/class\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);var classMatchStr = getClassAttr ? (getClassAttr[1] || getClassAttr[2] || getClassAttr[3] || "") : "";var getIdAttr = fullOpenTag.match(/id\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);var idMatchStr = getIdAttr ? (getIdAttr[1] || getIdAttr[2] || getIdAttr[3] || "") : "";if (isMatched && targetId && idMatchStr !== targetId) {isMatched = false;} if (isMatched && targetClasses.length > 0) {if (classMatchStr) {var currentClasses = classMatchStr.trim().split(/\s+/);for (var c = 0;c < targetClasses.length;c++) {if (currentClasses.indexOf(targetClasses[c]) === -1) {isMatched = false;break;}}} else {isMatched = false;}} if (isMatched && hasAttrFilter) {var actualValue = "";if (attrNameFilter === "class") {actualValue = classMatchStr;} else if (attrNameFilter === "id") {actualValue = idMatchStr;} else {var getAnyAttr = fullOpenTag.match(new RegExp(attrNameFilter + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s>]+))','i'));actualValue = getAnyAttr ? (getAnyAttr[1] || getAnyAttr[2] || getAnyAttr[3] || "") : "";} var attrExists = fullOpenTag.search(new RegExp(attrNameFilter + '\\s*=','i')) !== -1;if (!attrExists) {isMatched = false;} else {if (attrOperator === "=") {if (attrNameFilter === "class") {var classes = actualValue.trim().split(/\s+/);if (classes.indexOf(attrValueFilter) === -1) isMatched = false;} else if (actualValue !== attrValueFilter) {isMatched = false;}} else if (attrOperator === "*=") {if (actualValue.indexOf(attrValueFilter) === -1) isMatched = false;} else if (attrOperator === "^=") {if (actualValue.indexOf(attrValueFilter) !== 0) isMatched = false;} else if (attrOperator === "$=") {if (actualValue.slice(-attrValueFilter.length) !== attrValueFilter) isMatched = false;}}} if (isMatched) {var startTagPos = pos;var endTagPos = endOpenTag + 1;var selfClosingTags = ['img','source','input','br','hr','link','meta'];if (selfClosingTags.indexOf(currentTagName) === -1 && fullOpenTag.indexOf('/>') === -1) {var depth = 1;var scanPos = endOpenTag + 1;var openStr = '<' + currentTagName;var closeStr = '</' + currentTagName + '>';while (depth > 0 && scanPos < currentHtml.length) {var nextOpen = currentHtml.indexOf(openStr,scanPos);var nextClose = currentHtml.indexOf(closeStr,scanPos);if (nextClose === -1) {scanPos = currentHtml.length;break;} if (nextOpen !== -1 && nextOpen < nextClose) {depth++;scanPos = nextOpen + openStr.length;} else {depth--;scanPos = nextClose + closeStr.length;if (depth === 0) endTagPos = nextClose + closeStr.length;}}} var foundBlock = currentHtml.substring(startTagPos,endTagPos);if (contentFilter) {var pureText = foundBlock.replace(/<[^>]+>/g,"").trim();if (pureText.indexOf(contentFilter) === -1) {pos = endTagPos;continue;}} if (notSelector) {var isNotClass = notSelector.indexOf('.') === 0;var isNotId = notSelector.indexOf('#') === 0;var notValue = notSelector.substring(1);var hasNot = false;if (isNotClass && classMatchStr.indexOf(notValue) !== -1) hasNot = true;if (isNotId && idMatchStr.indexOf(notValue) !== -1) hasNot = true;if (!hasNot) subResults.push(foundBlock);} else {subResults.push(foundBlock);} pos = endTagPos;} else {pos++;}} if (isFirstFilter && subResults.length > 0) subResults = [subResults[0]];if (isLastFilter && subResults.length > 0) subResults = [subResults[subResults.length - 1]];results = results.concat(subResults);} var newInstance = _$(results);newInstance.sourceHtml = this.sourceHtml || currentHtml;return newInstance;},each: function (callback) {for (var i = 0;i < this.elements.length;i++) {var childInstance = _$(this.elements[i]);childInstance.sourceHtml = this.sourceHtml;callback.call(childInstance,i,this.elements[i]);} return this;},eq: function (index) {if (index < 0) index = this.elements.length + index;var matchedElement = this.elements[index];this.elements = matchedElement ? [matchedElement] : [];return this;},attr: function (attrName) {if (this.elements.length === 0) return "";var elem = this.elements[0];var getAttr = elem.match(new RegExp(attrName + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s>]+))','i'));return getAttr ? (getAttr[1] || getAttr[2] || getAttr[3] || "") : "";},html: function () {if (this.elements.length === 0) return "";var elem = this.elements[0];var start = elem.indexOf('>') + 1;var end = elem.lastIndexOf('</');if (start > 0 && end > start) return elem.substring(start,end);return "";},text: function (separator) {if (this.elements.length === 0) return "";var elem = this.elements[0];var start = elem.indexOf('>') + 1;var end = elem.lastIndexOf('</');if (start > 0 && end > start) {var content = elem.substring(start,end);var pureText = content.replace(/<\/?[^>]+(>|$)/g,"");if (typeof separator === 'string') {return pureText .split('\n') .map(function (item) {return item.trim();}) .filter(function (item) {return item !== '';}) .join(separator);} return pureText.trim();} return "";},next: function () {var results = [];if (!this.sourceHtml) return this;for (var i = 0;i < this.elements.length;i++) {var elem = this.elements[i];var idx = this.sourceHtml.indexOf(elem);if (idx === -1) continue;var scanPos = idx + elem.length;var nextOpen = this.sourceHtml.indexOf('<',scanPos);if (nextOpen !== -1) {if (this.sourceHtml.charAt(nextOpen + 1) === '/') continue;var endOpenTag = this.sourceHtml.indexOf('>',nextOpen);if (endOpenTag === -1) continue;var fullOpenTag = this.sourceHtml.substring(nextOpen,endOpenTag + 1);var spacePos = fullOpenTag.indexOf(' ');var currentTagName = (spacePos === -1) ? fullOpenTag.substring(1,fullOpenTag.length - 1).toLowerCase() : fullOpenTag.substring(1,spacePos).toLowerCase();var startTagPos = nextOpen;var endTagPos = endOpenTag + 1;var selfClosingTags = ['img','source','input','br','hr','link','meta'];if (selfClosingTags.indexOf(currentTagName) === -1 && fullOpenTag.indexOf('/>') === -1) {var depth = 1;var sPos = endOpenTag + 1;var openStr = '<' + currentTagName;var closeStr = '</' + currentTagName + '>';while (depth > 0 && sPos < this.sourceHtml.length) {var nOpen = this.sourceHtml.indexOf(openStr,sPos);var nClose = this.sourceHtml.indexOf(closeStr,sPos);if (nClose === -1) break;if (nOpen !== -1 && nOpen < nClose) {depth++;sPos = nOpen + openStr.length;} else {depth--;sPos = nClose + closeStr.length;if (depth === 0) endTagPos = nClose + closeStr.length;}}} results.push(this.sourceHtml.substring(startTagPos,endTagPos));}} var nextInstance = _$(results);nextInstance.sourceHtml = this.sourceHtml;this.elements = results;return this;},parent: function () {var results = [];if (!this.sourceHtml) return this;for (var i = 0;i < this.elements.length;i++) {var elem = this.elements[i];var idx = this.sourceHtml.indexOf(elem);if (idx <= 0) continue;var scanPos = idx - 1;while (scanPos >= 0) {var openTagPos = this.sourceHtml.lastIndexOf('<',scanPos);if (openTagPos === -1) break;if (this.sourceHtml.charAt(openTagPos + 1) !== '/' && this.sourceHtml.charAt(openTagPos + 1) !== '!') {var endOpenTag = this.sourceHtml.indexOf('>',openTagPos);if (endOpenTag !== -1 && endOpenTag > openTagPos) {var fullOpenTag = this.sourceHtml.substring(openTagPos,endOpenTag + 1);var spacePos = fullOpenTag.indexOf(' ');var currentTagName = (spacePos === -1) ? fullOpenTag.substring(1,fullOpenTag.length - 1).toLowerCase() : fullOpenTag.substring(1,spacePos).toLowerCase();var endTagPos = endOpenTag + 1;var selfClosingTags = ['img','source','input','br','hr','link','meta'];if (selfClosingTags.indexOf(currentTagName) === -1 && fullOpenTag.indexOf('/>') === -1) {var depth = 1;var sPos = endOpenTag + 1;var openStr = '<' + currentTagName;var closeStr = '</' + currentTagName + '>';while (depth > 0 && sPos < this.sourceHtml.length) {var nOpen = this.sourceHtml.indexOf(openStr,sPos);var nClose = this.sourceHtml.indexOf(closeStr,sPos);if (nClose === -1) break;if (nOpen !== -1 && nOpen < nClose) {depth++;sPos = nOpen + openStr.length;} else {depth--;sPos = nClose + closeStr.length;if (depth === 0) endTagPos = nClose + closeStr.length;}}} if (endTagPos >= idx + elem.length) {var parentBlock = this.sourceHtml.substring(openTagPos,endTagPos);if (results.indexOf(parentBlock) === -1) results.push(parentBlock);break;}}} scanPos = openTagPos - 1;}} var parentInstance = _$(results);parentInstance.sourceHtml = this.sourceHtml;this.elements = results;return this;},closest: function (selector) {var results = [];if (!this.sourceHtml || this.elements.length === 0) return _$([]);for (var i = 0;i < this.elements.length;i++) {var currentElem = this.elements[i];var currentObj = _$(currentElem);currentObj.sourceHtml = this.sourceHtml;var selfCheck = _$(this.sourceHtml).find(selector);var isSelfMatched = false;for (var s = 0;s < selfCheck.elements.length;s++) {if (selfCheck.elements[s] === currentElem) {isSelfMatched = true;break;}} if (isSelfMatched) {if (results.indexOf(currentElem) === -1) results.push(currentElem);continue;} var parentObj = currentObj.parent();while (parentObj.elements.length > 0) {var parentElem = parentObj.elements[0];var checkMatch = _$(this.sourceHtml).find(selector);var isMatched = false;for (var j = 0;j < checkMatch.elements.length;j++) {if (checkMatch.elements[j] === parentElem) {isMatched = true;break;}} if (isMatched) {if (results.indexOf(parentElem) === -1) results.push(parentElem);break;} parentObj = parentObj.parent();}} var closestInstance = _$(results);closestInstance.sourceHtml = this.sourceHtml;return closestInstance;}};return instance;}
