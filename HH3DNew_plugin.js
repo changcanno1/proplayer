@@ -10,7 +10,7 @@ function getManifest() {
         "name": "Yanhh3d",
         "description": "Trang xem phim Hoạt Hình siêu hay.",
       	"info":"Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này.",
-        "version": "1.3.6",
+        "version": "1.3.7",
         "baseUrl": BASEURL,
         "iconUrl": "https://bilutv.asia/img/bilutvlogo-ngang.jpg",
         "isEnabled": true,
@@ -331,7 +331,7 @@ function parseMovieDetail(htmlContent, url) {
             var items = [];
             var items4k = [];
             
-            // Khắc phục triệt để lỗi sót tập cuối bằng Regex quét trực tiếp block HTML
+            // Fix lỗi sót tập cuối bằng Regex quét trực tiếp block HTML của tab
             var tabHtml = $parent.find(idserver).html() || "";
             if (tabHtml) {
                 var epRegex = /<a\s+[^>]*class=["'][^"']*ep-item[^"']*["'][^>]*href=["']([^"']+)["'][^>]*title=["']([^"']+)["']/gi;
@@ -382,7 +382,7 @@ function parseMovieDetail(htmlContent, url) {
             return match ? parseInt(match[0], 10) : 0;
         }
 
-        // Duyệt qua từng server để sort mảng episodes bên trong theo số tập
+        // Duyệt qua từng server để sort mảng episodes bên trong
         servers.forEach(server => {
             if (server.episodes && Array.isArray(server.episodes)) {
                 server.episodes.sort((a, b) => {
@@ -391,7 +391,7 @@ function parseMovieDetail(htmlContent, url) {
             }
         });
 
-        // Sắp xếp thứ tự ưu tiên Server: Vietsub -> Vietsub 4K -> TM -> TM 4K
+        // Sắp xếp thứ tự ưu tiên Server theo yêu cầu: Vietsub -> Vietsub 4K -> TM -> TM 4K
         servers.sort((a, b) => {
             const getScore = (name) => {
                 let n = name.toLowerCase();
@@ -451,10 +451,10 @@ function parseDetailResponse(html, url) {
         log("parseDetailResponse[url]: \n" + url);
         var allLink = [];
         
-        // Bắt chính xác link phim từ cấu trúc data-src thực tế của trang web
-        var aRegex = /<a[^>]+data-src=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        // Cập nhật cách bắt link chuẩn xác dựa trên các nút bấm có data-src (như #list_sv trong code web thực tế)
+        var btnRegex = /<a[^>]+data-src=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
         var match;
-        while ((match = aRegex.exec(html)) !== null) {
+        while ((match = btnRegex.exec(html)) !== null) {
             var link = match[1];
             var name = match[2].replace(/<[^>]*>/g, '').trim();
             if (link) {
@@ -462,12 +462,14 @@ function parseDetailResponse(html, url) {
             }
         }
 
-        // Dự phòng nếu không quét được qua thẻ a
+        // Dự phòng quét toàn bộ data-src nếu cấu trúc thay đổi
         if (allLink.length === 0) {
             var dataRegex = /data-src=["']([^"']+)["']/gi;
             var dMatch;
             while ((dMatch = dataRegex.exec(html)) !== null) {
-                allLink.push({ link: dMatch[1], name: "Server 1" });
+                if (dMatch[1].indexOf('http') > -1) {
+                    allLink.push({ link: dMatch[1], name: "Server 1" });
+                }
             }
         }
 
@@ -475,22 +477,26 @@ function parseDetailResponse(html, url) {
         const pool = { k4: null, hd: null, anyM3u8: null, anyEmbed: null };
         allLink.forEach((item) => {
             var n = item.name.toLowerCase();
-            if ((n.includes('4k') || n.includes('4k-')) && item.link.indexOf('http') > -1) {
+            var l = item.link.toLowerCase();
+            
+            if (n.indexOf('4k') > -1) {
                 pool.k4 = item.link;
-            } else if ((n.includes('1080') || n.includes('hd') || n.includes('1080+')) && item.link.indexOf('http') > -1) {
+            } else if (n.indexOf('1080') > -1 || n.indexOf('hd') > -1) {
                 pool.hd = item.link;
-            } else if (item.link.indexOf('http') > -1) {
+            } else if (l.indexOf('.m3u8') > -1 || l.indexOf('fbcdn') > -1) {
                 pool.anyM3u8 = item.link;
+            } else {
+                pool.anyEmbed = item.link;
             }
         });
 
-        selectedLink = pool.hd || pool.k4 || pool.anyM3u8 || pool.anyEmbed || (allLink.length > 0 ? allLink[0].link : "");
+        selectedLink = pool.hd || pool.k4 || pool.anyM3u8 || pool.anyEmbed;
         if (url.indexOf("type=4k") > -1) {
-            selectedLink = pool.k4 || pool.hd || pool.anyM3u8 || pool.anyEmbed || (allLink.length > 0 ? allLink[0].link : "");
+            selectedLink = pool.k4 || pool.hd || pool.anyM3u8 || pool.anyEmbed;
             log("parseDetailResponse[url]: \nĐã chọn 4K: " + selectedLink);
         }
 
-        var streamlink = selectedLink || "";
+        var streamlink = selectedLink || (allLink.length > 0 ? allLink[0].link : "");
         
         return JSON.stringify({
             "url": streamlink,
