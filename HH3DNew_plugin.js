@@ -1,5 +1,5 @@
 // =============================================================================
-// CẤU HÌNH TÊN MIỀN (SỬA NHANH Ở ĐÂY KHI WEB ĐỔI DOMAIN)
+// CẤU HÌNH TÊN MIỀN (SỬA NHANH Ở ĐÂY KHI WEB BỊ CHẶN)
 // =============================================================================
 var DOMAIN = "yanhh3d.pw";
 var BASEURL = "https://" + DOMAIN;
@@ -9,7 +9,7 @@ function getManifest() {
         "id": "yanhh3d",
         "name": "Yanhh3d",
         "description": "Trang xem phim Hoạt Hình siêu hay.",
-        "info": "Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này.",
+        "info":"Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này.",
         "version": "1.3.5",
         "baseUrl": BASEURL,
         "iconUrl": "https://bilutv.asia/img/bilutvlogo-ngang.jpg",
@@ -28,7 +28,6 @@ function log(msg) {
     }
 }
 
-// https://yanhh3d.ac/moi-cap-nhat?page=2
 // https://yanhh3d.ac/moi-cap-nhat?page=2
 function getHomeSections() {
     try {
@@ -57,7 +56,6 @@ function getPrimaryCategories() {
     }
 }
 
-// ĐÃ SỬA: Lỗi cú pháp khai báo biến trong JSON.stringify
 function getFilterConfig() {
     try {
         var listurl = getLISTmenu();
@@ -81,7 +79,6 @@ function getUrlList(slug, filtersJson) {
 
         // 1. Kiểm tra nếu slug là link tuyệt đối (chứa http) và không có bộ lọc thì trả về luôn
         if ((slug && slug.indexOf("http") > -1) || (slug && slug.indexOf("search") > -1)) {
-            // thường là link search sẽ bị trả về ở đây
             return slug;
         }
         let page = 1;
@@ -89,8 +86,6 @@ function getUrlList(slug, filtersJson) {
 
         // 2. Xử lý an toàn filtersJson nếu có truyền vào
         if (filtersJson) {
-            // Nếu có số trang hoặc có menu categ
-            // Sửa lỗi nếu JSON thiếu dấu ngoặc kép ở key hoặc sai cú pháp cơ bản
             let fixedJson = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
                 .replace(/:,/g, ':');
 
@@ -98,7 +93,6 @@ function getUrlList(slug, filtersJson) {
                 let filters = JSON.parse(fixedJson);
                 page = parseInt(filters.page) || 1;
 
-                // Nếu có category trong JSON, ưu tiên lấy category làm đường dẫn (path)
                 if (filters.category) {
                     if (Array.isArray(filters.category) && filters.category.length > 0) {
                         path = filters.category[0].slug;
@@ -119,17 +113,14 @@ function getUrlList(slug, filtersJson) {
             resultUrl += "?page=" + page;
         }
 
-        // Trả về kết quả, chỉ gộp dấu // ở phần path, giữ nguyên https://
         var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
         log("getUrlList[url]: \n" + finalUrl);
         return finalUrl;
 
     } catch (e) {
         log("getUrlList[err]:\n " + e);
-        // Trả về URL gốc an toàn nếu có lỗi
         let fallback = BASEURL + (slug ? "/" + slug : "");
         var resFallback = fallback.replace(/([^:]\/)\/+/g, "$1");
-        log("getUrlList[url]: \n" + resFallback);
         return resFallback;
     }
 }
@@ -139,7 +130,6 @@ function getUrlSearch(keyword, filtersJson) {
         var page = 1;
         var path = "";
 
-        // 2. Xử lý an toàn filtersJson nếu có truyền vào
         if (filtersJson) {
             var fixedJson = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
                 .replace(/:,/g, ':');
@@ -150,19 +140,15 @@ function getUrlSearch(keyword, filtersJson) {
 
             if (page > 1) {
                 var resUrlPage = BASEURL + "/search?keysearch=" + encodeURIComponent(keyword) + "&page=" + page;
-                log("getUrlSearch[url]: \n" + resUrlPage);
                 return resUrlPage;
             }
         }
         var resUrl = BASEURL + "/search?keysearch=" + encodeURIComponent(keyword);
-        log("getUrlSearch[url]: \n" + resUrl);
         return resUrl;
 
     } catch (e) {
         log("getUrlSearch[err]:\n " + e);
-        var fallbackUrl = BASEURL + "/search?keysearch=" + encodeURIComponent(keyword || "");
-        log("getUrlSearch[url]: \n" + fallbackUrl);
-        return fallbackUrl;
+        return BASEURL + "/search?keysearch=" + encodeURIComponent(keyword || "");
     }
 }
 
@@ -172,41 +158,22 @@ function getUrlDetail(slug) {
         if (!slug) return "";
         if (slug.indexOf('http') === 0) return slug;
         var resUrl = BASEURL + "/" + slug;
-        log("getUrlDetail[url]: \n" + resUrl);
         return resUrl;
     } catch (e) {
-        log("getUrlDetail[err]:\n " + e);
         return "";
     }
 }
 
 function getUrlCategories() {
     try {
-        log("getUrlCategories[url]: \n" + BASEURL);
         return BASEURL;
     } catch (e) {
-        log("getUrlCategories[err]:\n " + e);
         return "";
     }
 }
 
-function getUrlCountries() {
-    try {
-        return "";
-    } catch (e) {
-        log("getUrlCountries[err]:\n " + e);
-        return "";
-    }
-}
-
-function getUrlYears() {
-    try {
-        return "";
-    } catch (e) {
-        log("getUrlYears[err]:\n " + e);
-        return "";
-    }
-}
+function getUrlCountries() { return ""; }
+function getUrlYears() { return ""; }
 
 // =============================================================================
 // PARSERS
@@ -272,14 +239,7 @@ function parseSearchResponse(html) {
     try {
         return parseListResponse(html);
     } catch (e) {
-        log("parseSearchResponse[err]:\n " + e);
-        return JSON.stringify({
-            "items": [],
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 1
-            }
-        });
+        return JSON.stringify({ "items": [], "pagination": { "currentPage": 1, "totalPages": 1 } });
     }
 }
 
@@ -287,7 +247,6 @@ function parseMovieDetail(htmlContent, url) {
     try {
         log("parseMovieDetail[url]: \n" + url);
 
-        // === BƯỚC 1: ĐỒNG NHẤT ID PHIM BẰNG REGEX META (Y hệt tác giả) ===
         var idMatch = /<link\s+rel="canonical"\s+href="([^"]+)"/i.exec(htmlContent) ||
             /<meta\s+property="og:url"\s+content="([^"]+)"/i.exec(htmlContent);
         var id = idMatch ? idMatch[1] : (url || "");
@@ -302,7 +261,6 @@ function parseMovieDetail(htmlContent, url) {
             slug = slugMatch2 ? slugMatch2[1] : "";
         }
 
-        // === BƯỚC 2: TRÍCH XUẤT THÔNG TIN PHIM ===
         var lurl = "";
         var limg = "";
         var lname = "Đang cập nhật...";
@@ -345,7 +303,7 @@ function parseMovieDetail(htmlContent, url) {
             var items = [];
             var items4k = [];
             
-            // --- BẮT ĐẦU SỬA: Dùng Regex quét HTML để chống trượt tập cuối ---
+            // --- CÁCH SỬA 1: Dùng Regex bắt gọn thẻ A trong Tab (Khắc phục _$ bỏ sót tập) ---
             var tabHtml = $parent.find(idserver).html() || "";
             if (tabHtml) {
                 var aTagRegex = /<a\s+[^>]*class=["'][^"']*ep-item[^"']*["'][^>]*>/gi;
@@ -355,11 +313,11 @@ function parseMovieDetail(htmlContent, url) {
                 while ((aMatch = aTagRegex.exec(tabHtml)) !== null) {
                     var aTag = aMatch[0];
                     var hrefM = /href=["']([^"']+)["']/i.exec(aTag);
-                    var titleM = /title=["']([^"']+)["']/i.exec(aTag); // Lấy thuộc tính title
+                    var titleM = /title=["']([^"']+)["']/i.exec(aTag);
                     
                     if (hrefM && titleM) {
                         var epUrl = hrefM[1];
-                        var epName = titleM[1].trim(); // Tên tập phim cực chuẩn từ title="154"
+                        var epName = titleM[1].trim();
 
                         if (!added[epUrl] && epUrl.indexOf('javascript') === -1) {
                             added[epUrl] = true;
@@ -375,7 +333,7 @@ function parseMovieDetail(htmlContent, url) {
                     }
                 }
             }
-            // --- KẾT THÚC SỬA ---
+            // --- END CÁCH SỬA 1 ---
 
             if (items.length > 0) {
                 servers.push({
@@ -403,19 +361,24 @@ function parseMovieDetail(htmlContent, url) {
             }
         });
 
-        // --- BẮT ĐẦU SỬA: Sắp xếp Server theo thứ tự ưu tiên ---
+        // --- CÁCH SỬA 2: Sắp xếp ưu tiên Server ---
+        // Thứ tự: Vietsub 4K > Thuyết minh 4k > Vietsub > Thuyết minh
         servers.sort((a, b) => {
             const getScore = (name) => {
                 let score = 0;
                 let n = name.toLowerCase();
-                if (n.indexOf('4k') > -1) score += 100;
-                if (n.indexOf('vietsub') > -1) score += 20;
-                if (n.indexOf('thuyết minh') > -1) score += 10;
+                
+                if (n.indexOf('4k') > -1 && n.indexOf('vietsub') > -1) score = 100;
+                else if (n.indexOf('4k') > -1 && (n.indexOf('thuyết minh') > -1 || n.indexOf('thuyet minh') > -1)) score = 80;
+                else if (n.indexOf('vietsub') > -1) score = 60;
+                else if (n.indexOf('thuyết minh') > -1 || n.indexOf('thuyet minh') > -1) score = 40;
+                else score = 10;
+                
                 return score;
             };
             return getScore(b.name) - getScore(a.name);
         });
-        // --- KẾT THÚC SỬA ---
+        // --- END CÁCH SỬA 2 ---
 
         var extra = "";
         var isPlayPage = /\/tap-/.test(id);
@@ -460,38 +423,49 @@ function parseDetailResponse(html, url) {
     try {
         log("parseDetailResponse[url]: \n" + url);
         var allLink = [];
-        _$(html).find('div[class*="list-severs"]').find("a").each(function() {
-            var name = this.text();
-            var link = this.attr("data-src");
-            allLink.push({ link: link, name: name });
-        });
+        
+        // --- CÁCH SỬA 3: Bắt link đơn giản & Không replace đuôi m3u8 ---
+        var aRegex = /<a[^>]+data-src=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        var match;
+        while ((match = aRegex.exec(html)) !== null) {
+            var link = match[1];
+            var name = match[2].replace(/<[^>]*>/g, '').trim();
+            if (link && link.indexOf('m3u8') > -1) {
+                allLink.push({ link: link, name: name });
+            }
+        }
+        
+        // Dự phòng quét mọi data-src nếu thẻ a thất bại
+        if (allLink.length === 0) {
+            var dataRegex = /data-src=["']([^"']+\.m3u8[^"']*)["']/gi;
+            var dMatch;
+            while ((dMatch = dataRegex.exec(html)) !== null) {
+                allLink.push({ link: dMatch[1], name: "Server 1" });
+            }
+        }
+        // --- END CÁCH SỬA 3 ---
 
         let selectedLink = null;
-        const pool = { k4: null, hd: null, anyM3u8: null, anyEmbed: null };
-        allLink.forEach((item) => {
-            if (item.name.match(/4k/i) && item.link.endsWith('.m3u8')) {
-                pool.k4 = item.link;
-            } else if (item.name.match(/1080/i) && item.link.endsWith('.m3u8')) {
-                pool.hd = item.link;
-            } else if (item.link.endsWith('.m3u8')) {
-                pool.anyM3u8 = item.link;
-            } else if (item.link.includes('abyss')) {
-                pool.anyEmbed = item.link;
-            }
-        });
+        let k4 = null, hd = null, anyM3u8 = null, anyEmbed = null;
+        
+        for (var i = 0; i < allLink.length; i++) {
+            var item = allLink[i];
+            var n = item.name.toLowerCase();
+            var l = item.link.toLowerCase();
+            
+            if (n.indexOf('4k') > -1) k4 = item.link;
+            else if (n.indexOf('1080') > -1) hd = item.link;
+            else if (l.indexOf('.m3u8') > -1) anyM3u8 = item.link;
+            else if (l.indexOf('abyss') > -1) anyEmbed = item.link;
+        }
 
-        selectedLink = pool.hd || pool.k4 || pool.anyM3u8 || pool.anyEmbed;
+        selectedLink = hd || k4 || anyM3u8 || anyEmbed || (allLink.length > 0 ? allLink[0].link : "");
         if (url.indexOf("type=4k") > -1) {
-            selectedLink = pool.k4 || pool.hd || pool.anyM3u8 || pool.anyEmbed;
+            selectedLink = k4 || hd || anyM3u8 || anyEmbed || (allLink.length > 0 ? allLink[0].link : "");
             log("parseDetailResponse[url]: \nĐã chọn 4K: " + selectedLink);
         }
 
-        // --- BẮT ĐẦU SỬA: Bảo vệ Link CDN tránh bị phá hỏng bởi hàm replace ---
-        var streamlink = selectedLink ? selectedLink : "";
-        if (streamlink && streamlink.indexOf("fbcdn") === -1) {
-            streamlink = streamlink.replace(/(https?:\/\/[^\/]+)\/[^]+?\/([^\/]+\.m3u8)$/, '$1/stream/m3u8/$2');
-        }
-        // --- KẾT THÚC SỬA ---
+        var streamlink = selectedLink || "";
         
         return JSON.stringify({
             "url": streamlink,
