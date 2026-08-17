@@ -1,55 +1,37 @@
-var BASEURL = "http://vkey.vn/animevv";
+//var BASEURL = "http://vkey.vn/animevv";
+var BASEURL = "https://animevv.com";
 var DEV = true;
 
 function getManifest() {
-    return JSON.stringify({
-        id: "animevv",
-        name: "Nguồn Animevv",
-        description: "Nguồn phim Animevv...",
-        "version": "1.2.3",
-        info: "Nguồn phim Animevv, nguồn này dùng servers riêng của họ nên cũng khá mượt mà..",
-        "BASEURL": "http://vkey.vn/animevv",
-        iconUrl: "https://raw.githubusercontent.com/alokillgtv-gif/VAXAPPSCRIPT/main/img/animevv.png",
-        isEnabled: true,
-        "adblock": false,
-        "layoutType": "HORIZONTAL",
-        type: "MOVIE",
-        playerType: "embedtoexoplay"
-    });
+  return JSON.stringify({
+    id: "animevv",
+    name: "Nguồn Animevv",
+    description: "Nguồn phim Animevv...",
+    "version": "1.2.6",
+    info: "",
+    "BASEURL": BASEURL,
+    iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/animevv.png",
+    isEnabled: true,
+    "adblock": false,
+    "layoutType": "HORIZONTAL",
+    type: "ANIME",
+    "author": "Alokillgtv",
+    playerType: "embedtoexoplay"
+  });
 }
-
 
 function log(msg) {
-    console.log(msg);
+  	console.log(msg);
 }
-
-
 
 function getHomeSections() {
-    return JSON.stringify([{
-            "slug": "/top",
-            "title": "Top Anime",
-            "type": "Horizontal"
-        },
-        {
-            "slug": "/quoc-gia/Trung%20Qu%E1%BB%91c",
-            "title": "Trung Quốc",
-            "type": "Horizontal"
-        },
-        {
-            "slug": "/quoc-gia/Nh%E1%BA%ADt%20B%E1%BA%A3n",
-            "title": "Nhật Bản",
-            "type": "Horizontal"
-        },
-        {
-            "slug": "/moi-cap-nhat",
-            "title": "Phim Mới",
-            "type": "Grid"
-        }
+    return JSON.stringify([
+        {"slug": "/top","title": "Top Anime","type": "Horizontal"},
+       {"slug": "/quoc-gia/Trung%20Qu%E1%BB%91c","title": "Trung Quốc","type": "Horizontal"},
+       {"slug": "/quoc-gia/Nh%E1%BA%ADt%20B%E1%BA%A3n","title": "Nhật Bản","type": "Horizontal"},
+        {"slug": "/moi-cap-nhat","title": "Phim Mới","type": "Grid"}
     ]);
 }
-
-
 
 function getPrimaryCategories() {
     try {
@@ -71,9 +53,7 @@ function getFilterConfig() {
         });
     } catch (e) {
         log("getFilterConfig[err]:\n " + e);
-        return JSON.stringify({
-            category: []
-        });
+        return JSON.stringify({ category: [] });
     }
 }
 
@@ -112,7 +92,7 @@ function getUrlList(slug, filtersJson) {
 
         // 3. Ghép URL an toàn với BASEURL
         var resultUrl = BASEURL;
-
+        
         if (path) {
             resultUrl += (path.indexOf("/") === 0 ? "" : "/") + path;
         }
@@ -198,10 +178,10 @@ function getUrlDetail(slug) {
     }
 }
 
-function getUrlCategories() {
+function getUrlCategories() { 
     try {
         log("getUrlCategories[url]: \n" + BASEURL);
-        return BASEURL;
+        return BASEURL; 
     } catch (e) {
         log("getUrlCategories[err]:\n " + e);
         return "";
@@ -209,18 +189,18 @@ function getUrlCategories() {
 }
 
 
-function getUrlCountries() {
+function getUrlCountries() { 
     try {
-        return "";
+        return ""; 
     } catch (e) {
         log("getUrlCountries[err]:\n " + e);
         return "";
     }
 }
 
-function getUrlYears() {
+function getUrlYears() { 
     try {
-        return "";
+        return ""; 
     } catch (e) {
         log("getUrlYears[err]:\n " + e);
         return "";
@@ -239,7 +219,7 @@ function parseListResponse(html, $url) {
         var $data = JSON.parse(json);
         listData = $data.props.results.data;
         var $items = [];
-        listData.forEach(function(item) {
+        listData.forEach(function(item){
             // https://animevv.com/anime/kimi-no-koto-ga-daidaidaidaidaisuki-na-100-nin-no-kanojo-p5072
             var poster = BASEURL + item.thumbnailOptimized;
             var background = BASEURL + item.backgroundOptimized;
@@ -299,7 +279,8 @@ function parseSearchResponse(html, url) {
         });
     }
 
-    function decodeHTMLEntities(str) {}
+function decodeHTMLEntities(str) {
+}
     try {
         if (!str) return "";
         return str.replace(/&#(\d+);|&#x([0-9a-fA-F]+);/g, (match, dec, hex) => {
@@ -404,30 +385,31 @@ function parseMovieDetail(html, url) {
 */
 
 function parseDetailResponse(html, url) {
-    try {
-        console.log("parseDetailResponse dang xu ly: " + url);
-        var rawJS = runJS();
-        return JSON.stringify({
-            url: url,
-            isEmbed: false,
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                Referer: BASEURL,
-                "Block-Ads": false,
-                "Block-Css": "html,body,*",
-                "Custom-Js": rawJS
-            },
-            subtitles: [],
-        });
-    } catch (e) {
-        log("parseDetailResponse[err]:\n " + e);
-        return JSON.stringify({
-            url: "",
-            isEmbed: false,
-            headers: {},
-            subtitles: [],
-        });
-    }
+  try {
+    console.log("parseDetailResponse dang xu ly: " + url);
+    var rawJS = runJS();
+    return JSON.stringify({
+      url: url,
+      isEmbed: false,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Referer: BASEURL,
+        "Block-Ads": false,
+        "Block-Css": "html,body,*",
+        "Custom-Js": rawJS
+      },
+      subtitles: [],
+    });
+  } catch (e) {
+    log("parseDetailResponse[err]:\n " + e);
+    return JSON.stringify({
+      url: "",
+      isEmbed: false,
+      headers: {},
+      subtitles: [],
+    });
+  }
 }
 
 
@@ -629,39 +611,28 @@ function getLISTmenu() {
     return `[{\"link\":\"/the-loai/anime-bo\",\"name\":\"Anime bộ\"},{\"link\":\"/the-loai/anime-le\",\"name\":\"Anime lẻ\"},{\"link\":\"/the-loai/hanh-dong\",\"name\":\"Action\"},{\"link\":\"/the-loai/phieu-luu\",\"name\":\"Adventure\"},{\"link\":\"/the-loai/anime-sap-chieu\",\"name\":\"Anime sắp chiếu\"},{\"link\":\"/the-loai/dong-tinh-nam\",\"name\":\"Boys Love\"},{\"link\":\"/the-loai/cartoon\",\"name\":\"Cartoon\"},{\"link\":\"/the-loai/co-trang\",\"name\":\"Cổ Trang\"},{\"link\":\"/the-loai/hai-huoc\",\"name\":\"Comedy\"},{\"link\":\"/the-loai/dien-loan\",\"name\":\"Dementia\"}]`;
 }
 
-function buildMenu(menuStr, type) {
-    var menuArray = JSON.parse(menuStr);
-    let menulist = [];
-    if (!menuArray || !Array.isArray(menuArray)) return menulist;
-    var typeStr = type !== undefined ? String(type).trim() : undefined;
-    for (var i = 0; i < menuArray.length; i++) {
-        var item = menuArray[i];
-        if (!item) continue;
-        var link = item.link ? String(item.link).trim() : "";
-        var name = item.name ? String(item.name).trim() : "";
-        if (!link || !name) continue;
-        var menuItem = {};
-        if (typeStr === "false") {
-            menuItem = {
-                "slug": link,
-                "title": name,
-                "type": "Horizontal"
-            };
-        } else if (typeStr === "true") {
-            menuItem = {
-                "slug": link,
-                "title": name,
-                "type": "Grid"
-            };
-        } else {
-            menuItem = {
-                "slug": link,
-                "name": name
-            };
-        }
-        menulist.push(menuItem);
-    }
-    return menulist;
+function buildMenu(menuStr, type) { 
+    var menuArray = JSON.parse(menuStr); 
+    let menulist = []; 
+    if (!menuArray || !Array.isArray(menuArray)) return menulist; 
+    var typeStr = type !== undefined ? String(type).trim() : undefined; 
+    for (var i = 0; i < menuArray.length; i++) { 
+        var item = menuArray[i]; 
+        if (!item) continue; 
+        var link = item.link ? String(item.link).trim() : ""; 
+        var name = item.name ? String(item.name).trim() : ""; 
+        if (!link || !name) continue; 
+        var menuItem = {}; 
+        if (typeStr === "false") { 
+            menuItem = { "slug": link, "title": name, "type": "Horizontal" }; 
+        } else if (typeStr === "true") { 
+            menuItem = { "slug": link, "title": name, "type": "Grid" }; 
+        } else { 
+            menuItem = { "slug": link, "name": name }; 
+        } 
+        menulist.push(menuItem); 
+    } 
+    return menulist; 
 }
 
 function _$(param) {
@@ -670,26 +641,17 @@ function _$(param) {
     // -------------------------------------------------------------
     function parseHTML(htmlString) {
         let nodes = [];
-        let root = {
-            id: 0,
-            tag: "ROOT",
-            attrs: {},
-            childrenIds: [],
-            parentId: null
-        };
+        let root = { id: 0, tag: "ROOT", attrs: {}, childrenIds: [], parentId: null };
         nodes.push(root);
 
         try {
             let html = (htmlString || "").trim();
-            if (!html) return {
-                root,
-                nodes
-            };
+            if (!html) return { root, nodes };
 
-            const VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
+            const VOID_TAGS = new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
             let stack = [0];
             let tagRegex = /<(?:\/([a-zA-Z0-9_-]+)|([a-zA-Z0-9_-]+)([^>]*?)(\/)?)\s*>/g;
-
+            
             let lastIndex = 0;
             let match;
             let maxIter = 50000;
@@ -701,14 +663,7 @@ function _$(param) {
 
                 if (textBefore) {
                     let textId = nodes.length;
-                    nodes.push({
-                        id: textId,
-                        tag: "#text",
-                        text: textBefore,
-                        attrs: {},
-                        childrenIds: [],
-                        parentId: parentId
-                    });
+                    nodes.push({ id: textId, tag: "#text", text: textBefore, attrs: {}, childrenIds: [], parentId: parentId });
                     nodes[parentId].childrenIds.push(textId);
                 }
 
@@ -734,13 +689,7 @@ function _$(param) {
                     }
 
                     let nodeId = nodes.length;
-                    let node = {
-                        id: nodeId,
-                        tag: tagName,
-                        attrs: attrs,
-                        childrenIds: [],
-                        parentId: parentId
-                    };
+                    let node = { id: nodeId, tag: tagName, attrs: attrs, childrenIds: [], parentId: parentId };
                     nodes.push(node);
                     nodes[parentId].childrenIds.push(nodeId);
 
@@ -754,23 +703,13 @@ function _$(param) {
             if (remainingText && stack.length > 0) {
                 let parentId = stack[stack.length - 1];
                 let textId = nodes.length;
-                nodes.push({
-                    id: textId,
-                    tag: "#text",
-                    text: remainingText,
-                    attrs: {},
-                    childrenIds: [],
-                    parentId: parentId
-                });
+                nodes.push({ id: textId, tag: "#text", text: remainingText, attrs: {}, childrenIds: [], parentId: parentId });
                 nodes[parentId].childrenIds.push(textId);
             }
         } catch (err) {
             if (typeof window !== "undefined" && window.log) window.log("parseHTML error: " + err.message);
         }
-        return {
-            root,
-            nodes
-        };
+        return { root, nodes };
     }
 
     function getNodeText(node, nodes, depth) {
@@ -792,7 +731,7 @@ function _$(param) {
         if (!node || node.tag === "#text" || node.tag === "ROOT") return false;
 
         let cleanSel = sel;
-
+        
         // 1. Tách pseudo positional (:first, :last, :eq)
         cleanSel = cleanSel.replace(/:first|:last|:eq\([0-9]+\)/gi, "").trim();
 
@@ -844,7 +783,6 @@ function _$(param) {
 
     function querySelectorAllSingleLevel(startNode, selector, nodes) {
         let results = [];
-
         function search(currentId, depth) {
             if (depth > 50) return;
             let current = nodes[currentId];
@@ -865,7 +803,7 @@ function _$(param) {
 
         if (selector.indexOf(":first") !== -1) return results.slice(0, 1);
         if (selector.indexOf(":last") !== -1) return results.slice(-1);
-
+        
         let eqMatch = selector.match(/:eq\(([0-9]+)\)/i);
         if (eqMatch) {
             let idx = parseInt(eqMatch[1], 10);
