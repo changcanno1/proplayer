@@ -16,18 +16,18 @@
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
-      "id": "kkphim",
-      "name": "KKPhim",
-      "version": "1.0.2",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
-      "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim.png"
-    },
-    {
       "id": "VicDn",
       "name": "PhimVicDn",
       "version": "1.5.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
       "iconUrl": "https://vicdn.cc/vicdn.png"
+    },
+    {
+      "id": "kkphim",
+      "name": "KKPhim",
+      "version": "1.0.2",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
+      "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim.png"
     },
     {
       "id": "Onflix",
@@ -69,6 +69,13 @@
       "name": "AnimeHay09",
       "version": "1.0.7",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Animehay09New_plugin.js",
+      "iconUrl": "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/i/c72e2f68-1a1c-48a2-aa5f-edf7eaaf3548/d77q5ev-af22ff5c-be81-4e24-bf0e-13836c6c939e.png"
+    },
+    {
+      "id": "AnimeVV",
+      "name": "AnimeVV",
+      "version": "1.0.7",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/AnimevvNew_plugin.js",
       "iconUrl": "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/i/c72e2f68-1a1c-48a2-aa5f-edf7eaaf3548/d77q5ev-af22ff5c-be81-4e24-bf0e-13836c6c939e.png"
     },
     {
