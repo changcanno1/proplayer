@@ -1,300 +1,505 @@
 // =============================================================================
-// CONFIGURATION & METADATA
+// NHÓM 1: CẤU HÌNH (Config & Metadata)
 // =============================================================================
 
 function getManifest() {
-    return JSON.stringify({
-        "id": "OnlineTV",
-        "name": "OnlineTV",
-        "version": "1.2.0", // Nâng version
-        "baseUrl": "https://tinhlagi.pro/tivi",
-        "iconUrl": "https://tinhlagi.pro/tinhlagi.ico",
-        "isEnabled": true,
-        "isAdult": false,
-        "type": "MOVIE",
-        "layoutType": "VERTICAL",
-        "playerType": "auto"
-    });
+  return JSON.stringify({
+    id: "tvpub",
+    name: "TVPub",
+    version: "1.0.2",
+    baseUrl: BASE_URL,
+    iconUrl: "https://i.ibb.co/KjVv0WRP/tvpub-logo.jpg",
+    isEnabled: true,
+    isAdult: false,
+    type: "IPTV",
+    layoutType: "HORIZONTAL",
+    playerType: "exoplayer",
+    debug: true
+  });
 }
 
 function getHomeSections() {
-    return JSON.stringify([
-        { slug: 'truyen-hinh', title: 'Danh Mục Kênh Truyền Hình', type: 'Grid', path: '' }
-    ]);
+  return JSON.stringify([
+    { slug: "vtv", title: "VTV ⭐", type: "Horizontal", path: "" },
+    { slug: "vtvcab", title: "VTVcab 💎", type: "Horizontal", path: "" },
+    { slug: "htv-htvc", title: "HTV x HTVC 🧬", type: "Horizontal", path: "" },
+    { slug: "sctv", title: "SCTV 🎫", type: "Horizontal", path: "" },
+    { slug: "local", title: "Địa Phương 📺", type: "Horizontal", path: "" },
+    { slug: "radio", title: "Radio 📻", type: "Horizontal", path: "" }
+  ]);
 }
 
 function getPrimaryCategories() {
-    return JSON.stringify([
-        { name: 'Tất Cả', slug: 'truyen-hinh' }
-    ]);
+  return JSON.stringify([
+    { name: "VTV", slug: "vtv" },
+    { name: "VTVcab", slug: "vtvcab" },
+    { name: "HTV x HTVC", slug: "htv-htvc" },
+    { name: "SCTV", slug: "sctv" },
+    { name: "Địa Phương", slug: "local" },
+    { name: "Radio", slug: "radio" }
+  ]);
 }
 
-function getFilterConfig() { return JSON.stringify({}); }
-
-// =============================================================================
-// URL GENERATION
-// =============================================================================
-
-function getUrlList(slug, filtersJson) { 
-    return "https://tinhlagi.pro/tivi"; 
+function getFilterConfig() {
+  return JSON.stringify({ sort: [], category: [] });
 }
 
-// 1. NHÉT TỪ KHÓA VÀO DỮ LIỆU CỦA URL
-function getUrlSearch(keyword, filtersJson) { 
-    return "https://tinhlagi.pro/tivi|data:search=" + encodeURIComponent(keyword); 
-}
-
-// 2. NHÉT ID GROUP VÀO DỮ LIỆU CỦA URL
-function getUrlDetail(slug) { 
-    if (slug && slug.indexOf("search=") === 0) {
-        return "https://tinhlagi.pro/tivi|data:" + slug;
-    }
-    return "https://tinhlagi.pro/tivi|data:group=" + encodeURIComponent(slug); 
-}
-
-function getUrlCategories() { return ""; }
-function getUrlCountries() { return ""; }
-function getUrlYears() { return ""; }
-
 // =============================================================================
-// PARSERS DATA
+// NHÓM 2: SINH URL (App gọi hàm → nhận URL → tự fetch HTTP)
 // =============================================================================
 
-var PluginUtils = {
-    cleanText: function (text) {
-        if (!text) return "";
-        return text.replace(/<[^>]*>/g, "")
-            .replace(/&amp;/g, "&")
-            .replace(/&quot;/g, '"')
-            .replace(/&#039;/g, "'")
-            .replace(/\s+/g, " ")
-            .trim();
-    },
-    // Hàm hỗ trợ bóc tách phần data sau dấu | chuẩn xác
-    getPipeData: function(url) {
-        if (!url) return "";
-        var i = url.indexOf("|");
-        if (i < 0) return "";
-        var s = url.substring(i + 1).replace(/^\s+/, "");
-        if (s.toLowerCase().indexOf("data:") === 0) {
-            s = s.substring(5);
+function getUrlList(slug, filtersJson) {
+  return `${BASE_URL}?category=${slug}`;
+}
+
+function getUrlSearch(keyword = "", filtersJson) {
+  return `${BASE_URL}?search=${encodeURIComponent(keyword?.trim())}`;
+}
+
+function getUrlDetail(path) {
+  if (!path) return "";
+  if (path.indexOf("http") === 0) return path;
+  return `${BASE_URL}${path}`;
+}
+
+function getUrlCategories() {
+  return "";
+}
+function getUrlCountries() {
+  return "";
+}
+function getUrlYears() {
+  return "";
+}
+
+// =============================================================================
+// NHÓM 3: PARSER (App fetch URL xong → ném HTML/JSON thô vào đây → bạn parse)
+// =============================================================================
+
+function parseListResponse(html, apiUrl) {
+  try {
+    const items = [];
+    let channels = [];
+
+    if (channelList.length === 0) channelList = parseM3U(html);
+    const category = extractParamFromUrl(apiUrl, "category");
+    const keyword = extractParamFromUrl(apiUrl, "search");
+
+    if (category)
+      channels = filterChannels(channelList, ["category", category]);
+    else if (keyword) channels = filterChannels(channelList, ["search", keyword]);
+
+    channels.forEach((channel) => {
+      const {
+        props: {
+          "inputstream.adaptive.manifest_type": manifestType,
+          "inputstream.adaptive.license_type": licenseType,
+          "inputstream.adaptive.license_key": licenseKey
         }
-        return s;
+      } = channel;
+
+      items.push({
+        id: licenseKey ? licenseKey + "&channelId=" + channel.channelId + `|User-Agent=Dalvik/2.1.0&Referer=${BASE_URL}` : "?channelId=" + channel.channelId,
+        title: channel.name,
+        description: `Channel "${channel.name}" is hosted on server TVPub.`,
+        posterUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
+        backdropUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
+        quality: "LIVE",
+        episode_current: manifestType ? `DASH - ${licenseType.toUpperCase()}` : "HLS"
+      });
+    });
+
+    return JSON.stringify({
+      items: items,
+      pagination: { currentPage: 1, totalPages: 1 }
+    });
+  } catch (error) {
+    console.error("⛔ [parseDetailResponse in tvpub_plugin.js] ERROR MESSAGE: ", error);
+    return JSON.stringify({
+        items: [],
+        pagination: { currentPage: 1, totalPages: 1 }
+    });
+  }
+}
+
+function parseSearchResponse(html, apiUrl) {
+  return parseListResponse(html, apiUrl);
+}
+
+function parseDetailResponse(html, apiUrl) {
+  try {
+    if (apiUrl.indexOf("|") > 0) apiUrl = apiUrl.split("|")[0];
+    const channelId = extractParamFromUrl(apiUrl, "channelId");
+    const {
+      url,
+      name,
+      props: {
+        "http-user-agent": userAgent,
+        "http-referrer": referrer,
+        "http-origin": origin,
+        "inputstream.adaptive.manifest_type": manifestType,
+        "inputstream.adaptive.license_type": licenseType,
+        "inputstream.adaptive.license_key": licenseKey
+      }
+    } = getChannel(channelList, channelId);
+    
+    console.log("ℹ️ [parseDetailResponse in tvpub_plugin.js] Name: ", name);
+    // Handle license_type and manifest_type
+    // Value manifest_type = dash or mdp
+    // Value license_type = clearkey
+    if (licenseType === "clearkey") {
+      const clearKey = getClearKey(html, licenseKey);
+    
+      console.log(`ℹ️ [parseDetailResponse in tvpub_plugin.js] Manifest type DASH (MPD) - ClearKey: `, clearKey);
+      console.log("ℹ️ [parseDetailResponse in tvpub_plugin.js] URL:", url);
+      return JSON.stringify({
+        isEmbed: false,
+        url: url,
+        mimeType: "application/dash+xml",
+        drmType: "clearkey",
+        drmKid: clearKey.drmKid,
+        drmKey: clearKey.drmKey,
+        headers: {
+          "User-Agent": userAgent || "Dalvik/2.1.0",
+          Referer: referrer || url,
+          Origin: origin || url
+        }
+      });
     }
+    else if (licenseType === "widevine") { // Value manifest_type = dash or mdp, Value license_type = widevine
+      const licenseUrl = apiUrl.substring(0, apiUrl.indexOf("&channelId"));
+      
+      console.log(`ℹ️ [parseDetailResponse in tvpub_plugin.js] Manifest type DASH (MPD) - Widevine: `, apiUrl);
+      console.log("ℹ️ [parseDetailResponse in tvpub_plugin.js] URL:", url);
+      return JSON.stringify({
+        isEmbed: false,
+        url: url,
+        mimeType: "application/dash+xml",
+        drmType: "widevine",
+        licenseUrl: licenseUrl,
+        headers: {
+          "User-Agent": userAgent || "Dalvik/2.1.0",
+          Referer: referrer || url,
+          Origin: origin || url
+        }
+      });
+    }
+    else { // No manifest_type and licenseType, Normal HLS (m3u8)
+      console.log(`ℹ️ [parseDetailResponse in tvpub_plugin.js] Manifest type HLS (M3U8)`);
+      console.log("ℹ️ [parseDetailResponse in tvpub_plugin.js] URL:", url);
+      return JSON.stringify({
+        isEmbed: false,
+        url: url,
+        mimeType: "application/x-mpegURL",
+        headers: {
+          "User-Agent": userAgent || "Dalvik/2.1.0",
+          Referer: referrer || url,
+          Origin: origin || url
+        }
+      });
+    }
+  } catch (error) {
+    console.error("⛔ [parseDetailResponse in tvpub_plugin.js] ERROR MESSAGE: ", error);
+    return "{}";
+  }
+}
+
+function parseCategoriesResponse(html) {
+  return "[]";
+}
+function parseCountriesResponse(html) {
+  return "[]";
+}
+function parseYearsResponse(html) {
+  return "[]";
+}
+
+// =============================================================================
+// NHÓM 4: HELPERS
+// =============================================================================
+
+// ======================================
+// VARIABLES
+// ======================================
+
+const BASE_URL = "https://raw.githubusercontent.com/quanlehong539/TVPub/refs/heads/main/TVPub%20IPTV";
+const FALLBACK_POSTER_URL = "https://i.ibb.co/rKHf363x/fallback-thumbnail.webp";
+let channelList = [];
+// Use GROUP_MAP to rename and merge the channel into tvg-group.
+const GROUP_MAP = {
+  vtv: "VTV ⭐",
+  "thời sự": "VTV ⭐",
+  vtvcab: "VTVcab 💎",
+  htv: "HTV x HTVC 🧬",
+  sctv: "SCTV 🎫",
+  "địa phương": "Địa Phương 📺",
+  "kênh địa phương": "Địa Phương 📺",
+  "thvl": "Địa Phương 📺",
+  "dự phòng": "Backup 📌",
+  "sự kiện vtvprime": "VTVPrime 🛰️",
+  "thiết yếu": "VTV ⭐",
+  "🌐| thiết yếu": "VTV ⭐",
+  "htv/c": "HTV x HTVC 🧬",
+  "asean huyndai cup 2026": "🔴 ASEAN HUYNDAI CUP 2026",
+  "live events 🔴": "VOD 🎞️",
+  "sự kiện fpt play": "FPTPlay 🏷️",
+  "radio": "Radio 📻",
+  "phát thanh": "Radio 📻",
+  "🇬🇧 uk radio": "Radio 📻",
+  "israel": "Israel 🌐",
+  "🇰🇷| hàn quốc": "Hàn Quốc 🌐",
+  "🇨🇳| trung quốc": "Trung Quốc 🌐",
+  "cctv": "Trung Quốc 🌐"
+};
+// Use CATEGORY_MAP to convert the slug to tvg-group.
+const CATEGORY_MAP = {
+  vtv: "VTV ⭐",
+  antvhd: "VTV ⭐",
+  vietnamtoday: "VTV ⭐",
+  qpvnhd: "VTV ⭐",
+  vtvcab: "VTVcab 💎",
+  on: "VTVcab 💎",
+  vtvprime: "VTVPrime 🛰️",
+  "htv-htvc": "HTV x HTVC 🧬",
+  sctv: "SCTV 🎫",
+  local: "Địa Phương 📺",
+  backup: "Backup 📌",
+  "event": "🔴 ASEAN HUYNDAI CUP 2026",
+  "vod": "VOD 🎞️",
+  "fptplay": "FPTPlay 🏷️",
+  "radio": "Radio 📻",
+  "israel": "Israel 🌐",
+  "korea": "Hàn Quốc 🌐",
+  "china": "Trung Quốc 🌐"
 };
 
-function parseListResponse(html) {
-    var groups = [
-        { id: "VTV", name: "Kênh VTV", img: "https://raw.githubusercontent.com/vuminhthanh12/Logo/refs/heads/main/VTV6.png" },
-        { id: "VTVcab", name: "Kênh VTVcab", img: "https://raw.githubusercontent.com/vuminhthanh12/Logo/refs/heads/main/ONPHIMVIET.png" },
-        { id: "SCTV", name: "Kênh SCTV", img: "https://raw.githubusercontent.com/vuminhthanh12/vuminhthanh12/refs/heads/main/sctv1.png" },
-        { id: "HTV", name: "Kênh HTV", img: "https://s7771.cdn.mytvnet.vn/vimages/8c/ce/ee/e7/79/98/8cee7-phtv1hd-channel-unkn.png" },
-        { id: "HTVC", name: "Kênh HTVC", img: "https://raw.githubusercontent.com/vuminhthanh12/Logo/refs/heads/main/htvcthuanviet.png" },
-        { id: "Địa phương", name: "Kênh Địa Phương", img: "https://upload.wikimedia.org/wikipedia/vi/9/90/THP-Logo.png" },
-        { id: "Thiết yếu", name: "Kênh Thiết Yếu", img: "https://i.ytimg.com/vi/sFLUmdwp0Z8/maxresdefault.jpg" }
-    ];
+// ======================================
+// FUNCTIONS
+// ======================================
 
-    var items = [];
-    for (var i = 0; i < groups.length; i++) {
-        items.push({
-            id: groups[i].id, // Đẩy thẳng ID (VD: "VTV") để getUrlDetail bắt
-            title: groups[i].name,
-            posterUrl: groups[i].img,
-            backdropUrl: groups[i].img,
-            quality: "HD",
-            episode_current: "Live",
-            lang: "Viet",
-            year: 0
-        });
-    }
-    return JSON.stringify({ items: items, pagination: { currentPage: 1, totalPages: 1, totalItems: items.length, itemsPerPage: 10 } });
+function extractParamFromUrl(url, param) {
+  if (!url) return "";
+  var match = url.match(new RegExp("[?&]" + param + "=([^&]+)"));
+  return match ? decodeURIComponent(match[1]) : "";
 }
 
-// 3. TẠO MỤC KẾT QUẢ TÌM KIẾM RIÊNG BIỆT
-function parseSearchResponse(html, url) { 
-    var keyword = "";
-    var pipeData = PluginUtils.getPipeData(url);
-    if (pipeData && pipeData.indexOf("search=") === 0) {
-        keyword = decodeURIComponent(pipeData.split("search=")[1]);
-    }
-    
-    var items = [];
-    if (keyword) {
-        items.push({
-            id: "search=" + encodeURIComponent(keyword), // Đẩy ID dạng tìm kiếm
-            title: 'Kết quả tìm kiếm cho: "' + keyword + '"',
-            posterUrl: "https://tinhlagi.pro/tinhlagi.ico",
-            backdropUrl: "https://tinhlagi.pro/tinhlagi.ico",
-            quality: "HD",
-            episode_current: "Search",
-            lang: "Viet",
-            year: 0
-        });
-    }
-    
-    return JSON.stringify({ items: items, pagination: { currentPage: 1, totalPages: 1 } });
+function filterChannels(channels, [filterKey, filterValue]) {
+  // filter channels by category
+  if (filterValue && filterKey === "category") {
+    return channels.filter(
+      (channel) => CATEGORY_MAP[filterValue] === channel.tvgGroup
+    );
+  }
+  if (filterValue && filterKey === "search") {
+    return channels.filter((channel) => {
+      const name = channel.name.toLowerCase();
+      filterValue = filterValue.toLowerCase();
+      return name.indexOf(filterValue) >= 0;
+    });
+  }
 }
 
-// 4. LỌC CHÍNH XÁC KÊNH THEO TỪ KHÓA HOẶC DANH MỤC
-function parseMovieDetail(html, url) {
-    try {
-        var pipeData = PluginUtils.getPipeData(url);
-        var isSearch = false;
-        var searchKeyword = "";
-        var targetGroup = "";
-        
-        // Phân tích lệnh từ URL
-        if (pipeData.indexOf("search=") === 0) {
-            isSearch = true;
-            searchKeyword = decodeURIComponent(pipeData.split("search=")[1]).toLowerCase();
-        } else if (pipeData.indexOf("group=") === 0) {
-            targetGroup = decodeURIComponent(pipeData.split("group=")[1]);
+function getChannel(channels, channelId) {
+  if (channelId === undefined || channelId === null || channelId === "") return {};
+  const numId = parseInt(channelId, 10);
+  return channels.find(channel => String(channel.channelId) === String(channelId)) || {};
+}
+
+function parseM3U(text) {
+  const lines = text.split("\n");
+  const channels = [];
+  let currentChannel = null;
+  let count = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.toUpperCase().includes("EXTINF:")) {
+      currentChannel = {
+        name: "No Name",
+        tvgLogo: "",
+        tvgGroup: "No Group",
+        url: "",
+        tvgId: "",
+        channelId: count++,
+        props: {}
+      };
+
+      const commaIndex = line.lastIndexOf(",");
+      if (commaIndex !== -1)
+        currentChannel.name =
+          line.substring(commaIndex + 1).trim() || "No Name";
+
+      const logoMatch = line.match(/tvg-logo="([^"]+)"/i);
+      if (logoMatch && logoMatch[1]) currentChannel.tvgLogo = logoMatch[1];
+
+      const idMatch = line.match(/tvg-id="([^"]+)"/i);
+      if (idMatch && idMatch[1]) currentChannel.tvgId = idMatch[1];
+
+      const groupMatch = line.match(/group-title="([^"]+)"/i);
+      if (groupMatch && groupMatch[1]) {
+        if(groupMatch[1] === "ĐỊA PHƯƠNG" || groupMatch[1] === "PHÁT THANH")
+          currentChannel.tvgGroup = GROUP_MAP[groupMatch[1].toLowerCase()]
+            ? GROUP_MAP[groupMatch[1].toLowerCase()]
+            : groupMatch[1];
+        else {
+          for (const key in CATEGORY_MAP) {
+            if(startsWithRegex(currentChannel.tvgId, (key === "htv-htvc" ? "htv" : key))) {
+              currentChannel.tvgGroup = CATEGORY_MAP[key];
+              break;
+            }
+          }
         }
+      }
 
-        var servers = [];
-        var searchEpisodes = []; // Rổ đựng các kênh khớp từ khóa
-        
-        var groupBlocks = html.split('<h2 class="group-title">');
-        
-        for (var i = 1; i < groupBlocks.length; i++) {
-            var block = groupBlocks[i];
-            var titleEnd = block.indexOf('</h2>');
-            if (titleEnd === -1) continue;
-            
-            var rawTitle = block.substring(0, titleEnd);
-            var groupNameClean = PluginUtils.cleanText(rawTitle).split('(')[0].trim();
-            var groupLower = groupNameClean.toLowerCase();
-            
-            var matchedGroup = "";
-            if (groupLower.indexOf("vtvcab") !== -1) matchedGroup = "VTVcab";
-            else if (groupLower.indexOf("vtv") !== -1) matchedGroup = "VTV";
-            else if (groupLower.indexOf("sctv") !== -1) matchedGroup = "SCTV";
-            else if (groupLower.indexOf("htvc") !== -1) matchedGroup = "HTVC";
-            else if (groupLower.indexOf("htv") !== -1) matchedGroup = "HTV";
-            else if (groupLower.indexOf("địa phương") !== -1 || groupLower.indexOf("dia phuong") !== -1) matchedGroup = "Địa phương";
-            else if (groupLower.indexOf("thiết yếu") !== -1 || groupLower.indexOf("thiet yeu") !== -1) matchedGroup = "Thiết yếu";
+      // Capture all catchup attributes
+      const catchupMatch = line.match(/catchup="([^"]+)"/i);
+      if (catchupMatch) currentChannel.props.catchup = catchupMatch[1];
 
-            if (!matchedGroup) continue;
+      const catchupDaysMatch = line.match(/catchup-days="([^"]+)"/i);
+      if (catchupDaysMatch)
+        currentChannel.props.catchupDays = catchupDaysMatch[1];
 
-            // Nếu đang xem danh mục (VTV, HTV...) -> Bỏ qua các danh mục không liên quan
-            if (!isSearch && targetGroup && matchedGroup !== targetGroup) continue;
-
-            var episodes = [];
-            var channelParts = block.split('class="channel-card');
-            
-            for (var k = 1; k < channelParts.length; k++) {
-                var cp = channelParts[k];
-                var urlM = cp.match(/href=["']\?url=([^&"']+)/i);
-                var nameM = cp.match(/&name=([^"']+)/i);
-                
-                if (urlM && nameM) {
-                    var streamLink = decodeURIComponent(urlM[1]); 
-                    var cleanName = decodeURIComponent(nameM[1]).replace(/\+/g, " ").split('#')[0].trim();
-                    
-                    // NẾU LÀ TÌM KIẾM -> Kiểm tra tên kênh có khớp với từ khóa không
-                    if (isSearch) {
-                        if (cleanName.toLowerCase().indexOf(searchKeyword) === -1 && matchedGroup.toLowerCase().indexOf(searchKeyword) === -1) {
-                            continue; // Kênh này không khớp -> vứt
-                        }
-                    }
-                    
-                    var finalPlayUrl = streamLink;
-                    if (streamLink.indexOf("fptplay") !== -1 || streamLink.indexOf(".m3u8") !== -1) {
-                        // Kodi Pipe để Player nhận Headers
-                        finalPlayUrl = streamLink + "|User-Agent=cvmedia/1.1.0|Referer=https://tinhlagi.pro/|Origin=https://tinhlagi.pro";
-                    }
-
-                    var epObj = {
-                        id: finalPlayUrl, 
-                        name: cleanName,
-                        // Tạo slug duy nhất (Bắt buộc theo chuẩn Vax)
-                        slug: "live-" + cleanName.toLowerCase().replace(/[^a-z0-9]/g, '-')
-                    };
-
-                    if (isSearch) searchEpisodes.push(epObj);
-                    else episodes.push(epObj);
-                }
-            }
-
-            // Quét tìm bổ sung kênh VTV1 bị lỗi nhảy block
-            if (!isSearch && matchedGroup === "VTV") {
-                var allCards = html.split('class="channel-card');
-                for (var c = 1; c < allCards.length; c++) {
-                    var cPart = allCards[c];
-                    var uM = cPart.match(/href=["']\?url=([^&"']+)/i);
-                    var nM = cPart.match(/&name=([^"']+)/i);
-                    if (uM && nM) {
-                        var nClean = decodeURIComponent(nM[1]).replace(/\+/g, " ").split('#')[0].trim();
-                        if (nClean.toUpperCase() === "VTV1") {
-                            var sLink = decodeURIComponent(uM[1]);
-                            var fUrl = sLink;
-                            if (sLink.indexOf("fptplay") !== -1 || sLink.indexOf(".m3u8") !== -1) {
-                                fUrl = sLink + "|User-Agent=cvmedia/1.1.0|Referer=https://tinhlagi.pro/|Origin=https://tinhlagi.pro";
-                            }
-                            
-                            var exists = false;
-                            for (var eIdx = 0; eIdx < episodes.length; eIdx++) {
-                                if (episodes[eIdx].name.toUpperCase() === "VTV1") { exists = true; break; }
-                            }
-                            if (!exists) {
-                                episodes.unshift({ id: fUrl, name: "VTV1", slug: "live-vtv1" });
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (!isSearch && episodes.length > 0) {
-                servers.push({ name: "Kênh " + matchedGroup, episodes: episodes });
-            }
+      const catchupSourceMatch = line.match(/catchup-source="([^"]+)"/i);
+      if (catchupSourceMatch)
+        currentChannel.props.catchupSource = catchupSourceMatch[1];
+    } else if (line.toUpperCase().startsWith("#KODIPROP:")) {
+      if (currentChannel) {
+        const propLine = line.substring(10).trim();
+        const equalIdx = propLine.indexOf("=");
+        if (equalIdx !== -1) {
+          const key = propLine.substring(0, equalIdx).trim();
+          const val = propLine.substring(equalIdx + 1).trim();
+          currentChannel.props[key] = val;
         }
-
-        // Đóng gói trả về nếu đang trong lệnh Tìm kiếm
-        if (isSearch) {
-            if (searchEpisodes.length > 0) {
-                servers.push({ name: "Kênh Tìm Được", episodes: searchEpisodes });
-            } else {
-                servers.push({ name: "Không tìm thấy", episodes: [] });
-            }
+      }
+    } else if (line.toUpperCase().startsWith("#EXTVLCOPT:")) {
+      if (currentChannel) {
+        const optLine = line.substring(11).trim();
+        const equalIdx = optLine.indexOf("=");
+        if (equalIdx !== -1) {
+          const key = optLine.substring(0, equalIdx).trim();
+          const val = optLine.substring(equalIdx + 1).trim();
+          currentChannel.props[key] = val;
         }
-
-        var titleStr = isSearch ? ('Tìm kiếm: "' + searchKeyword + '"') : ("Danh sách: Kênh " + (targetGroup || "Truyền Hình"));
-
-        return JSON.stringify({
-            id: url,
-            title: titleStr,
-            posterUrl: "https://tinhlagi.pro/tinhlagi.ico",
-            backdropUrl: "https://tinhlagi.pro/tinhlagi.ico",
-            description: isSearch ? "Danh sách các kênh khớp với từ khóa." : "Danh mục kênh đang chọn.",
-            servers: servers
+      }
+    } else if (line !== "" && !line.startsWith("#")) {
+      if (currentChannel) {
+        currentChannel.url = line;
+        channels.push(currentChannel);
+        currentChannel = null;
+      } else {
+        channels.push({
+          name: line.split("/").pop().toUpperCase() || "No Name",
+          tvgLogo: "",
+          tvgGroup: "No Group",
+          url: line,
+          channelId: count++,
+          props: {}
         });
-    } catch (e) { 
-        return JSON.stringify({}); 
+      }
     }
+  }
+  return channels;
 }
 
-// Xử lý nạp link Video cuối cùng gửi cho ExoPlayer
-function parseDetailResponse(html, url) { 
-    try {
-        var cleanUrl = url.split("|")[0]; // Bóc đường dẫn m3u8 sạch
-        var isEmbed = cleanUrl.indexOf(".m3u8") === -1 && cleanUrl.indexOf("fptplay") === -1;
-        
-        return JSON.stringify({
-            "url": cleanUrl,
-            "isEmbed": isEmbed,
-            "mimeType": isEmbed ? "" : "application/x-mpegURL",
-            "headers": {
-                "User-Agent": "cvmedia/1.1.0",
-                "Referer": "https://tinhlagi.pro/",
-                "Origin": "https://tinhlagi.pro"
-            }
-        });
-    } catch (e) {
-        return JSON.stringify({ "url": url, "isEmbed": true });
-    }
+function startsWithRegex(str, prefix) {
+  const regex = new RegExp("^" + prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  return regex.test(str);
 }
 
-function parseEmbedResponse(html, sourceUrl) { return JSON.stringify({ url: "", isEmbed: false }); }
-function parseCategoriesResponse(html) { return "[]"; }
-function parseCountriesResponse(html) { return "[]"; }
-function parseYearsResponse(html) { return "[]"; }
+// Convert Base64/Base64Url to Hex for ClearKey
+function base64ToHex(base64) {
+  if (!base64) return "";
+  let b64 = base64.replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4 !== 0) b64 += "=";
+  try {
+    const raw = atob(b64);
+    let result = "";
+    for (let i = 0; i < raw.length; i++) {
+      const hex = raw.charCodeAt(i).toString(16);
+      result += hex.length === 2 ? hex : "0" + hex;
+    }
+    return result.toLowerCase();
+  } catch (e) {
+    console.error("Lỗi giải mã Base64:", e);
+    return "";
+  }
+}
+
+// A handmade atob function for QuickJS
+function atob(input) {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  let str = String(input).replace(/[\t\n\f\r ]/g, "");
+
+  let output = "";
+  let buffer = 0;
+  let bits = 0;
+
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === "=") break;
+
+    const index = chars.indexOf(str[i]);
+    if (index === -1) {
+      throw new Error("Invalid base64 character");
+    }
+
+    buffer = (buffer << 6) | index;
+    bits += 6;
+
+    if (bits >= 8) {
+      bits -= 8;
+      output += String.fromCharCode((buffer >> bits) & 0xff);
+    }
+  }
+
+  return output;
+}
+
+// The getClearKey function is used for multiple IPTV sources.
+function getClearKey(html, licenseKey) {
+  const clearKey = {}
+  try { // clearKey needs to be fetched.
+    // JSON format {"keys":[{"kid":"...","k":"..."}]}
+    const keyData = JSON.parse(html);
+    console.log("ℹ️ [getClearKey in tvpub_plugin.js] clearKey NEEDS to be fetched - ", keyData);
+    if (keyData.keys && Array.isArray(keyData.keys)) {
+      keyData.keys.forEach((k) => {
+        clearKey.drmKid = base64ToHex(k.kid);
+        clearKey.drmKey = base64ToHex(k.k);
+      });
+    } else if (keyData.kid && keyData.k) { // JSON format {"kid":"...","k":"..."}
+      clearKey.drmKid = base64ToHex(keyData.kid);
+      clearKey.drmKey = base64ToHex(keyData.k);
+    }
+  } catch (error) { // clearKey does not require fetching.
+    console.log("ℹ️ [getClearKey in tvpub_plugin.js] clearKey does NOT require fetching - ", licenseKey);
+    // Hex format "KID:KEY" (e.g. license_key=aabb...:ccdd...)
+    if (licenseKey && licenseKey.includes(":") && licenseKey.split(":").length === 2) {
+      const parts = licenseKey.split(":");
+
+      if (
+        /^[0-9a-fA-F]+$/.test(parts[0]) &&
+        /^[0-9a-fA-F]+$/.test(parts[1])
+      ) {
+        clearKey.drmKid = parts[0].toLowerCase();
+        clearKey.drmKey = parts[1].toLowerCase();
+      }
+    }
+    else {
+      const keyData = JSON.parse(licenseKey);
+      // JSON format {"keys":[{"kid":"...","k":"..."}]}
+      if (keyData.keys && Array.isArray(keyData.keys)) {
+      keyData.keys.forEach((k) => {
+        clearKey.drmKid = base64ToHex(k.kid);
+        clearKey.drmKey = base64ToHex(k.k);
+      });
+      } else if (keyData.kid && keyData.k) { // JSON format {"kid":"...","k":"..."}
+        clearKey.drmKid = base64ToHex(keyData.kid);
+        clearKey.drmKey = base64ToHex(keyData.k);
+      }
+    }
+  }
+
+  return clearKey
+}
