@@ -2,7 +2,7 @@
 // CẤU HÌNH PLUGIN (CHỈ CẦN SỬA Ở ĐÂY KHI WEB ĐỔI LINK)
 // =============================================================================
 var CONFIG = {
-    domain: "yanhh3d.pw", // <-- THAY ĐỔI TÊN MIỀN MỚI Ở ĐÂY
+    domain: "https://yanhh3d.pw", // <-- THAY ĐỔI TÊN MIỀN MỚI Ở ĐÂY
     id: "yanhh3d",
     name: "Yanhh3d",
     version: "1.3.5",               // Tăng version nếu app yêu cầu cập nhật lại manifest
