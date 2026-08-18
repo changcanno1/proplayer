@@ -1,7 +1,7 @@
 // =============================================================================
 // CẤU HÌNH TÊN MIỀN (SỬA NHANH Ở ĐÂY KHI WEB BỊ CHẶN)
 // =============================================================================
-var DOMAIN = "hhpanda.st";
+var DOMAIN = "https://yanhh3d.pw/";
 var BASEURL = "https://" + DOMAIN;
 
 function getManifest() {
