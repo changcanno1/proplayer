@@ -108,20 +108,6 @@
       "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
     },
     {
-      "id": "Goated",
-      "name": "Nguồn Goated",
-      "version": "1.0.6",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Goatednew_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/goated.png"
-    },
-    {
-      "id": "Vidgod",
-      "name": "Nguồn Vidgod",
-      "version": "1.0.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Vidgodnew_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vidgod.png"
-    },
-    {
       "id": "ThethaoTV",
       "name": "ThethaoTV",
       "version": "1.0.1",
