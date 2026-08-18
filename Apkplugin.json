@@ -35,6 +35,27 @@
 "info": "Nguồn phim lồng tiếng và phụ đề mới, xe rắt nhanh và mượt. Có hỗ trợ phụ đề song ngữ luôn."
 
 },
+  {
+
+"id": "vicdn",
+
+"name": "Nguồn Vicdn",
+
+"version": "1.5",
+
+"scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/vicdn_plugin.js",
+
+"iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png?cache=true",
+
+"info": "Nguồn phim siêu xịn có chất lượng cao.
+
+Hỗ trợ nhiều luồng phát từ vietsub tới thuyết minh và lồng tiếng,
+
+Player siêu xịn với tốc độ tải video vô cùng mượt mà.
+
+Hỗ trợ anh em chuyển tập và lưu lịch sử lại ngay khi đang xem."
+
+},
 {
 
 "id": "kkphim",
@@ -48,27 +69,6 @@
 "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim.png",
 
 "info": "Nguồn phim của youngbi. Báo tác giả ngay khi có lỗi."
-
-},
-{
-
-"id": "vicdn",
-
-"name": "Nguồn Vicdn",
-
-"version": "1.5",
-
-"scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/vicdn_plugin.js",
-
-"iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png?cache=true",
-
-"info": "Nguồn phim siêu xịn có chất lưowjng cao.
-
-Hỗ trợ nhiều luồng phát từ vietsub tới thuyết minh và lồng tiếng,
-
-Player siêu xịn với tốc độ tải video vô cùng mượt mà.
-
-Hỗ trợ anh em chuyển tập và lưu lịch sử lại ngay khi đang xem."
 
 },
 {
@@ -226,51 +226,6 @@ và tính năng qua tập khi xem phim."
 "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hhpanda.png?cache=true",
 
 "info": "Nguồn phim hoạt hình chất lượng cao, tuy nhiên cơ chế chiếu phát của nó rất khó chịu. Chỉ phát được trên máy chủ của họ còn phát qua app sẽ bị mất góc không tràn viền. Vì thế đã tích hợp bộ chỉnh kích cỡ video vào bên trong video. Bạn có thể chỉnh sao cho vừa màn hình. Chỉ cần chỉnh 1 lần là các lần sau sẽ dùng như vậy."
-
-},
-{
-
-"id": "phimchill",
-
-"name": "Phim Chill",
-
-"version": "3.8.3",
-
-"scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/phimchill_plugin.js",
-
-"iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimchill.png?cache=true",
-
-"info": "Phim hay, xem mượt. Nếu nguồn không vào được hãy thử truy cập bằng nút đăng nhập ở kho plugin để xem họ đổi domain gì và bạn tự đổi lại trên app và báo cho tác giả biết."
-
-},
-{
-
-"id": "goated",
-
-"name": "Nguồn Goated",
-
-"version": "1.0.6",
-
-"scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/goated_plugin.js",
-
-"iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/goated.png?cache=true",
-
-"info": "Nguồn phim thuộc servers nước ngoài.\nDùng để sơ cua khi các nguồn trong nước bị sập.\nNguồn này được mình tích hợp rẩt nhiều subtitle nên có thể tự động dịch và lồng tiếng tự động.\nVì là nguồn nước ngoài nên đôi khi cần phải vượt DNS mới xem được.\nDo đó nếu không xem được hãy vào cài đặt bật DNS và DPI hoặc dùng ứng dụng 1.1.1.1 để vượt DNS.\nMột vài phim load sẽ hơi lâu, nhưng khi load được sẽ phát mượt. Nếu không load được hay bấm tải lại sẽ tự tìm link khác để phát.\nNếu vẫn không dược hãy thử hạ độ phân giải xuống 1 cấp sẽ coi được."
-
-},
-{
-
-"id": "vidgod",
-
-"name": "Nguồn Vidgod",
-
-"version": "1.0.1",
-
-"scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/vidgod_plugin.js",
-
-"iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vidgod.png?cache=true",
-
-"info": "Nguồn phim thuộc servers nước ngoài.\nDùng để sơ cua khi các nguồn trong nước bị sập.\nNguồn này được mình tích hợp rẩt nhiều subtitle nên có thể tự động dịch và lồng tiếng tự động.\nVì là nguồn nước ngoài nên đôi khi cần phải vượt DNS mới xem được.\nDo đó nếu không xem được hãy vào cài đặt bật DNS và DPI hoặc dùng ứng dụng 1.1.1.1 để vượt DNS.\nMột vài phim load sẽ hơi lâu, nhưng khi load được sẽ phát mượt. Nếu không load được hay bấm tải lại sẽ tự tìm link khác để phát.\nNếu vẫn không dược hãy thử hạ độ phân giải xuống 1 cấp sẽ coi được."
 
 }
 
