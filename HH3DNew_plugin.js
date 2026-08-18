@@ -2,7 +2,7 @@
 // CẤU HÌNH PLUGIN (CHỈ CẦN SỬA Ở ĐÂY KHI WEB ĐỔI LINK)
 // =============================================================================
 var CONFIG = {
-    domain: "https://yanhh3d.love", // <-- THAY ĐỔI TÊN MIỀN MỚI Ở ĐÂY
+    domain: "yanhh3d.pw", // <-- THAY ĐỔI TÊN MIỀN MỚI Ở ĐÂY
     id: "yanhh3d",
     name: "Yanhh3d",
     version: "1.3.5",               // Tăng version nếu app yêu cầu cập nhật lại manifest
@@ -20,7 +20,6 @@ function getManifest() {
         "id": CONFIG.id,
         "name": CONFIG.name,
         "description": "Trang xem phim Hoạt Hình siêu hay.",
-        "info": "Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này.",
         "version": CONFIG.version,
         "baseUrl": CONFIG.domain, // Tự động lấy domain mới
         "iconUrl": CONFIG.icon,
