@@ -2,36 +2,36 @@
   "version": 1,
   "plugins": [
     {
-      "id": "Nguon1 - C",
-      "name": "Nguon1",
+      "id": "NguonCVip",
+      "name": "NguonCVip",
       "version": "1.5.4",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncHT_plugin.js",
       "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/nguonC.png"
     },
     {
-      "id": "Nguon2 - V",
-      "name": "Nguon2",
+      "id": "Vsmov",
+      "name": "PhimVsmov",
       "version": "1.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
-      "id": "Nguon3 - D",
-      "name": "Nguon3",
+      "id": "VicDn",
+      "name": "PhimVicDn",
       "version": "1.5.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
       "iconUrl": "https://vicdn.cc/vicdn.png"
     },
     {
-      "id": "Nguon4 - K",
-      "name": "Nguon4",
+      "id": "kkphim",
+      "name": "KKPhim",
       "version": "1.0.2",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
       "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim.png"
     },
     {
       "id": "Onflix",
-      "name": "Onflix",
+      "name": "Onfix",
       "version": "1.9.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/OnflixHT_plugin.js",
       "iconUrl": "https://onflix.lat/app/asset/logo.png"
@@ -80,7 +80,7 @@
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNZWj2x3KVRTGvKRc6jyinavcjgQxZVTFhzpwtdWyvbB_SfUir-WEHgDc&s=10"
     },
     {
-      "id": "HH3D",
+      "id": "Hh3D",
       "name": "Hoạt Hình 3D",
       "version": "1.3.5",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HH3DNew_plugin.js",
