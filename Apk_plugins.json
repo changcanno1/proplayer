@@ -66,18 +66,10 @@
       "info": "Nguồn CLB phim xưa, đã vượt cơ chế đăng nhập.\nBổ xung thêm tính năng lưu lịch sử xem phim,\nvà tính năng qua tập khi xem phim."
     },
     {
-      "id": "sieutamphim",
-      "name": "Sưu Tầm Phim",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/sieutamphim_plugin.js",
-      "iconUrl": "https://www.sieutamphim.pro/posts/2024/06/cropped-logosieutamphim-192x192.png",
-      "info": "Nguồn phim của youngbi. Báo tác giả ngay khi có lỗi."
-    },
-    {
       "id": "yanhh3d",
       "name": "Yanhh3D",
       "version": "1.3.5",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/yanhh3d_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HH3DNew_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yanhh3d.png?cache=true",
       "info": "Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này."
     },
