@@ -61,7 +61,7 @@
       "id": "clbpxVIP",
       "name": "Nguồn CLB Phim Xưa VIP",
       "version": "1.4.8",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/clbpxVIP_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/CLBphimxua_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/clbpxVIP.png?cache=true",
       "info": "Nguồn CLB phim xưa, đã vượt cơ chế đăng nhập.\nBổ xung thêm tính năng lưu lịch sử xem phim,\nvà tính năng qua tập khi xem phim."
     },
