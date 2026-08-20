@@ -21,7 +21,7 @@
       "id": "vicdn",
       "name": "Nguồn Vicdn",
       "version": "1.5",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/vicdn_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimVicdnHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png?cache=true",
       "info": "Nguồn phim siêu xịn có chất lượng cao.\n\nHỗ trợ nhiều luồng phát từ vietsub tới thuyết minh và lồng tiếng,\n\nPlayer siêu xịn với tốc độ tải video vô cùng mượt mà.\n\nHỗ trợ anh em chuyển tập và lưu lịch sử lại ngay khi đang xem."
     },
