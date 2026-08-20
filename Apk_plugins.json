@@ -77,7 +77,7 @@
       "id": "animevv",
       "name": "Nguồn Animevv",
       "version": "1.2.3",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/animevv_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/AnimevvNew_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/animevv.png?cache=true",
       "info": "Nguồn phim Animevv, nguồn này dùng servers riêng của họ nên cũng khá mượt mà..."
     },
