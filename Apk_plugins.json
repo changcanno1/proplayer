@@ -13,7 +13,7 @@
       "id": "vsmov",
       "name": "Nguồn Vsmov",
       "version": "1.1",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/vsmov_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vsmov.png?cache=true",
       "info": "Nguồn phim lồng tiếng và phụ đề mới, xe rắt nhanh và mượt. Có hỗ trợ phụ đề song ngữ luôn."
     },
