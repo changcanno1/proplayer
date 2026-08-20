@@ -53,7 +53,7 @@
       "id": "phimhdcs",
       "name": "PhimHDCSS",
       "version": "1.1.4",
-      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/phimhdcs_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
       "iconUrl": "https://phimhdcss.com/favicon.ico",
       "info": "Nguồn phim của youngbi. Báo tác giả ngay khi có lỗi."
     },
