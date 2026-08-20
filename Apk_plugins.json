@@ -37,7 +37,7 @@
       "id": "onflix",
       "name": "Onflix Phim",
       "version": "1.9",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/onflix_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/OnflixHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png?cache=true",
       "info": "Phim hay, xem mượt. Nếu nguồn không vào được hãy thử truy cập bằng nút đăng nhập ở kho plugin để xem họ đổi domain gì và bạn tự đổi lại trên app và báo cho tác giả biết."
     },
