@@ -85,7 +85,7 @@
       "id": "animehay",
       "name": "Nguồn Anime Hay",
       "version": "1.0.7",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/animehay_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Animehay09New_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/animehay.png?cache=true",
       "info": "Nguồn phim anime chất lượng."
     },
