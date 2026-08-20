@@ -2,116 +2,277 @@
   "version": 1,
   "plugins": [
     {
-      "id": "nguoncnew",
-      "name": "Nguồn C VIP",
-      "version": "1.5.4",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/nguoncnew_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png?cache=true",
-      "info": "Phim hay, xem mượt. Nếu nguồn không vào được hãy thử truy cập bằng nút đăng nhập ở kho plugin để xem họ đổi domain gì và bạn tự đổi lại trên app và báo cho tác giả biết."
-    },
-    {
-      "id": "vsmov",
-      "name": "Nguồn Vsmov",
-      "version": "1.1",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/vsmov_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vsmov.png?cache=true",
-      "info": "Nguồn phim lồng tiếng và phụ đề mới, xe rắt nhanh và mượt. Có hỗ trợ phụ đề song ngữ luôn."
-    },
-    {
-      "id": "vicdn",
-      "name": "Nguồn Vicdn",
-      "version": "1.5",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/vicdn_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png?cache=true",
-      "info": "Nguồn phim siêu xịn có chất lượng cao.\n\nHỗ trợ nhiều luồng phát từ vietsub tới thuyết minh và lồng tiếng,\n\nPlayer siêu xịn với tốc độ tải video vô cùng mượt mà.\n\nHỗ trợ anh em chuyển tập và lưu lịch sử lại ngay khi đang xem."
-    },
-    {
-      "id": "kkphim",
-      "name": "KKPhim",
-      "version": "1.0.2",
-      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim_plugin.js",
-      "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim.png",
-      "info": "Nguồn phim của youngbi. Báo tác giả ngay khi có lỗi."
-    },
-    {
-      "id": "onflix",
-      "name": "Onflix Phim",
-      "version": "1.9",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/onflix_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png?cache=true",
-      "info": "Phim hay, xem mượt. Nếu nguồn không vào được hãy thử truy cập bằng nút đăng nhập ở kho plugin để xem họ đổi domain gì và bạn tự đổi lại trên app và báo cho tác giả biết."
-    },
-    {
-      "id": "phimhayok",
-      "name": "Phim Hay Ok",
-      "version": "1.1.3",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/phimhayok_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimhayok.png?cache=true",
-      "info": "Phim hay, xem mượt. Nếu nguồn không vào được hãy thử truy cập bằng nút đăng nhập ở kho plugin để xem họ đổi domain gì và bạn tự đổi lại trên app và báo cho tác giả biết."
-    },
-    {
-      "id": "phimhdcs",
-      "name": "PhimHDCSS",
-      "version": "1.1.4",
-      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/phimhdcs_plugin.js",
-      "iconUrl": "https://phimhdcss.com/favicon.ico",
-      "info": "Nguồn phim của youngbi. Báo tác giả ngay khi có lỗi."
-    },
-    {
-      "id": "clbpxVIP",
-      "name": "Nguồn CLB Phim Xưa VIP",
-      "version": "1.4.8",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/clbpxVIP_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/clbpxVIP.png?cache=true",
-      "info": "Nguồn CLB phim xưa, đã vượt cơ chế đăng nhập.\nBổ xung thêm tính năng lưu lịch sử xem phim,\nvà tính năng qua tập khi xem phim."
-    },
-    {
-      "id": "sieutamphim",
-      "name": "Sưu Tầm Phim",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/sieutamphim_plugin.js",
-      "iconUrl": "https://www.sieutamphim.pro/posts/2024/06/cropped-logosieutamphim-192x192.png",
-      "info": "Nguồn phim của youngbi. Báo tác giả ngay khi có lỗi."
-    },
-    {
-      "id": "yanhh3d",
-      "name": "Yanhh3D",
-      "version": "1.3.5",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/yanhh3d_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yanhh3d.png?cache=true",
-      "info": "Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này."
-    },
-    {
-      "id": "animevv",
-      "name": "Nguồn Animevv",
-      "version": "1.2.3",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/animevv_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/animevv.png?cache=true",
-      "info": "Nguồn phim Animevv, nguồn này dùng servers riêng của họ nên cũng khá mượt mà..."
-    },
-    {
-      "id": "animehay",
-      "name": "Nguồn Anime Hay",
-      "version": "1.0.7",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/animehay_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/animehay.png?cache=true",
-      "info": "Nguồn phim anime chất lượng."
+      "id": "hhpanda",
+      "name": "Nguồn HH Panda",
+      "version": "1.2.4",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/hhpanda_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hhpanda.png?cache=true"
     },
     {
       "id": "anime47",
       "name": "Nguồn Anime47",
       "version": "1.3.2",
       "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/anime47_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/anime47.png?cache=true",
-      "info": "Nguồn Anime47 siêu xịn, cập nhật siêu nhanh.\nCó servers riêng nên xem vô cùng mượt mà.\nĐã vượt và bỏ qua cơ chế đăng nhập cứ xem thoải mái."
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/anime47.png?cache=true"
     },
     {
-      "id": "hhpanda",
-      "name": "Nguồn HH Panda",
-      "version": "1.2.4",
-      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/hhpanda_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hhpanda.png?cache=true",
-      "info": "Nguồn phim hoạt hình chất lượng cao, tuy nhiên cơ chế chiếu phát của nó rất khó chịu. Chỉ phát được trên máy chủ của họ còn phát qua app sẽ bị mất góc không tràn viền. Vì thế đã tích hợp bộ chỉnh kích cỡ video vào bên trong video. Bạn có thể chỉnh sao cho vừa màn hình. Chỉ cần chỉnh 1 lần là các lần sau sẽ dùng như vậy."
+      "id": "clbpxVIP",
+      "name": "Nguồn CLB Phim Xưa VIP",
+      "version": "1.4.8",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/clbpxVIP_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/clbpxVIP.png?cache=true"
+    },
+    {
+      "id": "nartodrama",
+      "name": "Phim Ngắn Narto",
+      "version": "1.1.8",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/nartodrama_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nartodrama.png?cache=true"
+    },
+    {
+      "id": "nguoncnew",
+      "name": "Nguồn C VIP",
+      "version": "1.5.4",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/nguoncnew_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png?cache=true"
+    },
+    {
+      "id": "ophim",
+      "name": "OPhim",
+      "version": "1.0.4",
+      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/ophim_plugin.js",
+      "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/ophim.ico"
+    },
+    {
+      "id": "kkphim",
+      "name": "KKPhim",
+      "version": "1.0.2",
+      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim_plugin.js",
+      "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim.png"
+    },
+    {
+      "id": "sieutamphim",
+      "name": "Sưu Tầm Phim",
+      "version": "1.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/sieutamphim_plugin.js",
+      "iconUrl": "https://www.sieutamphim.pro/posts/2024/06/cropped-logosieutamphim-192x192.png"
+    },
+    {
+      "id": "phimhdcs",
+      "name": "PhimHDCSS",
+      "version": "1.1.4",
+      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/phimhdcs_plugin.js",
+      "iconUrl": "https://phimhdcss.com/favicon.ico"
+    },
+    {
+      "id": "clbpx",
+      "name": "CLB Phim Xưa",
+      "version": "1.0.7",
+      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/clbpx_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/clbpx.png?cache=true"
+    },
+    {
+      "id": "phimnganhdc",
+      "name": "Phim Ngắn HDC",
+      "version": "1.6",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/phimnganhdc_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimnganhdc.png?cache=true"
+    },
+    {
+      "id": "goated",
+      "name": "Nguồn Goated",
+      "version": "1.0.6",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/goated_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/goated.png?cache=true"
+    },
+    {
+      "id": "shortflix",
+      "name": "Phim Ngắn Hay",
+      "version": "1.2.5",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/shortflix_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix.png?cache=true"
+    },
+    {
+      "id": "yanhh3d",
+      "name": "Yanhh3D",
+      "version": "1.3.5",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/yanhh3d_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yanhh3d.png?cache=true"
+    },
+    {
+      "id": "novahd",
+      "name": "Nguồn NovaHD",
+      "version": "1.1.9",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/novahd_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/novahd.png?cache=true"
+    },
+    {
+      "id": "vsmov",
+      "name": "Nguồn Vsmov",
+      "version": "1.1",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/vsmov_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vsmov.png?cache=true"
+    },
+    {
+      "id": "vidgod",
+      "name": "Nguồn Vidgod",
+      "version": "1.0.1",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/vidgod_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vidgod.png?cache=true"
+    },
+    {
+      "id": "phimhayok",
+      "name": "Phim Hay Ok",
+      "version": "1.1.3",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/phimhayok_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimhayok.png?cache=true"
+    },
+    {
+      "id": "otruyen",
+      "name": "OTruyen",
+      "version": "1.0.2",
+      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/otruyen_plugin.js",
+      "iconUrl": "https://docs.otruyenapi.com/favicon-32x32.png"
+    },
+    {
+      "id": "onflix",
+      "name": "Onflix Phim",
+      "version": "1.9",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/onflix_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png?cache=true"
+    },
+    {
+      "id": "vicdn",
+      "name": "Nguồn Vicdn",
+      "version": "1.5",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/vicdn_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png?cache=true"
+    },
+    {
+      "id": "motchill",
+      "name": "Nguồn Motchill",
+      "version": "1.2",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/motchill_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/motchill.png?cache=true"
+    },
+    {
+      "id": "animevv",
+      "name": "Nguồn Animevv",
+      "version": "1.2.3",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/animevv_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/animevv.png?cache=true"
+    },
+    {
+      "id": "phimchill",
+      "name": "Phim Chill",
+      "version": "3.8.3",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/phimchill_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimchill.png?cache=true"
+    },
+    {
+      "id": "gamomephim",
+      "name": "Gà Mờ Mê Phim",
+      "version": "1.2.2",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/gamomephim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/gamomephim.png?cache=true"
+    },
+    {
+      "id": "animehay",
+      "name": "Nguồn Anime Hay",
+      "version": "1.0.7",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/animehay_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/animehay.png?cache=true"
+    },
+    {
+      "id": "bilutv",
+      "name": "Nguồn Bilutv",
+      "version": "1.5.3",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/bilutv_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png?cache=true"
+    },
+    {
+      "id": "streamed",
+      "name": "Streamed",
+      "version": "1.3.9",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-sport-plugins/refs/heads/main/streamed_plugin.js",
+      "iconUrl": "https://i.ibb.co/N2mkkD4N/streamed-logo.png"
+    },
+    {
+      "id": "ppv",
+      "name": "PPV",
+      "version": "1.2.1",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-sport-plugins/refs/heads/main/ppv_plugin.js",
+      "iconUrl": "https://i.ibb.co/BHQSwhLX/ppv-logo.png"
+    },
+    {
+      "id": "timstreams",
+      "name": "Timstreams",
+      "version": "1.2.8",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-sport-plugins/refs/heads/main/timstreams_plugin.js",
+      "iconUrl": "https://i.ibb.co/qYJ3gnwZ/timstreams-logo.png"
+    },
+    {
+      "id": "embedhd",
+      "name": "EmbedHD",
+      "version": "1.0.8",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-sport-plugins/refs/heads/main/embedhd_plugin.js",
+      "iconUrl": "https://i.ibb.co/wrrMVcwk/embedhd-logo.jpg"
+    },
+    {
+      "id": "methstreams",
+      "name": "MethStreams",
+      "version": "1.0.2",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-sport-plugins/refs/heads/main/methstreams_plugin.js",
+      "iconUrl": "https://i.ibb.co/2Rv6bzP/methstreams-logo.png"
+    },
+    {
+      "id": "crackstreams",
+      "name": "CrackStreams",
+      "version": "1.0.2",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-sport-plugins/refs/heads/main/crackstreams_plugin.js",
+      "iconUrl": "https://i.ibb.co/Mxg5183D/crackstreams-logo.png"
+    },
+    {
+      "id": "xoilacz",
+      "name": "XOILACZ",
+      "version": "1.0.6",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-sport-plugins/refs/heads/main/xoilacz_plugin.js",
+      "iconUrl": "https://i.ibb.co/m5rVgxZB/xoilacz-plugin.png"
+    },
+    {
+      "id": "vatvxsxtv",
+      "name": "VATVxSXTV",
+      "version": "1.0.9",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-iptv-plugins/refs/heads/main/vatvxsxtv_plugin.js",
+      "iconUrl": "https://i.ibb.co/GyFwhPJ/vatvxsxtv-logo.jpg"
+    },
+    {
+      "id": "vmttv",
+      "name": "VMTTV",
+      "version": "1.0.3",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-iptv-plugins/refs/heads/main/vmttv_plugin.js",
+      "iconUrl": "https://i.ibb.co/nq4ns7bd/vmttv-logo.jpg"
+    },
+    {
+      "id": "hoiquanclick",
+      "name": "HOIQUANCLICK",
+      "version": "1.0.2",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-iptv-plugins/refs/heads/main/hoiquanclick_plugin.js",
+      "iconUrl": "https://i.ibb.co/HpXFPKxL/hoiquanclick-logo.png"
+    },
+    {
+      "id": "tvpub",
+      "name": "TVPUB",
+      "version": "1.0.2",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-iptv-plugins/refs/heads/main/tvpub_plugin.js",
+      "iconUrl": "https://i.ibb.co/KjVv0WRP/tvpub-logo.jpg"
+    },
+    {
+      "id": "sgchill",
+      "name": "SGCHILL",
+      "version": "1.0.3",
+      "scriptUrl": "https://raw.githubusercontent.com/mahorai/vaxapp-iptv-plugins/refs/heads/main/sgchill_plugin.js",
+      "iconUrl": "https://sgchill.duckdns.org/favicon.ico"
     }
   ]
 }
