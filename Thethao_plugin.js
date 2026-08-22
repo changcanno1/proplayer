@@ -1,5 +1,5 @@
 // =============================================================================
-// PLUGIN VAX: TINHLAGI TV (TÂM ĐIỂM + ẢNH BÌA ĐỘNG TỈ SỐ/THỜI GIAN)
+// PLUGIN VAX: TINHLAGI TV (TÂM ĐIỂM + ẢNH BÌA DỌC HIỂN THỊ TÊN ĐỘI/TỈ SỐ)
 // =============================================================================
 
 var BASEURL = "https://tinhlagi.pro/sport";
@@ -12,8 +12,8 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV",
         "name": "TV - Thể Thao Pro",
-        "description": "Trực tiếp bóng đá (Tâm điểm lên đầu, Bìa tự động hiện tỉ số/giờ).",
-        "version": "1.9.3", // Nâng version
+        "description": "Trực tiếp bóng đá (Tâm điểm lên đầu, Bìa dọc tự động hiện tên đội, tỉ số, giờ).",
+        "version": "1.9.4", // Nâng version
         "baseUrl": BASEURL,
         "isEnabled": true,
         "layoutType": "LIST",
@@ -89,12 +89,7 @@ function getPrimaryCategories() {
 
 function getFilterConfig() { return JSON.stringify({}); }
 function getUrlList(slug, filtersJson) { return BASEURL + "/?section=" + slug; }
-
-// TẮT TÍNH NĂNG TÌM KIẾM
-function getUrlSearch(keyword, filtersJson) { 
-    return ""; 
-}
-
+function getUrlSearch(keyword, filtersJson) { return ""; }
 function getUrlDetail(slug) { return slug; }
 function getUrlCategories() { return BASEURL + "/"; }
 function getUrlCountries() { return ""; }
@@ -164,19 +159,36 @@ function parseListResponse(html, url) {
                 try { parsedSources = JSON.parse(decodeEntities(sourcesMatch[1])); } catch (e) {}
             }
 
+            // --- TRÍCH XUẤT LOGO TỪ HTML ---
+            var extractedLogos = [];
+            var imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+            var imgMatch;
+            while ((imgMatch = imgRegex.exec(innerContent)) !== null) {
+                var imgSrc = imgMatch[1];
+                // Bỏ qua các ảnh placeholder rỗng
+                if (imgSrc.indexOf("data:image") === -1 && imgSrc.indexOf("base64") === -1) {
+                    extractedLogos.push(imgSrc);
+                }
+            }
+            var backdropImg = extractedLogos.length > 0 ? extractedLogos[0] : DEFAULT_POSTER;
+
+            // --- TẠO BÌA TRẬN ĐẤU ĐỘNG DỌC (400x600) ---
+            var lineTime = time ? time : "Đang cập nhật";
+            var lineScore = score ? score : (isLive ? "LIVE" : "SẮP DIỄN RA");
+            
+            // Format lại tên đội (Xuống dòng ở chữ "vs" để font nhỏ lại vừa vặn)
+            var displayTitle = cleanTitle;
+            if (cleanTitle.indexOf(" vs ") !== -1) {
+                displayTitle = cleanTitle.replace(" vs ", "\nVS\n");
+            }
+            
+            var textOverlay = encodeURIComponent(displayTitle + "\n\n" + lineTime + "\n" + lineScore);
+            // Đã đổi sang 400x600 để khớp với bìa dọc của App VAX
+            var dynamicPoster = "https://placehold.co/400x600/111827/ffffff.png?text=" + textOverlay;
+
             var episodeParts = [];
             var payload = { title: cleanTitle, league: league, mainUrl: streamUrl, sources: parsedSources, isLive: isLive };
             var itemUrl = BASEURL + "#data=" + encodeURIComponent(JSON.stringify(payload));
-
-            // =================================================================
-            // TẠO BÌA TRẬN ĐẤU ĐỘNG (THỜI GIAN & TỈ SỐ)
-            // =================================================================
-            var line1 = time ? time : "Đang cập nhật";
-            var line2 = score ? score : (isLive ? "LIVE" : "SẮP DIỄN RA");
-            var textOverlay = encodeURIComponent(line1 + "\n" + line2);
-            // Tạo ảnh nền màu tối (#111827), chữ trắng, kích thước 600x400
-            var dynamicPoster = "https://placehold.co/600x400/111827/ffffff.png?text=" + textOverlay;
-
             var finalItem = {};
 
             if (isLive) {
@@ -189,7 +201,7 @@ function parseListResponse(html, url) {
                     "id": itemUrl,
                     "title": cleanTitle,
                     "posterUrl": dynamicPoster,
-                    "backdropUrl": dynamicPoster,
+                    "backdropUrl": backdropImg, // Dùng logo web làm hình nền chi tiết
                     "quality": "ĐANG LIVE",
                     "episode_current": episodeParts.join(" | ")
                 };
@@ -202,7 +214,7 @@ function parseListResponse(html, url) {
                     "id": itemUrl,
                     "title": cleanTitle,
                     "posterUrl": dynamicPoster,
-                    "backdropUrl": dynamicPoster,
+                    "backdropUrl": backdropImg, // Dùng logo web làm hình nền chi tiết
                     "quality": "SẮP LIVE",
                     "episode_current": episodeParts.join(" | ")
                 };
@@ -210,7 +222,6 @@ function parseListResponse(html, url) {
             }
         }
 
-        // Đã xóa hàm sort() để giữ nguyên thứ tự tâm điểm như web gốc
         var finalFilteredItems = (currentSlug === "upcoming_group") ? upcomingItems : liveItems;
 
         return JSON.stringify({
@@ -225,10 +236,7 @@ function parseListResponse(html, url) {
 }
 
 function parseSearchResponse(html) { 
-    return JSON.stringify({
-        "items": [],
-        "pagination": { "currentPage": 1, "totalPages": 1 }
-    }); 
+    return JSON.stringify({ "items": [], "pagination": { "currentPage": 1, "totalPages": 1 } }); 
 }
 
 // =============================================================================
