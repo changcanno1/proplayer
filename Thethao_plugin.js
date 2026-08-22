@@ -1,5 +1,5 @@
 // =============================================================================
-// PLUGIN VAX: TINHLAGI TV (BÌA SANBONG + PLAY M3U8 NO SIGNAL NẾU LỖI/KẾT THÚC)
+// PLUGIN VAX: TINHLAGI TV (TÂM ĐIỂM + ẢNH BÌA ĐỘNG TỈ SỐ/THỜI GIAN)
 // =============================================================================
 
 var BASEURL = "https://tinhlagi.pro/sport";
@@ -12,8 +12,8 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV",
         "name": "TV - Thể Thao Pro",
-        "description": "Trực tiếp bóng đá (Tự động phát link No Signal nếu lỗi hoặc kết thúc).",
-        "version": "1.9.2", // Nâng version
+        "description": "Trực tiếp bóng đá (Tâm điểm lên đầu, Bìa tự động hiện tỉ số/giờ).",
+        "version": "1.9.3", // Nâng version
         "baseUrl": BASEURL,
         "isEnabled": true,
         "layoutType": "LIST",
@@ -159,7 +159,6 @@ function parseListResponse(html, url) {
             var minute = minuteMatch ? decodeEntities(minuteMatch[1]).trim() : "";
             var time = timeMatch ? decodeEntities(timeMatch[1]).trim() : "";
 
-            var matchTimeMs = parseDateTimeToTimestamp(time);
             var parsedSources = [];
             if (sourcesMatch) {
                 try { parsedSources = JSON.parse(decodeEntities(sourcesMatch[1])); } catch (e) {}
@@ -169,7 +168,16 @@ function parseListResponse(html, url) {
             var payload = { title: cleanTitle, league: league, mainUrl: streamUrl, sources: parsedSources, isLive: isLive };
             var itemUrl = BASEURL + "#data=" + encodeURIComponent(JSON.stringify(payload));
 
-            var itemObj = { matchTimeMs: matchTimeMs, item: {} };
+            // =================================================================
+            // TẠO BÌA TRẬN ĐẤU ĐỘNG (THỜI GIAN & TỈ SỐ)
+            // =================================================================
+            var line1 = time ? time : "Đang cập nhật";
+            var line2 = score ? score : (isLive ? "LIVE" : "SẮP DIỄN RA");
+            var textOverlay = encodeURIComponent(line1 + "\n" + line2);
+            // Tạo ảnh nền màu tối (#111827), chữ trắng, kích thước 600x400
+            var dynamicPoster = "https://placehold.co/600x400/111827/ffffff.png?text=" + textOverlay;
+
+            var finalItem = {};
 
             if (isLive) {
                 episodeParts.push("🔴 LIVE");
@@ -177,37 +185,33 @@ function parseListResponse(html, url) {
                 if (score) episodeParts.push(score);
                 if (time) episodeParts.push(time);
                 
-                itemObj.item = {
+                finalItem = {
                     "id": itemUrl,
                     "title": cleanTitle,
-                    "posterUrl": DEFAULT_POSTER,
-                    "backdropUrl": DEFAULT_POSTER,
+                    "posterUrl": dynamicPoster,
+                    "backdropUrl": dynamicPoster,
                     "quality": "ĐANG LIVE",
                     "episode_current": episodeParts.join(" | ")
                 };
-                liveItems.push(itemObj);
+                liveItems.push(finalItem);
             } else if (isUpcoming) {
                 episodeParts.push("⏳ Sắp Live");
                 if (time) episodeParts.push(time);
                 
-                itemObj.item = {
+                finalItem = {
                     "id": itemUrl,
                     "title": cleanTitle,
-                    "posterUrl": DEFAULT_POSTER,
-                    "backdropUrl": DEFAULT_POSTER,
+                    "posterUrl": dynamicPoster,
+                    "backdropUrl": dynamicPoster,
                     "quality": "SẮP LIVE",
                     "episode_current": episodeParts.join(" | ")
                 };
-                upcomingItems.push(itemObj);
+                upcomingItems.push(finalItem);
             }
         }
 
-        liveItems.sort(function(a, b) { return b.matchTimeMs - a.matchTimeMs; });
-        upcomingItems.sort(function(a, b) { return a.matchTimeMs - b.matchTimeMs; });
-
-        var finalFilteredItems = (currentSlug === "upcoming_group") ? 
-            upcomingItems.map(function(w) { return w.item; }) : 
-            liveItems.map(function(w) { return w.item; });
+        // Đã xóa hàm sort() để giữ nguyên thứ tự tâm điểm như web gốc
+        var finalFilteredItems = (currentSlug === "upcoming_group") ? upcomingItems : liveItems;
 
         return JSON.stringify({
             "items": finalFilteredItems,
@@ -220,7 +224,6 @@ function parseListResponse(html, url) {
     }
 }
 
-// TẮT TÍNH NĂNG TÌM KIẾM BẰNG MẢNG RỖNG
 function parseSearchResponse(html) { 
     return JSON.stringify({
         "items": [],
@@ -242,7 +245,6 @@ function parseMovieDetail(html, url) {
         var hasSources = data && data.sources && data.sources.length > 0;
         var mainUrl = data && data.mainUrl ? data.mainUrl : BASEURL;
 
-        // Nếu trận đấu đã kết thúc hoặc không có link, dùng thẳng link NO SIGNAL
         if (!hasSources) {
             episodes.push({
                 id: NO_SIGNAL_LINK + "#embed_play",
@@ -281,11 +283,8 @@ function parseDetailResponse(html, url) {
     var cleanUrl = url.split('#')[0];
     if (!cleanUrl || cleanUrl.indexOf('http') !== 0) cleanUrl = BASEURL;
 
-    // Kịch bản đếm ngược: Auto-click lúc 1s, Kiểm tra lúc 7s.
-    // Nếu thẻ <video> lỗi hoặc không tải được -> Nhảy sang link No Signal gốc của họ.
     var fallbackScript = "setTimeout(function(){var b=document.querySelector('button, .play, .vjs-big-play-button, .jw-display-icon-display');if(b)b.click();},1000);setTimeout(function(){var v=document.querySelector('video');var fail=false;if(!v)fail=true;else if(v.error)fail=true;else if(v.networkState===3)fail=true;else if(v.readyState===0)fail=true;if(fail){window.location.replace('" + NO_SIGNAL_LINK + "');}},7000);";
 
-    // Vô hiệu hóa script chuyển hướng nếu URL hiện tại ĐÃ LÀ url No Signal, tránh lặp vô tận
     if (cleanUrl.indexOf("freem3u.xyz") !== -1 || cleanUrl.indexOf("no-signal") !== -1) {
         fallbackScript = "";
     }
