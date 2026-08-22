@@ -1,13 +1,13 @@
 var BASEURL = "https://www.shortflix.net"; 
 var BASEAPI = "https://www.shortflix.net/api/search?limit=100&language=vi_VN&lang=vi_VN";
-var popup_html = "<div class='donate-container'><h2 class='donate-heading'>DONATE</h2><p class='donate-description'>Anh em yêu quý có thể mời bọn mình 2 ly cà phê nhé. Để có động lực duy trì App, cập nhật plugin và tìm thêm nhiều nguồn mới và hay cho anh em. Một chút lòng thành cũng làm bọn mình tiếp tục hoạt động tốt hơn, cám ơn anh em.</p><div class='donate-grid'><div class='donate-card'><div class='donate-title'>Donate Tác giả Plugin</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qrht.png' alt='Donate Tác giả Plugin' /></div></div><div class='donate-card'><div class='donate-title'>Donate Tác giả App</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qryb.png' alt='Donate Tác giả App' /></div></div></div></div><style>.donate-container{max-width:800px;margin:0 auto;padding:10px;box-sizing:border-box;font-family:Arial,sans-serif;text-align:center;color:#eee}.donate-heading{font-size:22px;font-weight:bold;margin:0 0 12px 0;color:#fff;text-transform:uppercase;letter-spacing:1px}.donate-description{font-size:14px;line-height:1.5;margin-bottom:18px;color:#ccc}.donate-grid{display:flex;flex-direction:row;justify-content:center;align-items:stretch;gap:16px}.donate-card{flex:1;min-width:0;background:#22252a;border-radius:12px;padding:14px;border:1px solid #33373e;display:flex;flex-direction:column;align-items:center}.donate-title{font-weight:bold;font-size:15px;margin-bottom:12px;color:#fff}.qr-wrapper{width:100%;max-width:240px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:#181a1d;border-radius:8px;padding:8px;box-sizing:border-box}.qr-wrapper img{width:100%;height:100%;object-fit:contain;border-radius:4px}@media(max-width:600px){.donate-grid{flex-direction:column}.donate-heading{font-size:18px;margin-bottom:8px}.donate-description{font-size:13px;margin-bottom:12px}.qr-wrapper{max-width:180px}}</style>"
+var popup_html = "";
 // =============================================================================
 // GLOBAL CURSOR CACHE (BỘ NHỚ LƯU CURSOR ĐỘNG TRONG BỘ NHỚ RAM)
 // =============================================================================
 var CURSOR_CACHE = {};
 var URL_TO_PAGE_MAP = {};
 var URL_TO_PATH_MAP = {};
-var DEV = FALSE;
+var DEV = false;
 function getManifest() {
     return JSON.stringify({
         "id": "shortflix",
@@ -18,14 +18,14 @@ function getManifest() {
         "baseUrl": "https://www.shortflix.net",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix.png",
         "author": "Alokillgtv",
-        popup_html: popup_html,
+        "popup_html": popup_html,
         "type": "shortfilm",
         "playerType": "exoplayer"
     });
 }
 // "type": "shortfilm",
 function log(msg) {
-  	if(DEV){
+    if(DEV){
       if (typeof nativeLog !== 'undefined') {
           nativeLog("[" + BASEURL.replace(/^(https?:\/\/)?(www\.)?/, "") + "]: " + msg);
       } else if (typeof console !== 'undefined' && console.log) {
@@ -485,15 +485,9 @@ function parseMovieDetail(html, url) {
             };
             $items.push($item);
         }
+        
         servers.push({
-            name: "Full tập",
-            episodes: [{
-              id: url + "?tap=1&full1tap=true",
-              name: "Full 1 Tập",
-              slug: "tap-full"
-            }]
-        },{
-            name: "Chia tập",
+            name: "Danh sách tập",
             episodes: $items
         });
         
@@ -535,7 +529,6 @@ function parseDetailResponse(html, url) {
         var $subtitle = "";
         var $dataVD = parseScript(script);
         var $episodes = $dataVD.data.episodes || [];
-        //console.log("episode\n" + JSON.stringify($episodes))
         var tapcurrent = $episodes.findIndex(function(ep) {
             return ep.name == tapVal || ep.slug == tapVal || ep.episode == tapVal;
         });
@@ -559,27 +552,6 @@ function parseDetailResponse(html, url) {
             $subtitle = $video.subtitles[0].fileUrl;
         }
         
-        if(url.indexOf("full1tap=true") > -1){
-          //.log("ListMV\n" + JSON.stringify($episodes))
-          //log("parseDetailResponse[url]: \n" + $linkstream);
-          var postbody = BASE64.encode(JSON.stringify($episodes))
-          var link = "https://script.google.com/macros/s/AKfycbwOr1SrXDDAEFpcNJGolpcReeDe5u5A7v7BWMqoKw6y1UA-LGjLtVwIgxc-u1d_J1Tb/exec?film_url=" + encodeURIComponent(url)
-          console.log("link Post:\n" + link)
-          var $return = JSON.stringify({
-              "url": link,
-              "isEmbed": true,
-              "postBody": "data=" + postbody,
-              "headers": {
-                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                  "X-Requested-With": "XMLHttpRequest"
-              },
-              datasend: encodeURIComponent(link)
-            
-          });
-          //console.log($return);
-          return $return
-      }
-      else{
         return JSON.stringify({
             "url": $linkstream,
             "isEmbed": false,
@@ -593,7 +565,7 @@ function parseDetailResponse(html, url) {
                 "url": $subtitle
             }]
         });
-      }
+
     } catch (e) {
         log("parseDetailResponse[err]:\n " + e);
         return JSON.stringify({
@@ -603,10 +575,9 @@ function parseDetailResponse(html, url) {
     }
 }
 
-
- function parseEmbedResponse(html, url, datasend) {
-     console.log("Kết quả:\n" + html)
-    log("parseEmbedResponse [url]: " + url); //console.log("parseEmbedResponse [Raw]: " + html);
+function parseEmbedResponse(html, url, datasend) {
+    console.log("Kết quả:\n" + html)
+    log("parseEmbedResponse [url]: " + url);
     try {
       var decode = decodeURIComponent(datasend)
       console.log("embed:\n" + decode)
@@ -629,8 +600,7 @@ function parseDetailResponse(html, url) {
       console.log("[Lỗi parseEmbedResponse]", e);
       return JSON.stringify({ url: "", isEmbed: false, headers: {} });
     }
-  }
-
+}
 
 function sortEpisodesByName(data) {
     try {
@@ -801,7 +771,6 @@ function parseCategoriesResponse(apiResponseJson) {
         return JSON.stringify([]);
     }
 }
-
 
 function parseCountriesResponse(html) { return "[]"; }
 function parseYearsResponse(html) { return "[]"; }
