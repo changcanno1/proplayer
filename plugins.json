@@ -57,13 +57,6 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/1phim23_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
     },
-     {
-      "id": "CLB Phim Xưa",
-      "name": "CLB Phim Xưa",
-      "version": "1.1.5",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/CLBphimxua_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/clbpxVIP.png"
-    },
     {
       "id": "shortflix",
       "name": "PhimNgắnHay",
