@@ -76,6 +76,17 @@ function parseListResponse(html, apiUrl) {
     let streams = data?.events || data?.channels || data?.replays;
     // API return events|channels|replays = null instead of []
     if(!streams) return EMPTY_LIST_RESPONSE;
+
+    // LỌC CHỈ GIỮ LẠI CÁC KÊNH THỂ THAO CHO MỤC TELEVISION
+    if (data.channels) {
+      const sportsKeywords = ["sport", "football", "soccer", "espn", "bein", "nba", "nfl", "nhl", "mlb", "wwe", "ufc", "golf", "tennis", "racing", "f1", "tnt", "arena", "thể thao"];
+      streams = streams.filter(stream => {
+        const genreName = (data.genres?.[stream.genre]?.name || "").toLowerCase();
+        const channelName = (stream.name || "").toLowerCase();
+        return sportsKeywords.some(kw => genreName.includes(kw) || channelName.includes(kw));
+      });
+    }
+
     const items = [];
     // Filter search keyword form query string ?search= 
     const keyword = extractParamFromUrl(apiUrl, "search");
