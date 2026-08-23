@@ -1,18 +1,16 @@
 // =============================================================================
-// PLUGIN VAX: TINHLAGI TV (CHỈ LIVE + PHÂN LOẠI KÊNH THEO FOLDER)
+// PLUGIN VAX: TINHLAGI TV (LỌC LINK THEO KÊNH + BÁO LỖI 5 GIÂY)
 // =============================================================================
 
 var BASEURL = "https://tinhlagi.pro/sport";
 var DEFAULT_POSTER = "https://tinhlagi.pro/sport/sanbong.jpg";
 
-var NO_SIGNAL_LINK = "https://tinhlagi.pro/sport/proxy.php?hash=e84b78ac552063d85e51a15f251ff2c60ace92f9e978c2b716556cafe8c6ece2&referer=https%3A%2F%2Ffreem3u.xyz%2F&url=https%3A%2F%2Ffreem3u.xyz%2Fstatic%2Fno-signal%2Flow.m3u8";
-
 function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV",
         "name": "TV - Thể Thao Pro",
-        "description": "Bỏ Sắp Diễn Ra, Thêm Folder chia theo Kênh BLV, Giữ nguyên Bảng tỉ số.",
-        "version": "2.0.0",
+        "description": "Lọc link riêng từng kênh, Tâm điểm tổng hợp, Thông báo 5s nếu chết link.",
+        "version": "2.1.0",
         "baseUrl": BASEURL,
         "isEnabled": true,
         "layoutType": "LIST",
@@ -80,9 +78,7 @@ function getPrimaryCategories() {
 
 function getFilterConfig() { return JSON.stringify({}); }
 
-function getUrlList(slug, filtersJson) { 
-    return BASEURL + "/?channel=" + slug; 
-}
+function getUrlList(slug, filtersJson) { return BASEURL + "/?channel=" + slug; }
 function getUrlSearch(keyword, filtersJson) { return ""; }
 function getUrlDetail(slug) { return slug; }
 function getUrlCategories() { return BASEURL + "/"; }
@@ -100,7 +96,6 @@ function parseListResponse(html, url) {
             currentSlug = url.split("channel=")[1].split("&")[0];
         }
 
-        // Bảng từ khóa để tìm kiếm trong danh sách sources
         var slugToKeyword = {
             "gio-vang-tv": "GIỜ VÀNG",
             "phao-hoa-tv": "PHÁO HOA",
@@ -137,7 +132,6 @@ function parseListResponse(html, url) {
             var isFinished = innerContent.indexOf('Đã xong') !== -1 || innerContent.indexOf('status-ended') !== -1;
             if (isFinished) continue;
 
-            // CHỈ LẤY CÁC TRẬN ĐANG LIVE (Đã loại bỏ isUpcoming)
             var isLive = innerContent.indexOf('🟢 Live') !== -1 || innerContent.indexOf('status-live') !== -1;
             if (!isLive) continue;
 
@@ -163,7 +157,7 @@ function parseListResponse(html, url) {
                 try { parsedSources = JSON.parse(decodeEntities(sourcesMatch[1])); } catch (e) {}
             }
 
-            // --- LỌC KÊNH THEO FOLDER CHỈ ĐỊNH ---
+            // Lọc kênh theo folder
             if (filterKeyword !== "") {
                 var hasChannel = false;
                 for (var i = 0; i < parsedSources.length; i++) {
@@ -172,18 +166,27 @@ function parseListResponse(html, url) {
                         break;
                     }
                 }
-                // Nếu trận đấu này không có kênh được chọn thì bỏ qua không hiển thị vào folder
                 if (!hasChannel) continue; 
             }
 
-            // --- TẠO BÌA ĐIỆN TỬ ---
+            // Bìa điện tử
             var lineScore = score ? score : "ĐANG LIVE";
             var lineTime = time ? time : "---";
             var textOverlay = encodeURIComponent("───── ⚽ ─────\n\n" + lineScore + "\n\n" + lineTime + "\n\n──────────────");
             var dynamicPoster = "https://placehold.co/400x600/0f172a/f8fafc.png?text=" + textOverlay;
 
             var episodeParts = [];
-            var payload = { title: cleanTitle, league: league, mainUrl: streamUrl, sources: parsedSources, isLive: true };
+            
+            // LƯU CẢ CURRENT SLUG VÀ KEYWORD VÀO PAYLOAD ĐỂ DÙNG Ở MÀN HÌNH CHI TIẾT
+            var payload = { 
+                title: cleanTitle, 
+                league: league, 
+                mainUrl: streamUrl, 
+                sources: parsedSources, 
+                isLive: true,
+                filterSlug: currentSlug,
+                filterKeyword: filterKeyword
+            };
             var itemUrl = BASEURL + "#data=" + encodeURIComponent(JSON.stringify(payload));
 
             episodeParts.push("🔴 LIVE");
@@ -217,7 +220,7 @@ function parseSearchResponse(html) {
 }
 
 // =============================================================================
-// CHI TIẾT & BẮT FALLBACK NO SIGNAL
+// CHI TIẾT & BẮT FALLBACK NO SIGNAL (5 GIÂY)
 // =============================================================================
 
 function parseMovieDetail(html, url) {
@@ -227,18 +230,33 @@ function parseMovieDetail(html, url) {
         if (data && data.league) title = "[" + data.league + "] " + title;
 
         var episodes = [];
-        var hasSources = data && data.sources && data.sources.length > 0;
         var mainUrl = data && data.mainUrl ? data.mainUrl : BASEURL;
+        var targetSources = [];
 
-        if (!hasSources) {
+        // Kiểm tra xem có đang ở chế độ Lọc Kênh không
+        if (data && data.sources && data.sources.length > 0) {
+            if (data.filterKeyword && data.filterSlug !== "live_group") {
+                // Chỉ lấy kênh khớp với thư mục đang xem
+                for (var k = 0; k < data.sources.length; k++) {
+                    if (data.sources[k].name && data.sources[k].name.toUpperCase().indexOf(data.filterKeyword) !== -1) {
+                        targetSources.push(data.sources[k]);
+                    }
+                }
+            } else {
+                // Nếu ở Tâm Điểm Đang Live, lấy tất cả các kênh
+                targetSources = data.sources;
+            }
+        }
+
+        if (targetSources.length === 0) {
             episodes.push({
-                id: NO_SIGNAL_LINK + "#embed_play",
-                name: "⚠️ Đang chờ tín hiệu / Trận đấu kết thúc",
-                slug: "no-signal"
+                id: mainUrl + "#embed_play",
+                name: "⚠️ Không có link cho kênh này",
+                slug: "no-link"
             });
         } else {
-            for (var i = 0; i < data.sources.length; i++) {
-                var s = data.sources[i];
+            for (var i = 0; i < targetSources.length; i++) {
+                var s = targetSources[i];
                 episodes.push({
                     id: (s.link || mainUrl) + "#embed_play",
                     name: "🌐 " + (s.name || ("Kênh " + (i + 1))),
@@ -252,14 +270,14 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: DEFAULT_POSTER,
             backdropUrl: DEFAULT_POSTER,
-            description: "Hệ thống trực tiếp thể thao. Tự động chuyển Màn hình chờ sau 7s nếu lỗi tín hiệu.",
+            description: "Hệ thống trực tiếp thể thao. Tự động báo kết thúc nếu chết link sau 5s.",
             servers: [{ name: "Danh Sách Kênh Phát Sóng", episodes: episodes }]
         });
     } catch (e) {
         return JSON.stringify({
             id: url,
             title: "Trực Tiếp Bóng Đá",
-            servers: [{ name: "Server", episodes: [{ id: NO_SIGNAL_LINK + "#embed_play", name: "⚠️ Lỗi dữ liệu", slug: "error" }] }]
+            servers: [{ name: "Server", episodes: [{ id: BASEURL + "#embed_play", name: "⚠️ Lỗi dữ liệu", slug: "error" }] }]
         });
     }
 }
@@ -268,11 +286,8 @@ function parseDetailResponse(html, url) {
     var cleanUrl = url.split('#')[0];
     if (!cleanUrl || cleanUrl.indexOf('http') !== 0) cleanUrl = BASEURL;
 
-    var fallbackScript = "setTimeout(function(){var b=document.querySelector('button, .play, .vjs-big-play-button, .jw-display-icon-display');if(b)b.click();},1000);setTimeout(function(){var v=document.querySelector('video');var fail=false;if(!v)fail=true;else if(v.error)fail=true;else if(v.networkState===3)fail=true;else if(v.readyState===0)fail=true;if(fail){window.location.replace('" + NO_SIGNAL_LINK + "');}},7000);";
-
-    if (cleanUrl.indexOf("freem3u.xyz") !== -1 || cleanUrl.indexOf("no-signal") !== -1) {
-        fallbackScript = "";
-    }
+    // SCIRPT TỰ ĐỘNG: Click nút Play sau 1s. Sau 5s nếu chết link sẽ in ra thông báo "Trận đấu đã kết thúc"
+    var fallbackScript = "setTimeout(function(){var b=document.querySelector('button, .play, .vjs-big-play-button, .jw-display-icon-display');if(b)b.click();},1000);setTimeout(function(){var v=document.querySelector('video');var fail=false;if(!v)fail=true;else if(v.error)fail=true;else if(v.networkState===3)fail=true;else if(v.readyState===0)fail=true;if(fail){document.body.innerHTML='<div style=\"display:flex;justify-content:center;align-items:center;height:100vh;background:#0f172a;color:#f8fafc;font-size:18px;font-family:sans-serif;text-align:center;font-weight:bold;\">⚠️ Trận đấu đã kết thúc hoặc Không có link</div>';}},5000);";
 
     return JSON.stringify({
         url: cleanUrl,
