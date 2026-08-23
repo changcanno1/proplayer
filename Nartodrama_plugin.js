@@ -17,7 +17,7 @@ function getManifest() {
         "subtitleCat": true
     })
 };
-// "type": "shortfilm",
+
 function log(msg) {
   	if(DEV){
       if (typeof nativeLog !== 'undefined') {
@@ -30,8 +30,18 @@ function log(msg) {
 
 function getHomeSections() {
     try {
-        var listurl = '[{\"link\":\"/?lang=vi-VN\",\"name\":\"Phim Mới\"}]';
-        var menulist = buildMenu(listurl, true);
+        // Lấy danh sách các thể loại từ getLISTmenu
+        var listCategoryStr = getLISTmenu();
+        var listCategory = JSON.parse(listCategoryStr);
+        
+        // Thêm mục Phim Mới vào đầu danh sách để hiện trên cùng ở Trang Chủ
+        listCategory.unshift({
+            "link": "/?lang=vi-VN",
+            "name": "Phim Mới"
+        });
+        
+        // Build menu dưới dạng Grid (true)
+        var menulist = buildMenu(JSON.stringify(listCategory), true);
         return JSON.stringify(menulist);
     } catch (e) {
         console.log("getHomeSections[err]:\n " + e);
@@ -70,7 +80,6 @@ function getUrlList(slug, filtersJson) {
     try {
         console.log("getUrlList[url]: \n" + slug);
 
-        // 1. Kiểm tra nếu slug là link tuyệt đối (chứa http)
         if (slug && slug.indexOf("http") > -1) {
             if (slug.indexOf("search") > -1 && filtersJson) {
                 var fixedJson1 = filtersJson
@@ -95,7 +104,6 @@ function getUrlList(slug, filtersJson) {
         var page = 1;
         var path = slug || "";
 
-        // 2. Xử lý an toàn filtersJson cho link tương đối
         if (filtersJson) {
             var fixedJson2 = filtersJson
                 .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
@@ -115,19 +123,16 @@ function getUrlList(slug, filtersJson) {
             } catch (jsonErr) {}
         }
 
-        // 3. Ghép URL an toàn với BASEURL
         var resultUrl = BASEURL;
         if (path) {
             resultUrl += (path.indexOf("/") === 0 ? "" : "/") + path;
         }
 
-        // 4. Ghép tham số phân trang page (tự động nhận biết ? hay &)
         if (page > 1 && resultUrl.indexOf("page=") === -1) {
             var separator = resultUrl.indexOf("?") > -1 ? "&" : "?";
             resultUrl += separator + "page=" + page;
         }
 
-        // 5. Làm sạch dấu // thừa ở path (giữ nguyên https://)
         var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
         console.log("getUrlList[url]: \n" + finalUrl);
         return finalUrl;
@@ -149,7 +154,6 @@ function getUrlSearch(keyword, filtersJson) {
     try {
         var page = 1;
 
-        // 1. Giải mã filtersJson lấy trang đúng chuẩn hàm gốc
         if (filtersJson) {
             var fixedJson = filtersJson
                 .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
@@ -161,11 +165,9 @@ function getUrlSearch(keyword, filtersJson) {
             } catch (jsonErr) {}
         }
 
-        // 2. Khởi tạo URL tìm kiếm kèm cấu trúc /search?lang=vi-VN&q=
         var encodedKeyword = encodeURIComponent(keyword || "");
         var resultUrl = BASEURL + "/search?lang=vi-VN&q=" + encodedKeyword;
 
-        // 3. Nếu page > 1 thì nối thêm &page=
         if (page > 1) {
             resultUrl += "&page=" + page;
         }
@@ -207,23 +209,8 @@ function getUrlCategories() {
     }
 }
 
-function getUrlCountries() { 
-    try {
-        return ""; 
-    } catch (e) {
-        console.log("getUrlCountries[err]:\n " + e);
-        return "";
-    }
-}
-
-function getUrlYears() { 
-    try {
-        return ""; 
-    } catch (e) {
-        console.log("getUrlYears[err]:\n " + e);
-        return "";
-    }
-}
+function getUrlCountries() { return ""; }
+function getUrlYears() { return ""; }
 
 // =============================================================================
 // PARSERS
@@ -324,7 +311,6 @@ function parseMovieDetail(html, url) {
     try {
         console.log("parseMovieDetail[url]: \n" + url);
         
-        // === BƯỚC 1: ĐỒNG NHẤT ID PHIM BẰNG REGEX META ===
         var idMatch = /<link\s+rel="canonical"\s+href="([^"]+)"/i.exec(html) ||
             /<meta\s+property="og:url"\s+content="([^"]+)"/i.exec(html);
         var id = idMatch ? idMatch[1] : (url || "");
@@ -339,7 +325,6 @@ function parseMovieDetail(html, url) {
             slug = slugMatch2 ? slugMatch2[1] : "";
         }
 
-        // === LẤY THÔNG TIN CHI TIẾT PHIM ===
         console.log("Lượt 1 lấy thông tin");
         var lurl = "";
         var limg = "";
@@ -369,7 +354,6 @@ function parseMovieDetail(html, url) {
         category = _$(html).find(".movie-tag-pill").textAll(" - ");
         episode_current = _$(html).find(".movie-sub").text();
         
-        // Lấy dữ liệu raw từ script
         var rawScript = _$(html).find('script:content("episodeItemsRaw = [{")').html();
         var $objepi = [];
         var episodes = rawScript ? rawScript.match(/(?:const|let|var)\s+episodeItemsRaw\s*=\s*(\[[\s\S]*?\])(?:;|\n|$)/i) : null;
@@ -380,7 +364,6 @@ function parseMovieDetail(html, url) {
             } catch(err) {}
         }
         
-        // Xác định tổng số tập (Ưu tiên lấy từ mảng script, nếu không có thì lấy từ URL maxfile hoặc mặc định là 1)
         var matchMax = url.match(/maxfile=(\d+)/i);
         var maxEpi = $objepi.length > 0 ? $objepi.length : (matchMax ? parseInt(matchMax[1], 10) : 1);
 
@@ -399,7 +382,7 @@ function parseMovieDetail(html, url) {
         var items = [];
         var linkFull = "https://edge.narto-drama.com/e/rs/detail/" + slugVal + "/1/refresh-source?lang=vi-VN&rs_sid=hgsleaj5&force=1" + "&fulltap=true&maxfile=" + maxEpi + "&slug=" + slugVal;
         
-        // Đã xóa 2 object "Xem Tập Đã Nối" và "Làm Mới Tập Nối"
+        // Chỉ để lại lựa chọn "Nối Thành 1 Tập"
         servers.push({
             name: "Server 1 Tập",
             episodes: [{
@@ -425,7 +408,6 @@ function parseMovieDetail(html, url) {
             episodes: items
         });
         
-        // === TRẢ VỀ KẾT QUẢ ĐẦY ĐỦ MỘT LẦN DUY NHẤT ===
         var $return = JSON.stringify({
             id: id,
             title: lname,
@@ -438,7 +420,7 @@ function parseMovieDetail(html, url) {
             status: status,
             category: category,
             episode_current: episode_current,
-            servers: servers, // Đã đưa servers vào đây
+            servers: servers, 
             duration: lduran || "",
             casts: lactor || "",
             director: ldirec || "",
@@ -467,7 +449,6 @@ function htmlload(videosrc, subtitle, linkpost, postbody, customHeaders = {}, ra
 
   const isMp4 = !videosrc.includes('.m3u8') && (videosrc.includes('.mp4') || !videosrc.includes('m3u'));
 
-  // ================= LUỒNG MP4 =================
   if (isMp4) {
     return `<!DOCTYPE html>
 <html lang="vi">
@@ -567,7 +548,6 @@ function parseDetailResponse(html, url) {
     try {
         console.log("parseDetailResponse[url]: \n" + url);
         
-        // Kiểm tra nếu html rỗng hoặc không hợp lệ
         if (!html || typeof html !== 'string') {
             throw new Error("Phản hồi từ server bị trống hoặc không hợp lệ");
         }
@@ -951,24 +931,14 @@ function parseCategoriesResponse(apiResponseJson) {
 }
 
 function parseCountriesResponse(html) {
-    try {
-        return "[]";
-    } catch (e) {
-        console.log("parseCountriesResponse[err]:\n " + e);
-        return "[]";
-    }
+    return "[]";
 }
 
 function parseYearsResponse(html) {
-    try {
-        return "[]";
-    } catch (e) {
-        console.log("parseYearsResponse[err]:\n " + e);
-        return "[]";
-    }
+    return "[]";
 }
 
-// THÊM NHIỀU THỂ LOẠI (FOLDER) PHIM Ở ĐÂY
+// Chứa toàn bộ các category bạn yêu cầu
 function getLISTmenu() {
     return `[{\"link\":"${BASEURL}/search?lang=vi-VN&q=l%E1%BB%93ng+ti%E1%BA%BFng\",\"name\":\"Lồng Tiếng\"},{\"link\":\"${BASEURL}/search?lang=vi-VN&q=kinh+d%E1%BB%8B\",\"name\":\"Kinh Dị\"},{\"link\":\"${BASEURL}/tag/bi-an-than-phan?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Thân Phận Bí Ẩn\"},{\"link\":\"${BASEURL}/tag/hien-dai?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Hiện Đại\"},{\"link\":\"${BASEURL}/tag/bao-thu?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Báo Thù\"},{\"link\":\"${BASEURL}/tag/co-trang?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Cổ Trang\"},{\"link\":\"${BASEURL}/tag/tinh-cam?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Tình Cảm\"},{\"link\":\"${BASEURL}/tag/xuyen-khong?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Xuyên Không\"},{\"link\":\"${BASEURL}/search?lang=vi-VN&q=t%E1%BB%95ng+t%C3%A0i\",\"name\":\"Tổng Tài\"}]`;
 }
