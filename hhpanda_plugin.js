@@ -1,7 +1,7 @@
 // =============================================================================
 // CẤU HÌNH TÊN MIỀN (SỬA NHANH Ở ĐÂY KHI WEB THAY ĐỔI DOMAIN)
 // =============================================================================
-var DOMAIN = "hhpanda.st";
+var DOMAIN = "hhkungfu.ee";
 var BASEURL = "https://" + DOMAIN;
 
 function getManifest() {
