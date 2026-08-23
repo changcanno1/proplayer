@@ -1,5 +1,5 @@
 // =============================================================================
-// PLUGIN VAX: TINHLAGI TV (LỌC LINK THEO KÊNH + BÁO LỖI 5 GIÂY)
+// PLUGIN VAX: TINHLAGI TV (FIX LỖI LINK CHẾT + TỐI ƯU DỮ LIỆU CHẠY SIÊU MƯỢT)
 // =============================================================================
 
 var BASEURL = "https://tinhlagi.pro/sport";
@@ -9,8 +9,8 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV",
         "name": "TV - Thể Thao Pro",
-        "description": "Lọc link riêng từng kênh, Tâm điểm tổng hợp, Thông báo 5s nếu chết link.",
-        "version": "2.1.0",
+        "description": "Fix tràn dữ liệu link, Script check 5s thông minh an toàn, Lọc kênh độc lập.",
+        "version": "2.2.0",
         "baseUrl": BASEURL,
         "isEnabled": true,
         "layoutType": "LIST",
@@ -77,7 +77,6 @@ function getPrimaryCategories() {
 }
 
 function getFilterConfig() { return JSON.stringify({}); }
-
 function getUrlList(slug, filtersJson) { return BASEURL + "/?channel=" + slug; }
 function getUrlSearch(keyword, filtersJson) { return ""; }
 function getUrlDetail(slug) { return slug; }
@@ -86,7 +85,7 @@ function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; }
 
 // =============================================================================
-// PARSE DANH SÁCH & BỘ LỌC KÊNH
+// PARSE DANH SÁCH & TIỀN XỬ LÝ DỮ LIỆU ĐỂ GIẢM TẢI
 // =============================================================================
 
 function parseListResponse(html, url) {
@@ -122,10 +121,7 @@ function parseListResponse(html, url) {
             var rawTitle = titleMatch ? decodeEntities(titleMatch[1]).trim() : "";
             var cleanTitle = cleanMatchTitle(rawTitle);
 
-            if (!cleanTitle || 
-                cleanTitle.indexOf("Cập Nhật") !== -1 || 
-                cleanTitle.indexOf("Địa Chỉ IP") !== -1 || 
-                cleanTitle.indexOf("Chào Khách Lạ") !== -1) {
+            if (!cleanTitle || cleanTitle.indexOf("Cập Nhật") !== -1 || cleanTitle.indexOf("Địa Chỉ IP") !== -1 || cleanTitle.indexOf("Chào Khách Lạ") !== -1) {
                 continue;
             }
 
@@ -144,52 +140,55 @@ function parseListResponse(html, url) {
             var scoreMatch = attrBlock.match(/data-score="([^"]*)"/i);
             var minuteMatch = attrBlock.match(/data-minute="([^"]*)"/i);
             var timeMatch = attrBlock.match(/data-time="([^"]*)"/i);
-            var leagueMatch = attrBlock.match(/data-league="([^"]*)"/i);
             var sourcesMatch = attrBlock.match(/data-sources="([^"]*)"/i);
 
-            var league = leagueMatch ? decodeEntities(leagueMatch[1]).trim() : "Giải đấu khác";
             var score = scoreMatch && scoreMatch[1] ? decodeEntities(scoreMatch[1]).trim() : "";
             var minute = minuteMatch ? decodeEntities(minuteMatch[1]).trim() : "";
             var time = timeMatch ? decodeEntities(timeMatch[1]).trim() : "";
 
+            // Xử lý Sources trực tiếp ở đây để tránh truyền chuỗi quá dài gây hỏng Data
             var parsedSources = [];
             if (sourcesMatch) {
                 try { parsedSources = JSON.parse(decodeEntities(sourcesMatch[1])); } catch (e) {}
             }
 
-            // Lọc kênh theo folder
+            var finalSources = [];
             if (filterKeyword !== "") {
-                var hasChannel = false;
+                // Đang trong 1 folder kênh -> Chỉ lưu những kênh trùng tên
                 for (var i = 0; i < parsedSources.length; i++) {
                     if (parsedSources[i].name && parsedSources[i].name.toUpperCase().indexOf(filterKeyword) !== -1) {
-                        hasChannel = true;
-                        break;
+                        finalSources.push({
+                            name: parsedSources[i].name,
+                            link: parsedSources[i].link || parsedSources[i].url || streamUrl
+                        });
                     }
                 }
-                if (!hasChannel) continue; 
+                if (finalSources.length === 0) continue; // Nếu folder này ko có kênh phù hợp thì ẩn luôn trận đấu
+            } else {
+                // Đang ở Tâm điểm -> Lấy tối đa 8 link để chống tràn URL
+                var limit = Math.min(parsedSources.length, 8);
+                for (var j = 0; j < limit; j++) {
+                    finalSources.push({
+                        name: parsedSources[j].name || ("Kênh " + (j + 1)),
+                        link: parsedSources[j].link || parsedSources[j].url || streamUrl
+                    });
+                }
             }
 
-            // Bìa điện tử
+            // Bìa điện tử đồng đều
             var lineScore = score ? score : "ĐANG LIVE";
             var lineTime = time ? time : "---";
             var textOverlay = encodeURIComponent("───── ⚽ ─────\n\n" + lineScore + "\n\n" + lineTime + "\n\n──────────────");
             var dynamicPoster = "https://placehold.co/400x600/0f172a/f8fafc.png?text=" + textOverlay;
 
-            var episodeParts = [];
-            
-            // LƯU CẢ CURRENT SLUG VÀ KEYWORD VÀO PAYLOAD ĐỂ DÙNG Ở MÀN HÌNH CHI TIẾT
+            // Payload giờ rất nhẹ và an toàn
             var payload = { 
                 title: cleanTitle, 
-                league: league, 
-                mainUrl: streamUrl, 
-                sources: parsedSources, 
-                isLive: true,
-                filterSlug: currentSlug,
-                filterKeyword: filterKeyword
+                sources: finalSources
             };
             var itemUrl = BASEURL + "#data=" + encodeURIComponent(JSON.stringify(payload));
 
-            episodeParts.push("🔴 LIVE");
+            var episodeParts = ["🔴 LIVE"];
             if (minute) episodeParts.push(minute + "'");
             if (score) episodeParts.push(score);
             if (time) episodeParts.push(time);
@@ -220,46 +219,29 @@ function parseSearchResponse(html) {
 }
 
 // =============================================================================
-// CHI TIẾT & BẮT FALLBACK NO SIGNAL (5 GIÂY)
+// CHI TIẾT KÊNH & BẮT FALLBACK NO SIGNAL (5 GIÂY)
 // =============================================================================
 
 function parseMovieDetail(html, url) {
     try {
         var data = parseDataFromHash(url);
         var title = data && data.title ? data.title : "Trực Tiếp Bóng Đá";
-        if (data && data.league) title = "[" + data.league + "] " + title;
-
         var episodes = [];
-        var mainUrl = data && data.mainUrl ? data.mainUrl : BASEURL;
-        var targetSources = [];
-
-        // Kiểm tra xem có đang ở chế độ Lọc Kênh không
-        if (data && data.sources && data.sources.length > 0) {
-            if (data.filterKeyword && data.filterSlug !== "live_group") {
-                // Chỉ lấy kênh khớp với thư mục đang xem
-                for (var k = 0; k < data.sources.length; k++) {
-                    if (data.sources[k].name && data.sources[k].name.toUpperCase().indexOf(data.filterKeyword) !== -1) {
-                        targetSources.push(data.sources[k]);
-                    }
-                }
-            } else {
-                // Nếu ở Tâm Điểm Đang Live, lấy tất cả các kênh
-                targetSources = data.sources;
-            }
-        }
+        
+        var targetSources = (data && data.sources) ? data.sources : [];
 
         if (targetSources.length === 0) {
             episodes.push({
-                id: mainUrl + "#embed_play",
-                name: "⚠️ Không có link cho kênh này",
+                id: BASEURL + "#embed_play",
+                name: "⚠️ Không có link hoặc lỗi dữ liệu",
                 slug: "no-link"
             });
         } else {
             for (var i = 0; i < targetSources.length; i++) {
                 var s = targetSources[i];
                 episodes.push({
-                    id: (s.link || mainUrl) + "#embed_play",
-                    name: "🌐 " + (s.name || ("Kênh " + (i + 1))),
+                    id: s.link + "#embed_play",
+                    name: "🌐 " + s.name,
                     slug: "channel-" + i
                 });
             }
@@ -277,7 +259,7 @@ function parseMovieDetail(html, url) {
         return JSON.stringify({
             id: url,
             title: "Trực Tiếp Bóng Đá",
-            servers: [{ name: "Server", episodes: [{ id: BASEURL + "#embed_play", name: "⚠️ Lỗi dữ liệu", slug: "error" }] }]
+            servers: [{ name: "Server", episodes: [{ id: BASEURL + "#embed_play", name: "⚠️ Lỗi xử lý dữ liệu", slug: "error" }] }]
         });
     }
 }
@@ -286,8 +268,8 @@ function parseDetailResponse(html, url) {
     var cleanUrl = url.split('#')[0];
     if (!cleanUrl || cleanUrl.indexOf('http') !== 0) cleanUrl = BASEURL;
 
-    // SCIRPT TỰ ĐỘNG: Click nút Play sau 1s. Sau 5s nếu chết link sẽ in ra thông báo "Trận đấu đã kết thúc"
-    var fallbackScript = "setTimeout(function(){var b=document.querySelector('button, .play, .vjs-big-play-button, .jw-display-icon-display');if(b)b.click();},1000);setTimeout(function(){var v=document.querySelector('video');var fail=false;if(!v)fail=true;else if(v.error)fail=true;else if(v.networkState===3)fail=true;else if(v.readyState===0)fail=true;if(fail){document.body.innerHTML='<div style=\"display:flex;justify-content:center;align-items:center;height:100vh;background:#0f172a;color:#f8fafc;font-size:18px;font-family:sans-serif;text-align:center;font-weight:bold;\">⚠️ Trận đấu đã kết thúc hoặc Không có link</div>';}},5000);";
+    // SCRIPT THÔNG MINH: Auto-play sau 1s. Sau 5s nếu không thấy sự xuất hiện của Iframe hoặc Video -> Chắc chắn link chết/hết trận
+    var fallbackScript = "setTimeout(function(){var b=document.querySelector('button, .play, .vjs-big-play-button, .jw-display-icon-display');if(b)b.click();},1000); setTimeout(function(){ if(!document.querySelector('iframe, video')) { document.body.innerHTML='<div style=\"display:flex;justify-content:center;align-items:center;height:100vh;background:#0f172a;color:#f8fafc;font-size:18px;font-family:sans-serif;text-align:center;font-weight:bold;line-height:1.5;\">⚠️ Trận đấu đã kết thúc<br>Hoặc Kênh đang bị lỗi<br><br><span style=\"font-size:14px;color:#94a3b8;\">Vui lòng quay lại đổi kênh khác</span></div>'; } }, 5000);";
 
     return JSON.stringify({
         url: cleanUrl,
