@@ -1,19 +1,18 @@
 // =============================================================================
-// PLUGIN VAX: TINHLAGI TV (TÂM ĐIỂM + ẢNH BÌA DỌC HIỂN THỊ TÊN ĐỘI/TỈ SỐ)
+// PLUGIN VAX: TINHLAGI TV (CHỈ LIVE + PHÂN LOẠI KÊNH THEO FOLDER)
 // =============================================================================
 
 var BASEURL = "https://tinhlagi.pro/sport";
 var DEFAULT_POSTER = "https://tinhlagi.pro/sport/sanbong.jpg";
 
-// Đường link No Signal chính xác từ website
 var NO_SIGNAL_LINK = "https://tinhlagi.pro/sport/proxy.php?hash=e84b78ac552063d85e51a15f251ff2c60ace92f9e978c2b716556cafe8c6ece2&referer=https%3A%2F%2Ffreem3u.xyz%2F&url=https%3A%2F%2Ffreem3u.xyz%2Fstatic%2Fno-signal%2Flow.m3u8";
 
 function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV",
         "name": "TV - Thể Thao Pro",
-        "description": "Trực tiếp bóng đá (Tâm điểm lên đầu, Bìa dọc tự động hiện tên đội, tỉ số, giờ).",
-        "version": "1.9.4", // Nâng version
+        "description": "Bỏ Sắp Diễn Ra, Thêm Folder chia theo Kênh BLV, Giữ nguyên Bảng tỉ số.",
+        "version": "2.0.0",
         "baseUrl": BASEURL,
         "isEnabled": true,
         "layoutType": "LIST",
@@ -47,48 +46,43 @@ function cleanMatchTitle(rawTitle) {
     return rawTitle.replace(/🏆/g, '').replace(/\[[^\]]*\]/g, '').replace(/LIVE/gi, '').replace(/\s+/g, ' ').trim();
 }
 
-function parseDateTimeToTimestamp(dateStr) {
-    if (!dateStr || dateStr.indexOf("Đang cập nhật") !== -1) return 0;
-    try {
-        var parts = dateStr.trim().split(/\s+/);
-        var timeParts = parts[0].split(':');
-        var hours = parseInt(timeParts[0], 10);
-        var minutes = parseInt(timeParts[1], 10);
-
-        var now = new Date();
-        var day = now.getDate();
-        var month = now.getMonth();
-        var year = now.getFullYear();
-
-        if (parts.length > 1 && parts[1].indexOf('/') !== -1) {
-            var dParts = parts[1].split('/');
-            day = parseInt(dParts[0], 10);
-            month = parseInt(dParts[1], 10) - 1;
-        }
-
-        var matchDate = new Date(year, month, day, hours, minutes, 0);
-        return matchDate.getTime();
-    } catch (e) {
-        return 0;
-    }
-}
+// =============================================================================
+// NHÓM 1: CẤU HÌNH FOLDER & DANH MỤC KÊNH
+// =============================================================================
 
 function getHomeSections() {
     return JSON.stringify([
         { slug: 'live_group', title: '🔥 Tâm Điểm Đang Live', type: 'List' },
-        { slug: 'upcoming_group', title: '⏳ Danh Sách Sắp Diễn Ra', type: 'List' }
+        { slug: 'gio-vang-tv', title: '🔴 Giờ Vàng TV', type: 'List' },
+        { slug: 'phao-hoa-tv', title: '🔴 Pháo Hoa TV', type: 'List' },
+        { slug: 'cola-tv', title: '🔴 Cola TV', type: 'List' },
+        { slug: 'chuoi-chien-tv', title: '🔴 Chuối Chiên TV', type: 'List' },
+        { slug: 'vua-san-co-tv', title: '🔴 Vua Sân Cỏ TV', type: 'List' },
+        { slug: 'xoi-lac-tv', title: '🔴 Xôi Lạc TV', type: 'List' },
+        { slug: 'bia-om-tv', title: '🔴 Bia Ôm TV', type: 'List' },
+        { slug: 'socolive', title: '🔴 Socolive TV', type: 'List' }
     ]);
 }
 
 function getPrimaryCategories() {
     return JSON.stringify([
         { name: '🔥 Đang Live', slug: 'live_group' },
-        { name: '⏳ Sắp Diễn Ra', slug: 'upcoming_group' }
+        { name: '🔴 Giờ Vàng TV', slug: 'gio-vang-tv' },
+        { name: '🔴 Pháo Hoa TV', slug: 'phao-hoa-tv' },
+        { name: '🔴 Cola TV', slug: 'cola-tv' },
+        { name: '🔴 Chuối Chiên TV', slug: 'chuoi-chien-tv' },
+        { name: '🔴 Vua Sân Cỏ TV', slug: 'vua-san-co-tv' },
+        { name: '🔴 Xôi Lạc TV', slug: 'xoi-lac-tv' },
+        { name: '🔴 Bia Ôm TV', slug: 'bia-om-tv' },
+        { name: '🔴 Socolive', slug: 'socolive' }
     ]);
 }
 
 function getFilterConfig() { return JSON.stringify({}); }
-function getUrlList(slug, filtersJson) { return BASEURL + "/?section=" + slug; }
+
+function getUrlList(slug, filtersJson) { 
+    return BASEURL + "/?channel=" + slug; 
+}
 function getUrlSearch(keyword, filtersJson) { return ""; }
 function getUrlDetail(slug) { return slug; }
 function getUrlCategories() { return BASEURL + "/"; }
@@ -96,18 +90,30 @@ function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; }
 
 // =============================================================================
-// PARSE DANH SÁCH
+// PARSE DANH SÁCH & BỘ LỌC KÊNH
 // =============================================================================
 
 function parseListResponse(html, url) {
     try {
         var currentSlug = "live_group";
-        if (url && url.indexOf("upcoming_group") !== -1) {
-            currentSlug = "upcoming_group";
+        if (url.indexOf("channel=") !== -1) {
+            currentSlug = url.split("channel=")[1].split("&")[0];
         }
 
+        // Bảng từ khóa để tìm kiếm trong danh sách sources
+        var slugToKeyword = {
+            "gio-vang-tv": "GIỜ VÀNG",
+            "phao-hoa-tv": "PHÁO HOA",
+            "cola-tv": "COLA",
+            "chuoi-chien-tv": "CHUỖI CHIÊN",
+            "vua-san-co-tv": "VUA SÂN CỎ",
+            "xoi-lac-tv": "XÔI LẠC",
+            "bia-om-tv": "BIA ÔM",
+            "socolive": "SOCOLIVE"
+        };
+        var filterKeyword = slugToKeyword[currentSlug] || "";
+
         var liveItems = [];
-        var upcomingItems = [];
         var addedUrls = {}; 
         
         var itemRegex = /<(button|article)([^>]*js-match-btn[^>]*)>([\s\S]*?)<\/\1>/gi;
@@ -124,18 +130,16 @@ function parseListResponse(html, url) {
             if (!cleanTitle || 
                 cleanTitle.indexOf("Cập Nhật") !== -1 || 
                 cleanTitle.indexOf("Địa Chỉ IP") !== -1 || 
-                cleanTitle.indexOf("Chào Khách Lạ") !== -1 ||
-                cleanTitle.indexOf(" vs ") === -1) {
+                cleanTitle.indexOf("Chào Khách Lạ") !== -1) {
                 continue;
             }
 
             var isFinished = innerContent.indexOf('Đã xong') !== -1 || innerContent.indexOf('status-ended') !== -1;
             if (isFinished) continue;
 
+            // CHỈ LẤY CÁC TRẬN ĐANG LIVE (Đã loại bỏ isUpcoming)
             var isLive = innerContent.indexOf('🟢 Live') !== -1 || innerContent.indexOf('status-live') !== -1;
-            var isUpcoming = innerContent.indexOf('⏳ Sắp Live') !== -1 || innerContent.indexOf('status-upcoming') !== -1;
-
-            if (!isLive && !isUpcoming) continue;
+            if (!isLive) continue;
 
             var urlMatch = attrBlock.match(/data-url="([^"]*)"/i);
             var streamUrl = urlMatch ? decodeEntities(urlMatch[1]).trim() : BASEURL;
@@ -159,73 +163,46 @@ function parseListResponse(html, url) {
                 try { parsedSources = JSON.parse(decodeEntities(sourcesMatch[1])); } catch (e) {}
             }
 
-            // --- TRÍCH XUẤT LOGO TỪ HTML ---
-            var extractedLogos = [];
-            var imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
-            var imgMatch;
-            while ((imgMatch = imgRegex.exec(innerContent)) !== null) {
-                var imgSrc = imgMatch[1];
-                // Bỏ qua các ảnh placeholder rỗng
-                if (imgSrc.indexOf("data:image") === -1 && imgSrc.indexOf("base64") === -1) {
-                    extractedLogos.push(imgSrc);
+            // --- LỌC KÊNH THEO FOLDER CHỈ ĐỊNH ---
+            if (filterKeyword !== "") {
+                var hasChannel = false;
+                for (var i = 0; i < parsedSources.length; i++) {
+                    if (parsedSources[i].name && parsedSources[i].name.toUpperCase().indexOf(filterKeyword) !== -1) {
+                        hasChannel = true;
+                        break;
+                    }
                 }
+                // Nếu trận đấu này không có kênh được chọn thì bỏ qua không hiển thị vào folder
+                if (!hasChannel) continue; 
             }
-            var backdropImg = extractedLogos.length > 0 ? extractedLogos[0] : DEFAULT_POSTER;
 
-            // --- TẠO BÌA TRẬN ĐẤU ĐỘNG DỌC (400x600) ---
-            var lineTime = time ? time : "Đang cập nhật";
-            var lineScore = score ? score : (isLive ? "LIVE" : "SẮP DIỄN RA");
-            
-            // Format lại tên đội (Xuống dòng ở chữ "vs" để font nhỏ lại vừa vặn)
-            var displayTitle = cleanTitle;
-            if (cleanTitle.indexOf(" vs ") !== -1) {
-                displayTitle = cleanTitle.replace(" vs ", "\nVS\n");
-            }
-            
-            var textOverlay = encodeURIComponent(displayTitle + "\n\n" + lineTime + "\n" + lineScore);
-            // Đã đổi sang 400x600 để khớp với bìa dọc của App VAX
-            var dynamicPoster = "https://placehold.co/400x600/111827/ffffff.png?text=" + textOverlay;
+            // --- TẠO BÌA ĐIỆN TỬ ---
+            var lineScore = score ? score : "ĐANG LIVE";
+            var lineTime = time ? time : "---";
+            var textOverlay = encodeURIComponent("───── ⚽ ─────\n\n" + lineScore + "\n\n" + lineTime + "\n\n──────────────");
+            var dynamicPoster = "https://placehold.co/400x600/0f172a/f8fafc.png?text=" + textOverlay;
 
             var episodeParts = [];
-            var payload = { title: cleanTitle, league: league, mainUrl: streamUrl, sources: parsedSources, isLive: isLive };
+            var payload = { title: cleanTitle, league: league, mainUrl: streamUrl, sources: parsedSources, isLive: true };
             var itemUrl = BASEURL + "#data=" + encodeURIComponent(JSON.stringify(payload));
-            var finalItem = {};
 
-            if (isLive) {
-                episodeParts.push("🔴 LIVE");
-                if (minute) episodeParts.push(minute + "'");
-                if (score) episodeParts.push(score);
-                if (time) episodeParts.push(time);
-                
-                finalItem = {
-                    "id": itemUrl,
-                    "title": cleanTitle,
-                    "posterUrl": dynamicPoster,
-                    "backdropUrl": backdropImg, // Dùng logo web làm hình nền chi tiết
-                    "quality": "ĐANG LIVE",
-                    "episode_current": episodeParts.join(" | ")
-                };
-                liveItems.push(finalItem);
-            } else if (isUpcoming) {
-                episodeParts.push("⏳ Sắp Live");
-                if (time) episodeParts.push(time);
-                
-                finalItem = {
-                    "id": itemUrl,
-                    "title": cleanTitle,
-                    "posterUrl": dynamicPoster,
-                    "backdropUrl": backdropImg, // Dùng logo web làm hình nền chi tiết
-                    "quality": "SẮP LIVE",
-                    "episode_current": episodeParts.join(" | ")
-                };
-                upcomingItems.push(finalItem);
-            }
+            episodeParts.push("🔴 LIVE");
+            if (minute) episodeParts.push(minute + "'");
+            if (score) episodeParts.push(score);
+            if (time) episodeParts.push(time);
+            
+            liveItems.push({
+                "id": itemUrl,
+                "title": cleanTitle,
+                "posterUrl": dynamicPoster,
+                "backdropUrl": DEFAULT_POSTER,
+                "quality": "ĐANG LIVE",
+                "episode_current": episodeParts.join(" | ")
+            });
         }
 
-        var finalFilteredItems = (currentSlug === "upcoming_group") ? upcomingItems : liveItems;
-
         return JSON.stringify({
-            "items": finalFilteredItems,
+            "items": liveItems,
             "pagination": { "currentPage": 1, "totalPages": 1 }
         });
 
@@ -240,7 +217,7 @@ function parseSearchResponse(html) {
 }
 
 // =============================================================================
-// CHI TIẾT & BẮT FALLBACK NO SIGNAL (TỰ CHUYỂN LINK)
+// CHI TIẾT & BẮT FALLBACK NO SIGNAL
 // =============================================================================
 
 function parseMovieDetail(html, url) {
@@ -275,7 +252,7 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: DEFAULT_POSTER,
             backdropUrl: DEFAULT_POSTER,
-            description: "Hệ thống trực tiếp thể thao tốc độ cao. Tự động chuyển Màn hình chờ (No Signal) sau 7s nếu lỗi.",
+            description: "Hệ thống trực tiếp thể thao. Tự động chuyển Màn hình chờ sau 7s nếu lỗi tín hiệu.",
             servers: [{ name: "Danh Sách Kênh Phát Sóng", episodes: episodes }]
         });
     } catch (e) {
