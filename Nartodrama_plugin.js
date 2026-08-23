@@ -71,7 +71,7 @@ function getFilterConfig() {
 }
 
 // =============================================================================
-// HELPER: CURSOR BASE64 ENCODE / DECODE
+// HELPER: URL FORMATTING
 // =============================================================================
 function getUrlList(slug, filtersJson) {
     try {
@@ -377,17 +377,6 @@ function parseMovieDetail(html, url) {
         var slugVal = urlmatch[0];
         
         var items = [];
-        var linkFull = "https://edge.narto-drama.com/e/rs/detail/" + slugVal + "/1/refresh-source?lang=vi-VN&rs_sid=hgsleaj5&force=1" + "&fulltap=true&maxfile=" + maxEpi + "&slug=" + slugVal;
-        
-        // Đã sửa tên "Nối Thành 1 Tập" thành yêu cầu mới của bạn
-        servers.push({
-            name: "Server 1 Tập",
-            episodes: [{
-                name: "Load phim (Nếu lỗi đổi sang Chia tập)",
-                id: linkFull ,
-                slug: "tap-full"
-            }]
-        });
         
         for (var $j = 0; $j < maxEpi; $j++) {
             var $number = ($j + 1);
@@ -401,7 +390,7 @@ function parseMovieDetail(html, url) {
         }
         
         servers.push({
-            name: "Server Chia Tập",
+            name: "Danh sách tập",
             episodes: items
         });
         
@@ -437,110 +426,6 @@ function parseMovieDetail(html, url) {
     }
 }
 
-function htmlload(videosrc, subtitle, linkpost, postbody, customHeaders = {}, rawbackup = "") {
-  console.log("Stream html:\n" + videosrc);
-  const mergedHeaders = Object.assign({
-    'Referer': 'https://nartodrama.com/',
-    'Origin': 'https://nartodrama.com/'
-  }, customHeaders);
-
-  const isMp4 = !videosrc.includes('.m3u8') && (videosrc.includes('.mp4') || !videosrc.includes('m3u'));
-
-  if (isMp4) {
-    return `<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MP4 Player</title>
-    <style>
-        *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif}
-        body{background:#000;height:100vh;display:flex;justify-content:center;align-items:center;color:#f8fafc;overflow:hidden}
-        .black-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:5;transition:opacity 0.5s ease}
-        .black-overlay.hidden{opacity:0;pointer-events:none;display:none}
-        .card{background:rgba(15,23,42,0.98);border:1px solid rgba(56,189,248,0.3);padding:30px 24px;border-radius:20px;text-align:center;box-shadow:0 25px 50px rgba(0,0,0,0.9);z-index:10;max-width:440px;width:90%;transition:opacity 0.5s ease,transform 0.5s ease}
-        .card.hidden{opacity:0;transform:scale(0.95);pointer-events:none;display:none}
-        .videoplayer{width:100vw;height:100vh;position:fixed;top:0;left:0;right:0;bottom:0;background:#000;display:flex;justify-content:center;align-items:center;z-index:1;overflow:hidden}
-        .videoplayer video{width:100%;height:100%;object-fit:fill}
-        video::-webkit-media-controls-fullscreen-button { display: none !important; }
-        .spinner{width:45px;height:45px;border:4px solid rgba(255,255,255,0.1);border-top:4px solid #38bdf8;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 15px auto}
-        @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-        .loading-title{font-size:17px;font-weight:600;color:#fff;margin-bottom:10px}
-        .loading-desc{font-size:13px;color:#cbd5e1;line-height:1.5}
-        .loading-progress{margin-top:15px;font-size:14px;color:#38bdf8;font-weight:600}
-    </style>
-</head>
-<body>
-    <div class="black-overlay" id="blackOverlay"></div>
-    <div class="card" id="loadingCard">
-        <div class="spinner"></div>
-        <div class="loading-title">Thông báo</div>
-        <div class="loading-desc">Phim dùng định dạng MP4 trực tiếp.<br>Đang chuẩn bị phát...</div>
-        <div class="loading-progress" id="text">Đang chuẩn bị... 0%</div>
-    </div>
-    <div class="videoplayer" id="playerContainer">
-      <video id="myVideo" controls playsinline webkit-playsinline disablepictureinpicture controlsList="nofullscreen nodownload" preload="auto">Trình duyệt không hỗ trợ thẻ video.</video>
-    </div>
-    <script>
-        const video = document.getElementById('myVideo');
-        const loadingCard = document.getElementById('loadingCard');
-        const blackOverlay = document.getElementById('blackOverlay');
-        const textEl = document.getElementById('text');
-
-        video.requestFullscreen = function() {};
-        if (video.webkitRequestFullscreen) video.webkitRequestFullscreen = function() {};
-        if (video.webkitEnterFullscreen) video.webkitEnterFullscreen = function() {};
-
-        const mainSrc = ${JSON.stringify(videosrc)};
-        const backupSrc = ${JSON.stringify(rawbackup)};
-        let currentSrc = mainSrc;
-        let isBackupTried = false;
-        let progress = 0;
-        let isAllowedToPlay = false;
-
-        function loadVideoSource(src) {
-            video.src = src;
-            video.load();
-        }
-
-        video.addEventListener('error', function() {
-            if (!isBackupTried && backupSrc && backupSrc !== mainSrc) {
-                isBackupTried = true;
-                currentSrc = backupSrc;
-                loadVideoSource(backupSrc);
-            }
-        });
-
-        const watchdog = setInterval(() => {
-            if (!isAllowedToPlay && !video.paused) {
-                video.pause();
-                video.currentTime = 0;
-            }
-        }, 50);
-
-        const progressInterval = setInterval(() => {
-            if (progress < 100) {
-                progress += 1;
-                textEl.innerText = "Đang chuẩn bị phát... " + progress + "%";
-            }
-        }, 100);
-
-        loadVideoSource(mainSrc);
-
-        setTimeout(() => {
-            clearInterval(progressInterval);
-            clearInterval(watchdog);
-            isAllowedToPlay = true;
-            loadingCard.classList.add('hidden');
-            blackOverlay.classList.add('hidden');
-            video.play().catch(e => {});
-        }, 10000);
-    </script>
-</body>
-</html>`;
-  }
-}
-
 function parseDetailResponse(html, url) {
     try {
         console.log("parseDetailResponse[url]: \n" + url);
@@ -549,127 +434,62 @@ function parseDetailResponse(html, url) {
             throw new Error("Phản hồi từ server bị trống hoặc không hợp lệ");
         }
 
-        if(url.indexOf("fulltap") > -1 && url.indexOf("play=true") == -1){
-            var slug = url.match(/slug=([^&]+)/i)[1];
-            var maxfile = url.match(/maxfile=([^&]+)/i)[1];
-            var data = [slug, maxfile];   
-            var postbody = BASE64.encode(JSON.stringify(data));
-            var clear = "";
-            if(url.indexOf("clear=true") > -1){
-              clear = "&clear=true"
+        var $objmv = JSON.parse(html);
+        var rawStream = $objmv.play_url || $objmv.direct_play_url || "";
+        var $subtitle = $objmv.direct_subtitle_url || "";
+        
+        if (!rawStream) {
+            throw new Error("Không tìm thấy link stream");
+        }
+
+        var lowerStream = rawStream.toLowerCase();
+        var mimeType = "application/x-mpegURL";
+        var finalStreamUrl = rawStream;
+        
+        if (lowerStream.includes(".mp4") || finalStreamUrl.indexOf("dramabox-stream.narto-drama.com") > -1) {
+            mimeType = "video/mp4";
+            if (!finalStreamUrl.endsWith("#.m3u8")) {
+                finalStreamUrl += "#.m3u8";
             }
-            var linkpost = "https://script.google.com/macros/s/AKfycbyen58UYqBbf_j2dS55R0yWCQThRL25YhGIoZmY5KRFF131U0HeqVfPb4DJsa4Tlp13/exec?film_url=" + encodeURIComponent(slug) + "&maxfile=" + maxfile + "&slug=" + slug + clear;
-            
-            var $objmv = JSON.parse(html);
-            var rawStream = $objmv.direct_play_url || $objmv.play_url || "";
-            var rawbackup = $objmv.play_url || "";
-            var $subtitle = $objmv.direct_subtitle_url || "";
-            var encode = BASE64.encode(htmlload(rawStream, $subtitle, linkpost, postbody,rawbackup));
-            
-            var base64 = `https://base64html.alokillgtv.workers.dev/?url=data:text/html;base64,${encode}`;
-            console.log("link Post:\n" + linkpost);
-            
-            var isEmbed = true;
-            if(rawStream.includes('mp4')){
-              linkpost = base64;
-              isEmbed = false;
+        } 
+        else if (lowerStream.includes(".m3u8")) {
+            mimeType = "application/x-mpegURL";
+        } 
+        else {
+            mimeType = "application/x-mpegURL";
+            if (!finalStreamUrl.endsWith("#.m3u8")) {
+                finalStreamUrl += "#index.m3u8";
+            }
+        }
+
+        var listsub = [];
+        if ($subtitle) {
+            if (!$subtitle.startsWith("http://") && !$subtitle.startsWith("https://")) {
+                if (!$subtitle.startsWith("/")) {
+                    $subtitle = "/" + $subtitle;
+                }
+                $subtitle = BASEURL + $subtitle;
             }
 
-            var $return = JSON.stringify({
-                "url": linkpost,
-                "isEmbed": isEmbed,
-                "mimeType": "text/html",
-                "headers": {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                },
-                "subtitles": [{
-                  lang: "Vietsub",
-                  type: "text/vtt",
-                  url: linkpost + "&subtitle=true"
-                }],
-                datasend: encodeURIComponent(linkpost)
-            });
-            return $return;
-        }
-        if(url.indexOf("play=true") > -1){
-            var slug = url.match(/slug=([^&]+)/i)[1];
-            var maxfile = url.match(/maxfile=([^&]+)/i)[1];
-            var linkpost = "https://script.google.com/macros/s/AKfycbyen58UYqBbf_j2dS55R0yWCQThRL25YhGIoZmY5KRFF131U0HeqVfPb4DJsa4Tlp13/exec?film_url=" + encodeURIComponent(slug) + "&maxfile=" + maxfile + "&slug=" + slug;
-            return JSON.stringify({
-                "url": linkpost + "&m3u8=true#.m3u8",
-                "isEmbed": false,
-                "mimeType": "application/x-mpegURL",
-                "headers": {
-                    "Referer": typeof BASEURL !== 'undefined' ? BASEURL : "https://edge.narto-drama.com/",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Custom-Js": `SnifferBridge.play("${finalStreamUrl}#.m3u8");SnifferBridge.log("Sniffer: ${finalStreamUrl}")`
-                },
-                "subtitles": [{
-                  lang: "Vietsub",
-                  url: linkpost + "&subtitle=true",
-                  mimeType: "text/vtt"
-                }]
+            listsub.push({
+                "lang": "Subtitle",
+                "url": $subtitle,
+                "mimeType": "text/vtt"
             });
         }
-        else {
-            var $objmv = JSON.parse(html);
-            var rawStream = $objmv.play_url || $objmv.play_url || "";
-            var $subtitle = $objmv.direct_subtitle_url || "";
-            
-            if (!rawStream) {
-                throw new Error("Không tìm thấy link stream");
-            }
-  
-            var lowerStream = rawStream.toLowerCase();
-            var mimeType = "application/x-mpegURL";
-            var finalStreamUrl = rawStream;
-            
-            if (lowerStream.includes(".mp4") || finalStreamUrl.indexOf("dramabox-stream.narto-drama.com") > -1) {
-                mimeType = "video/mp4";
-                if (!finalStreamUrl.endsWith("#.m3u8")) {
-                    finalStreamUrl += "#.m3u8";
-                }
-            } 
-            else if (lowerStream.includes(".m3u8")) {
-                mimeType = "application/x-mpegURL";
-            } 
-            else {
-                mimeType = "application/x-mpegURL";
-                if (!finalStreamUrl.endsWith("#.m3u8")) {
-                    finalStreamUrl += "#index.m3u8";
-                }
-            }
-  
-            var listsub = [];
-            if ($subtitle) {
-                if (!$subtitle.startsWith("http://") && !$subtitle.startsWith("https://")) {
-                    if (!$subtitle.startsWith("/")) {
-                        $subtitle = "/" + $subtitle;
-                    }
-                    $subtitle = BASEURL + $subtitle;
-                }
-  
-                listsub.push({
-                    "lang": "Subtitle",
-                    "url": $subtitle,
-                    "mimeType": "text/vtt"
-                });
-            }
-  
-            console.log("parseDetailResponse[url]: \n" + finalStreamUrl);
-            return JSON.stringify({
-                "url": finalStreamUrl + "#.m3u8",
-                "isEmbed": false,
-                "mimeType": mimeType,
-                "headers": {
-                    "Referer": typeof BASEURL !== 'undefined' ? BASEURL : "https://edge.narto-drama.com/",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Custom-Js": `SnifferBridge.play("${finalStreamUrl}#.m3u8");SnifferBridge.log("Sniffer: ${finalStreamUrl}")`
-                },
-                "subtitles": listsub
-            });
-          
-        }
+
+        console.log("parseDetailResponse[url]: \n" + finalStreamUrl);
+        return JSON.stringify({
+            "url": finalStreamUrl + "#.m3u8",
+            "isEmbed": false,
+            "mimeType": mimeType,
+            "headers": {
+                "Referer": typeof BASEURL !== 'undefined' ? BASEURL : "https://edge.narto-drama.com/",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Custom-Js": `SnifferBridge.play("${finalStreamUrl}#.m3u8");SnifferBridge.log("Sniffer: ${finalStreamUrl}")`
+            },
+            "subtitles": listsub
+        });
         
     } catch (e) {
         console.log("parseDetailResponse[err]:\n " + e.message);
@@ -766,6 +586,7 @@ function parseEmbedResponse(html, url, datasend) {
     }
 }
 
+// BỘ CÔNG CỤ BASE64 
 BASE64 = {
   encode: function (str) {
     try {
