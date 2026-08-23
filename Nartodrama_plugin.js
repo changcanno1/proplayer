@@ -30,17 +30,14 @@ function log(msg) {
 
 function getHomeSections() {
     try {
-        // Lấy danh sách các thể loại từ getLISTmenu
         var listCategoryStr = getLISTmenu();
         var listCategory = JSON.parse(listCategoryStr);
         
-        // Thêm mục Phim Mới vào đầu danh sách để hiện trên cùng ở Trang Chủ
         listCategory.unshift({
             "link": "/?lang=vi-VN",
             "name": "Phim Mới"
         });
         
-        // Build menu dưới dạng Grid (true)
         var menulist = buildMenu(JSON.stringify(listCategory), true);
         return JSON.stringify(menulist);
     } catch (e) {
@@ -382,7 +379,6 @@ function parseMovieDetail(html, url) {
         var items = [];
         var linkFull = "https://edge.narto-drama.com/e/rs/detail/" + slugVal + "/1/refresh-source?lang=vi-VN&rs_sid=hgsleaj5&force=1" + "&fulltap=true&maxfile=" + maxEpi + "&slug=" + slugVal;
         
-        // Chỉ để lại lựa chọn "Nối Thành 1 Tập"
         servers.push({
             name: "Server 1 Tập",
             episodes: [{
@@ -938,9 +934,9 @@ function parseYearsResponse(html) {
     return "[]";
 }
 
-// Chứa toàn bộ các category bạn yêu cầu
+// Chỉ chứa các Category theo yêu cầu (đã xoá Lồng Tiếng, Kinh Dị, Cổ Trang, Tổng Tài)
 function getLISTmenu() {
-    return `[{\"link\":"${BASEURL}/search?lang=vi-VN&q=l%E1%BB%93ng+ti%E1%BA%BFng\",\"name\":\"Lồng Tiếng\"},{\"link\":\"${BASEURL}/search?lang=vi-VN&q=kinh+d%E1%BB%8B\",\"name\":\"Kinh Dị\"},{\"link\":\"${BASEURL}/tag/bi-an-than-phan?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Thân Phận Bí Ẩn\"},{\"link\":\"${BASEURL}/tag/hien-dai?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Hiện Đại\"},{\"link\":\"${BASEURL}/tag/bao-thu?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Báo Thù\"},{\"link\":\"${BASEURL}/tag/co-trang?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Cổ Trang\"},{\"link\":\"${BASEURL}/tag/tinh-cam?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Tình Cảm\"},{\"link\":\"${BASEURL}/tag/xuyen-khong?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Xuyên Không\"},{\"link\":\"${BASEURL}/search?lang=vi-VN&q=t%E1%BB%95ng+t%C3%A0i\",\"name\":\"Tổng Tài\"}]`;
+    return `[{\"link\":\"${BASEURL}/tag/bi-an-than-phan?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Thân Phận Bí Ẩn\"},{\"link\":\"${BASEURL}/tag/hien-dai?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Hiện Đại\"},{\"link\":\"${BASEURL}/tag/bao-thu?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Báo Thù\"},{\"link\":\"${BASEURL}/tag/tinh-cam?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Tình Cảm\"},{\"link\":\"${BASEURL}/tag/xuyen-khong?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Xuyên Không\"}]`;
 }
 
 function buildMenu(menuStr, type) { 
