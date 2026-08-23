@@ -379,10 +379,11 @@ function parseMovieDetail(html, url) {
         var items = [];
         var linkFull = "https://edge.narto-drama.com/e/rs/detail/" + slugVal + "/1/refresh-source?lang=vi-VN&rs_sid=hgsleaj5&force=1" + "&fulltap=true&maxfile=" + maxEpi + "&slug=" + slugVal;
         
+        // Đã sửa tên "Nối Thành 1 Tập" thành yêu cầu mới của bạn
         servers.push({
             name: "Server 1 Tập",
             episodes: [{
-                name: "Nối Thành 1 Tập",
+                name: "Load phim (Nếu lỗi đổi sang Chia tập)",
                 id: linkFull ,
                 slug: "tap-full"
             }]
@@ -934,7 +935,6 @@ function parseYearsResponse(html) {
     return "[]";
 }
 
-// Chỉ chứa các Category theo yêu cầu (đã xoá Lồng Tiếng, Kinh Dị, Cổ Trang, Tổng Tài)
 function getLISTmenu() {
     return `[{\"link\":\"${BASEURL}/tag/bi-an-than-phan?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Thân Phận Bí Ẩn\"},{\"link\":\"${BASEURL}/tag/hien-dai?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Hiện Đại\"},{\"link\":\"${BASEURL}/tag/bao-thu?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Báo Thù\"},{\"link\":\"${BASEURL}/tag/tinh-cam?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Tình Cảm\"},{\"link\":\"${BASEURL}/tag/xuyen-khong?lang=vi-VN&tab-provider=bibishort\",\"name\":\"Xuyên Không\"}]`;
 }
