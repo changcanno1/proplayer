@@ -4,8 +4,8 @@
 
 function getManifest() {
   return JSON.stringify({
-    id: "tvpub",
-    name: "TVPub",
+    id: "Truyền hình",
+    name: "Truyền hình",
     version: "1.0.2",
     baseUrl: BASE_URL,
     iconUrl: "https://i.ibb.co/KjVv0WRP/tvpub-logo.jpg",
