@@ -1,5 +1,5 @@
 // =============================================================================
-// PLUGIN VAX: TINHLAGI TV (FIX LỖI CHẠY LINK KÊNH LẺ + TẮT XOAY NGANG)
+// PLUGIN VAX: TINHLAGI TV (BÓC TÁCH LINK PROXY GỐC + TỐI ƯU FOLDER)
 // =============================================================================
 
 var BASEURL = "https://tinhlagi.pro/sport";
@@ -9,8 +9,8 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV",
         "name": "TV - Thể Thao Pro",
-        "description": "Tâm điểm gộp kênh, Folder lẻ lọc đúng kênh, Tắt tự xoay ngang, Direct Play.",
-        "version": "3.2.0",
+        "description": "Bóc tách link proxy lấy luồng FLV/M3U8 gốc, tối ưu folder kênh.",
+        "version": "3.3.0",
         "baseUrl": BASEURL,
         "isEnabled": true,
         "layoutType": "LIST",
@@ -45,7 +45,7 @@ function cleanMatchTitle(rawTitle) {
 }
 
 // =============================================================================
-// NHÓM 1: CẤU HÌNH FOLDER & DANH MỤC KÊNH
+// NHÓM 1: CẤU HÌNH FOLDER & DANH MỤC KÊNH (ĐÃ DỌN DẸP)
 // =============================================================================
 
 function getHomeSections() {
@@ -54,11 +54,7 @@ function getHomeSections() {
         { slug: 'gio-vang-tv', title: '🔴 Giờ Vàng TV', type: 'List' },
         { slug: 'phao-hoa-tv', title: '🔴 Pháo Hoa TV', type: 'List' },
         { slug: 'cola-tv', title: '🔴 Cola TV', type: 'List' },
-        { slug: 'chuoi-chien-tv', title: '🔴 Chuối Chiên TV', type: 'List' },
-        { slug: 'vua-san-co-tv', title: '🔴 Vua Sân Cỏ TV', type: 'List' },
-        { slug: 'xoi-lac-tv', title: '🔴 Xôi Lạc TV', type: 'List' },
-        { slug: 'bia-om-tv', title: '🔴 Bia Ôm TV', type: 'List' },
-        { slug: 'socolive', title: '🔴 Socolive TV', type: 'List' }
+        { slug: 'xoi-lac-tv', title: '🔴 Xôi Lạc TV', type: 'List' }
     ]);
 }
 
@@ -68,11 +64,7 @@ function getPrimaryCategories() {
         { name: '🔴 Giờ Vàng TV', slug: 'gio-vang-tv' },
         { name: '🔴 Pháo Hoa TV', slug: 'phao-hoa-tv' },
         { name: '🔴 Cola TV', slug: 'cola-tv' },
-        { name: '🔴 Chuối Chiên TV', slug: 'chuoi-chien-tv' },
-        { name: '🔴 Vua Sân Cỏ TV', slug: 'vua-san-co-tv' },
-        { name: '🔴 Xôi Lạc TV', slug: 'xoi-lac-tv' },
-        { name: '🔴 Bia Ôm TV', slug: 'bia-om-tv' },
-        { name: '🔴 Socolive', slug: 'socolive' }
+        { name: '🔴 Xôi Lạc TV', slug: 'xoi-lac-tv' }
     ]);
 }
 
@@ -99,11 +91,7 @@ function parseListResponse(html, url) {
             "gio-vang-tv": "GIỜ VÀNG",
             "phao-hoa-tv": "PHÁO HOA",
             "cola-tv": "COLA",
-            "chuoi-chien-tv": "CHUỖI CHIÊN",
-            "vua-san-co-tv": "VUA SÂN CỎ",
-            "xoi-lac-tv": "XÔI LẠC",
-            "bia-om-tv": "BIA ÔM",
-            "socolive": "SOCOLIVE"
+            "xoi-lac-tv": "XÔI LẠC"
         };
         var filterKeyword = slugToKeyword[currentSlug] || "";
 
@@ -154,7 +142,7 @@ function parseListResponse(html, url) {
             var finalSources = [];
 
             if (filterKeyword !== "") {
-                // ĐANG Ở FOLDER KÊNH LẺ: Chỉ lấy đúng link thuộc kênh đó
+                // FOLDER KÊNH LẺ: Lọc đúng keyword của kênh (VD: "COLA", "XÔI LẠC")
                 for (var i = 0; i < parsedSources.length; i++) {
                     if (parsedSources[i].name && parsedSources[i].name.toUpperCase().indexOf(filterKeyword) !== -1) {
                         finalSources.push({
@@ -165,7 +153,7 @@ function parseListResponse(html, url) {
                 }
                 if (finalSources.length === 0) continue; 
             } else {
-                // ĐANG Ở TÂM ĐIỂM: Gom tất cả link vào chung
+                // TÂM ĐIỂM: Gom tất cả link vào chung
                 var limit = Math.min(parsedSources.length, 12);
                 for (var j = 0; j < limit; j++) {
                     finalSources.push({
@@ -175,7 +163,6 @@ function parseListResponse(html, url) {
                 }
             }
 
-            // Tạo bìa bảng tỉ số điện tử
             var lineScore = score ? score : "ĐANG LIVE";
             var lineTime = time ? time : "---";
             var textOverlay = encodeURIComponent("───── ⚽ ─────\n\n" + lineScore + "\n\n" + lineTime + "\n\n──────────────");
@@ -219,7 +206,7 @@ function parseSearchResponse(html) {
 }
 
 // =============================================================================
-// CHI TIẾT KÊNH (TẠO DANH SÁCH SERVER CHO TÂM ĐIỂM / KÊNH LẺ)
+// CHI TIẾT KÊNH
 // =============================================================================
 
 function parseMovieDetail(html, url) {
@@ -247,7 +234,7 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: data.posterUrl || DEFAULT_POSTER,
             backdropUrl: DEFAULT_POSTER,
-            description: "🌟 HỆ THỐNG TRỰC TIẾP TỐC ĐỘ CAO (Đã ép màn hình dọc). Vui lòng chọn nguồn phát bên dưới.",
+            description: "🌟 HỆ THỐNG TRỰC TIẾP TỐC ĐỘ CAO (Màn hình dọc). Bạn đang dùng bộ bóc tách link gốc siêu mượt.",
             servers: [{ name: "Danh Sách Kênh", episodes: episodes }]
         });
     } catch (e) {
@@ -256,7 +243,7 @@ function parseMovieDetail(html, url) {
 }
 
 // =============================================================================
-// CHẠY TRỰC TIẾP EXOPLAYER (ĐÃ ÉP CỜ TẮT XOAY NGANG)
+// BÓC TÁCH LINK PROXY VÀ CHẠY EXOPLAYER (QUAN TRỌNG NHẤT)
 // =============================================================================
 
 function parseDetailResponse(html, apiUrl) {
@@ -269,16 +256,29 @@ function parseDetailResponse(html, apiUrl) {
         var cleanUrl = streamUrl.split('#')[0];
         if (!cleanUrl) cleanUrl = BASEURL;
 
+        // BƯỚC BÓC TÁCH LINK GỐC TỪ PROXY (Tuyệt chiêu fix lỗi Cola/Xôi Lạc)
+        var realUrl = cleanUrl;
+        var referer = "https://tinhlagi.pro/";
+
+        // Lọc thông số từ URL chứa proxy
+        var urlMatch = cleanUrl.match(/[?&]url=([^&]+)/);
+        if (urlMatch && urlMatch[1]) {
+            realUrl = decodeURIComponent(urlMatch[1]);
+        }
+        var refMatch = cleanUrl.match(/[?&]referer=([^&]+)/);
+        if (refMatch && refMatch[1]) {
+            referer = decodeURIComponent(refMatch[1]);
+        }
+
         return JSON.stringify({
             isEmbed: false,
-            url: cleanUrl,
-            mimeType: cleanUrl.indexOf(".flv") !== -1 ? "video/x-flv" : "application/x-mpegURL",
+            url: realUrl, // Truyền thẳng luồng FLV/M3U8 đã bóc tách
+            mimeType: realUrl.indexOf(".flv") !== -1 ? "video/x-flv" : "application/x-mpegURL",
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-                "Referer": "https://tinhlagi.pro/",
-                "Origin": "https://tinhlagi.pro/"
+                "Referer": referer, // Trả lại đúng Referer mà server yêu cầu
+                "Origin": referer
             },
-            // ÉP MÀN HÌNH DỌC (TẮT TỰ ĐỘNG XOAY NGANG)
             isLandscape: false, 
             isPortrait: true,
             isRotate: false,
