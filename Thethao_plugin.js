@@ -1,5 +1,5 @@
 // =============================================================================
-// PLUGIN VAX: TINHLAGI TV (TÂM ĐIỂM GỘP LINK + FOLDER TỰ PLAY + CHỐNG XOAY)
+// PLUGIN VAX: TINHLAGI TV (FIX LỖI CHẠY LINK KÊNH LẺ + TẮT XOAY NGANG)
 // =============================================================================
 
 var BASEURL = "https://tinhlagi.pro/sport";
@@ -9,8 +9,8 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV",
         "name": "TV - Thể Thao Pro",
-        "description": "Tâm điểm gộp kênh, Folder lẻ Auto-Play, Tắt tự xoay ngang, Direct Play.",
-        "version": "3.1.0",
+        "description": "Tâm điểm gộp kênh, Folder lẻ lọc đúng kênh, Tắt tự xoay ngang, Direct Play.",
+        "version": "3.2.0",
         "baseUrl": BASEURL,
         "isEnabled": true,
         "layoutType": "LIST",
@@ -152,11 +152,9 @@ function parseListResponse(html, url) {
             }
 
             var finalSources = [];
-            var isAutoPlay = false;
 
             if (filterKeyword !== "") {
-                // ĐANG Ở FOLDER KÊNH: Chỉ lấy link thuộc kênh đó và bật Cờ Auto-Play
-                isAutoPlay = true;
+                // ĐANG Ở FOLDER KÊNH LẺ: Chỉ lấy đúng link thuộc kênh đó
                 for (var i = 0; i < parsedSources.length; i++) {
                     if (parsedSources[i].name && parsedSources[i].name.toUpperCase().indexOf(filterKeyword) !== -1) {
                         finalSources.push({
@@ -167,7 +165,7 @@ function parseListResponse(html, url) {
                 }
                 if (finalSources.length === 0) continue; 
             } else {
-                // ĐANG Ở TÂM ĐIỂM: Gom tất cả link vào chung, Tắt Auto-Play để hiện danh sách Server
+                // ĐANG Ở TÂM ĐIỂM: Gom tất cả link vào chung
                 var limit = Math.min(parsedSources.length, 12);
                 for (var j = 0; j < limit; j++) {
                     finalSources.push({
@@ -186,7 +184,6 @@ function parseListResponse(html, url) {
             var payload = { 
                 title: cleanTitle, 
                 sources: finalSources,
-                autoPlay: isAutoPlay, // Đánh dấu để parseMovieDetail biết phải làm gì
                 posterUrl: dynamicPoster
             };
             var itemUrl = BASEURL + "#data=" + encodeURIComponent(JSON.stringify(payload));
@@ -222,19 +219,12 @@ function parseSearchResponse(html) {
 }
 
 // =============================================================================
-// CHI TIẾT KÊNH (XỬ LÝ AUTO-PLAY HOẶC SHOW DANH SÁCH SERVER)
+// CHI TIẾT KÊNH (TẠO DANH SÁCH SERVER CHO TÂM ĐIỂM / KÊNH LẺ)
 // =============================================================================
 
 function parseMovieDetail(html, url) {
     try {
         var data = parseDataFromHash(url);
-        
-        // NẾU LÀ FOLDER KÊNH: Bỏ qua màn hình chi tiết, App sẽ tự động Play
-        if (data && data.autoPlay === true && data.sources && data.sources.length > 0) {
-            return ""; 
-        }
-
-        // NẾU LÀ TÂM ĐIỂM: Xuất danh sách Server để user tự chọn thay cho Auto-Fallback
         var title = data && data.title ? data.title : "Trực Tiếp Bóng Đá";
         var episodes = [];
         var targetSources = (data && data.sources) ? data.sources : [];
@@ -257,8 +247,8 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: data.posterUrl || DEFAULT_POSTER,
             backdropUrl: DEFAULT_POSTER,
-            description: "🌟 TÂM ĐIỂM LIVE: Đã tổng hợp tất cả kênh phát sóng. Chọn Kênh bên dưới để xem trực tiếp tốc độ cao. Trình phát được ép dọc màn hình.",
-            servers: [{ name: "Danh Sách Kênh (Click để đổi Server)", episodes: episodes }]
+            description: "🌟 HỆ THỐNG TRỰC TIẾP TỐC ĐỘ CAO (Đã ép màn hình dọc). Vui lòng chọn nguồn phát bên dưới.",
+            servers: [{ name: "Danh Sách Kênh", episodes: episodes }]
         });
     } catch (e) {
         return JSON.stringify({ id: url, title: "Trực Tiếp Bóng Đá", servers: [] });
@@ -266,23 +256,14 @@ function parseMovieDetail(html, url) {
 }
 
 // =============================================================================
-// CHẠY TRỰC TIẾP EXOPLAYER (ĐÃ THÊM CỜ TẮT XOAY NGANG)
+// CHẠY TRỰC TIẾP EXOPLAYER (ĐÃ ÉP CỜ TẮT XOAY NGANG)
 // =============================================================================
 
 function parseDetailResponse(html, apiUrl) {
     try {
         var streamUrl = apiUrl;
-        
-        // Trường hợp 1: User click chọn Server từ danh sách Tâm Điểm
         if (apiUrl.indexOf("|") !== -1) {
             streamUrl = apiUrl.split("|")[0];
-        } 
-        // Trường hợp 2: Folder Kênh lẻ truyền thẳng Hash URL để Auto-Play
-        else {
-            var data = parseDataFromHash(apiUrl);
-            if (data && data.sources && data.sources.length > 0) {
-                streamUrl = data.sources[0].link;
-            }
         }
 
         var cleanUrl = streamUrl.split('#')[0];
