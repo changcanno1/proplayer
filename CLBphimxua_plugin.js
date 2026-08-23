@@ -246,13 +246,13 @@ function BASE64ENCODE(str) {
                     (code >> 18) | 240,
                     ((code >> 12) & 63) | 128,
                     ((code >> 6) & 63) | 128,
-                    (code & 63) | 128,
+                    (code & 63) | 128
                 );
             } else {
                 utf8Bytes.push(
                     (code >> 12) | 224,
                     ((code >> 6) & 63) | 128,
-                    (code & 63) | 128,
+                    (code & 63) | 128
                 );
             }
         }
@@ -370,14 +370,14 @@ function parseMovieDetail(htmlResponse) {
             boldSections.push(bMatch[1]);
         }
 
-        // ✅ Đã sửa: Chuẩn hóa URL bằng Regex cực kỳ an toàn, không lo lỗi crash
+        // ✅ Đã sửa tương thích iPhone: Thay vì dùng startsWith, sử dụng indexOf === 0 cho an toàn.
         function normalizeEpUrl(rawUrl) {
             if (!rawUrl) return "";
             // Loại bỏ domain cũ nếu có (http://domain.com hoặc https://domain.com)
             var pathAndQuery = rawUrl.replace(/^https?:\/\/[^\/]+/i, '');
 
             // Bắt buộc phải có dấu / ở đầu đường dẫn
-            if (!pathAndQuery.startsWith('/')) {
+            if (pathAndQuery.indexOf('/') !== 0) {
                 pathAndQuery = '/' + pathAndQuery;
             }
 
@@ -505,8 +505,6 @@ function parseMovieDetail(htmlResponse) {
     }
 }
 
-
-
 function parseDetailResponse(htmlResponse, fallbackUrl, datasend) {
     try {
         console.log("Raw:\n" + htmlResponse)
@@ -518,7 +516,7 @@ function parseDetailResponse(htmlResponse, fallbackUrl, datasend) {
             mimeType: "video/mp4",
             headers: {
                 "Referer": "https://sc.k-20.xyz",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             }
         });
     } catch (error) {
