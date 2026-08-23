@@ -29,7 +29,7 @@
       "id": "kkphim",
       "name": "KKPhim",
       "version": "1.0.2",
-      "scriptUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
       "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim.png",
       "info": "Nguồn phim của youngbi. Báo tác giả ngay khi có lỗi."
     },
