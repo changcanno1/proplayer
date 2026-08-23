@@ -1,5 +1,5 @@
 // =============================================================================
-// PLUGIN VAX: TINHLAGI TV (FIX LỖI LINK CHẾT + TỐI ƯU DỮ LIỆU CHẠY SIÊU MƯỢT)
+// PLUGIN VAX: TINHLAGI TV (LỌC KÊNH ĐỘC LẬP + LOAD LINK NGUYÊN BẢN)
 // =============================================================================
 
 var BASEURL = "https://tinhlagi.pro/sport";
@@ -9,8 +9,8 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV",
         "name": "TV - Thể Thao Pro",
-        "description": "Fix tràn dữ liệu link, Script check 5s thông minh an toàn, Lọc kênh độc lập.",
-        "version": "2.2.0",
+        "description": "Lọc kênh riêng, Load link nguyên bản không can thiệp script.",
+        "version": "2.3.0",
         "baseUrl": BASEURL,
         "isEnabled": true,
         "layoutType": "LIST",
@@ -85,7 +85,7 @@ function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; }
 
 // =============================================================================
-// PARSE DANH SÁCH & TIỀN XỬ LÝ DỮ LIỆU ĐỂ GIẢM TẢI
+// PARSE DANH SÁCH & TIỀN XỬ LÝ DỮ LIỆU
 // =============================================================================
 
 function parseListResponse(html, url) {
@@ -146,7 +146,6 @@ function parseListResponse(html, url) {
             var minute = minuteMatch ? decodeEntities(minuteMatch[1]).trim() : "";
             var time = timeMatch ? decodeEntities(timeMatch[1]).trim() : "";
 
-            // Xử lý Sources trực tiếp ở đây để tránh truyền chuỗi quá dài gây hỏng Data
             var parsedSources = [];
             if (sourcesMatch) {
                 try { parsedSources = JSON.parse(decodeEntities(sourcesMatch[1])); } catch (e) {}
@@ -154,7 +153,6 @@ function parseListResponse(html, url) {
 
             var finalSources = [];
             if (filterKeyword !== "") {
-                // Đang trong 1 folder kênh -> Chỉ lưu những kênh trùng tên
                 for (var i = 0; i < parsedSources.length; i++) {
                     if (parsedSources[i].name && parsedSources[i].name.toUpperCase().indexOf(filterKeyword) !== -1) {
                         finalSources.push({
@@ -163,9 +161,8 @@ function parseListResponse(html, url) {
                         });
                     }
                 }
-                if (finalSources.length === 0) continue; // Nếu folder này ko có kênh phù hợp thì ẩn luôn trận đấu
+                if (finalSources.length === 0) continue; 
             } else {
-                // Đang ở Tâm điểm -> Lấy tối đa 8 link để chống tràn URL
                 var limit = Math.min(parsedSources.length, 8);
                 for (var j = 0; j < limit; j++) {
                     finalSources.push({
@@ -175,13 +172,11 @@ function parseListResponse(html, url) {
                 }
             }
 
-            // Bìa điện tử đồng đều
             var lineScore = score ? score : "ĐANG LIVE";
             var lineTime = time ? time : "---";
             var textOverlay = encodeURIComponent("───── ⚽ ─────\n\n" + lineScore + "\n\n" + lineTime + "\n\n──────────────");
             var dynamicPoster = "https://placehold.co/400x600/0f172a/f8fafc.png?text=" + textOverlay;
 
-            // Payload giờ rất nhẹ và an toàn
             var payload = { 
                 title: cleanTitle, 
                 sources: finalSources
@@ -219,7 +214,7 @@ function parseSearchResponse(html) {
 }
 
 // =============================================================================
-// CHI TIẾT KÊNH & BẮT FALLBACK NO SIGNAL (5 GIÂY)
+// CHI TIẾT KÊNH & LOAD LINK NGUYÊN BẢN
 // =============================================================================
 
 function parseMovieDetail(html, url) {
@@ -233,7 +228,7 @@ function parseMovieDetail(html, url) {
         if (targetSources.length === 0) {
             episodes.push({
                 id: BASEURL + "#embed_play",
-                name: "⚠️ Không có link hoặc lỗi dữ liệu",
+                name: "⚠️ Không có link",
                 slug: "no-link"
             });
         } else {
@@ -252,7 +247,7 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: DEFAULT_POSTER,
             backdropUrl: DEFAULT_POSTER,
-            description: "Hệ thống trực tiếp thể thao. Tự động báo kết thúc nếu chết link sau 5s.",
+            description: "Hệ thống trực tiếp thể thao tốc độ cao.",
             servers: [{ name: "Danh Sách Kênh Phát Sóng", episodes: episodes }]
         });
     } catch (e) {
@@ -268,9 +263,7 @@ function parseDetailResponse(html, url) {
     var cleanUrl = url.split('#')[0];
     if (!cleanUrl || cleanUrl.indexOf('http') !== 0) cleanUrl = BASEURL;
 
-    // SCRIPT THÔNG MINH: Auto-play sau 1s. Sau 5s nếu không thấy sự xuất hiện của Iframe hoặc Video -> Chắc chắn link chết/hết trận
-    var fallbackScript = "setTimeout(function(){var b=document.querySelector('button, .play, .vjs-big-play-button, .jw-display-icon-display');if(b)b.click();},1000); setTimeout(function(){ if(!document.querySelector('iframe, video')) { document.body.innerHTML='<div style=\"display:flex;justify-content:center;align-items:center;height:100vh;background:#0f172a;color:#f8fafc;font-size:18px;font-family:sans-serif;text-align:center;font-weight:bold;line-height:1.5;\">⚠️ Trận đấu đã kết thúc<br>Hoặc Kênh đang bị lỗi<br><br><span style=\"font-size:14px;color:#94a3b8;\">Vui lòng quay lại đổi kênh khác</span></div>'; } }, 5000);";
-
+    // Đã xóa bỏ hoàn toàn script 5 giây gây lỗi. Lấy link một cách bình thường.
     return JSON.stringify({
         url: cleanUrl,
         isEmbed: true,
@@ -278,7 +271,7 @@ function parseDetailResponse(html, url) {
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/605.1.15",
             "Referer": "https://tinhlagi.pro/"
         },
-        script: fallbackScript,
+        script: "",
         subtitles: []
     });
 }
