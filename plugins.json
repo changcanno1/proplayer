@@ -58,6 +58,13 @@
       "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
     },
     {
+      "id": "NOVAHD",
+      "name": "NOVAHD",
+      "version": "1.2.4",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NovaHDHT_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/novahd.png"
+    },
+    {
       "id": "shortflix",
       "name": "PhimNgắnHay",
       "version": "1.2.2",
