@@ -5,8 +5,8 @@ var BASELINK = BASEURL;
 
 function getManifest() {
   return JSON.stringify({
-    id: "novahd",
-    name: "Backup Film",
+    id: "Nên ChọnVietsub2",
+    name: "Nên ChọnVietsub2",
     description: "Backup Film",
     "version": "1.2.4",
     "author": "Alokillgtv",
