@@ -8,14 +8,14 @@ function getManifest() {
     return JSON.stringify({
         id: "vicdn",
         name: "ViCDN Pro",
-        description: "Bản Master: Chia sẵn Server Vietsub & Thuyết Minh. Tự động bóc m3u8 để phát Native.",
-        version: "7.6.0",
+        description: "Bản Master: Fix dứt điểm Search, lấy dữ liệu thẳng từ server. Anti-Detector mạnh mẽ.",
+        version: "7.3.0",
         baseUrl: BASEURL,
         iconUrl: BASEURL + "/vicdn.png",
         isEnabled: true,
         adblock: false,
         type: "MOVIE",
-        playerType: "embedtoplay"
+        playerType: "embed" // [BẮT BUỘC] Dùng embed để mở Webview kèm CustomJS
     });
 }
 
@@ -80,6 +80,7 @@ function getUrlList(slug, filtersJson) {
 }
 
 function getUrlSearch(keyword, filtersJson) {
+    // Gọi thẳng vào giao diện tìm kiếm của website
     return BASEURL + "/?q=" + encodeURIComponent(keyword.trim());
 }
 
@@ -127,29 +128,45 @@ function parseListResponse(html) {
             "pagination": { "currentPage": currentPage, "totalPages": totalPages }
         });
     } catch (e) {
+        log("Lỗi parseListResponse: " + e);
         return JSON.stringify({ "items": [], "pagination": { "currentPage": 1, "totalPages": 1 } });
     }
 }
 
 // -----------------------------------------------------------------------------
-// PARSER TÌM KIẾM
+// [FIX DỨT ĐIỂM] PARSER TÌM KIẾM TỪ HTML
 // -----------------------------------------------------------------------------
 function parseSearchResponse(html, url) {
     try {
+        // Tìm vị trí của mảng JSON trong HTML
         var startTag = "const allData = [";
         var startIdx = html.indexOf(startTag);
         
-        if (startIdx === -1) return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
+        if (startIdx === -1) {
+            log("Không tìm thấy biến allData trong HTML Tìm Kiếm.");
+            return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
+        }
         
+        // Đặt con trỏ vào đúng ký tự "[" để bắt đầu mảng JSON
         var jsonStart = startIdx + "const allData = ".length;
-        var endIdx = html.indexOf("];let filteredData", jsonStart);
-        if (endIdx === -1) endIdx = html.indexOf("];", jsonStart);
-        if (endIdx === -1) return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
         
+        // Tìm dấu "];" kết thúc của mảng JSON
+        var endIdx = html.indexOf("];let filteredData", jsonStart);
+        if (endIdx === -1) {
+            // Dự phòng nếu Web đổi code
+            endIdx = html.indexOf("];", jsonStart);
+        }
+        
+        if (endIdx === -1) {
+            return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
+        }
+        
+        // Cắt chính xác chuỗi JSON: từ "[" đến "]"
         var jsonString = html.substring(jsonStart, endIdx + 1);
         var allData = JSON.parse(jsonString);
         var items = [];
         
+        // Không cần dùng If-Else để lọc từ khóa nữa, vì Server đã tự động gom kết quả vào allData rồi!
         for (var i = 0; i < allData.length; i++) {
             var item = allData[i];
             
@@ -169,18 +186,21 @@ function parseSearchResponse(html, url) {
             });
         }
         
+        log("Tìm kiếm thành công, số phim nhận từ Server: " + items.length);
+        
         return JSON.stringify({
             "items": items,
             "pagination": { "currentPage": 1, "totalPages": 1 }
         });
         
     } catch (e) {
+        log("Lỗi parseSearchResponse: " + e.message);
         return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
     }
 }
 
 // -----------------------------------------------------------------------------
-// [CẬP NHẬT] TÁCH 2 FOLDER VIETSUB & THUYẾT MINH RÕ RÀNG
+// BÓC TÁCH CHI TIẾT VÀ DANH SÁCH TẬP NATIVE
 // -----------------------------------------------------------------------------
 function parseMovieDetail(html, url) {
     try {
@@ -200,57 +220,30 @@ function parseMovieDetail(html, url) {
         var category = (data.genre || []).join(" - ");
         var year = data.year || 2026;
         
-        // Tạo 2 mảng chứa tập riêng biệt
-        var episodesVietsub = [];
-        var episodesThuyetMinh = [];
+        var episodes = [];
         
         if (data.list_episodes && data.list_episodes.length > 0) {
             for (var j = 0; j < data.list_episodes.length; j++) {
                 var itemEpi = data.list_episodes[j];
                 var splitEpi = itemEpi.split("|");
-                
                 if(splitEpi.length >= 2) {
-                    var epNum = splitEpi[0].trim();
-                    var epLink = splitEpi[1].trim();
-                    var separator = epLink.indexOf("?") !== -1 ? "&" : "?";
-                    
-                    // Gắn cờ vietsub vào ID link
-                    episodesVietsub.push({
-                        id: epLink + separator + "play=vietsub", 
-                        name: "Tập " + epNum,
-                        slug: "tap-" + epNum + "-vs"
-                    });
-                    
-                    // Gắn cờ thuyet-minh vào ID link
-                    episodesThuyetMinh.push({
-                        id: epLink + separator + "play=thuyet-minh", 
-                        name: "Tập " + epNum,
-                        slug: "tap-" + epNum + "-tm"
+                    episodes.push({
+                        id: splitEpi[1].trim(), // Lấy thẳng link Player làm ID
+                        name: "Tập " + splitEpi[0].trim(),
+                        slug: "tap-" + splitEpi[0].trim()
                     });
                 }
             }
         } else if (data.mkv) {
-            var epLink = data.mkv.trim();
-            var separator = epLink.indexOf("?") !== -1 ? "&" : "?";
-            
-            episodesVietsub.push({
-                id: epLink + separator + "play=vietsub",
+            episodes.push({
+                id: data.mkv.trim(),
                 name: "Xem Ngay",
-                slug: "full-vs"
-            });
-            episodesThuyetMinh.push({
-                id: epLink + separator + "play=thuyet-minh",
-                name: "Xem Ngay",
-                slug: "full-tm"
+                slug: "full"
             });
         }
         
-        var servers = [];
-        if (episodesVietsub.length > 0) {
-            servers.push({ name: "Vietsub", episodes: episodesVietsub });
-            servers.push({ name: "Thuyết Minh", episodes: episodesThuyetMinh });
-        } else {
-            servers.push({ name: "Lỗi", episodes: [{ id: url, name: "Phim chưa có link", slug: "error" }] });
+        if (episodes.length === 0) {
+            episodes.push({ id: url, name: "Phim chưa có link", slug: "error" });
         }
         
         return JSON.stringify({
@@ -265,7 +258,7 @@ function parseMovieDetail(html, url) {
             status: status,
             category: category,
             episode_current: "Tập " + data.stt,
-            servers: servers, // Trả ra 2 Folder Server tại đây
+            servers: [{ name: "VIP Server", episodes: episodes }],
             duration: lduran,
             casts: lactor
         });
@@ -277,56 +270,55 @@ function parseMovieDetail(html, url) {
 }
 
 // -----------------------------------------------------------------------------
-// TRẢ VỀ LINK ĐỂ APP SNIFF BẰNG EMBEDTOPLAY KÈM THEO JS KÍCH HOẠT THUYẾT MINH
+// INJECT CUSTOM-JS XỬ LÝ JWPLAYER MÃ HÓA
 // -----------------------------------------------------------------------------
 function parseDetailResponse(html, url) {
     try {
-        // Kiểm tra xem user đang bấm vào link ở folder nào (Vietsub hay Thuyết Minh)
-        var isThuyetMinh = url.indexOf("play=thuyet-minh") !== -1;
-        
-        // JS để can thiệp vào Webview ẩn của app, tự động click nút Thuyết Minh nếu có
+        var streamLink = url;
+
         var customJS = `
             try {
-                if (window.devtoolsDetector) window.devtoolsDetector.isOpen = false;
+                if (window.devtoolsDetector) {
+                    window.devtoolsDetector.launch = function(){};
+                    window.devtoolsDetector.addListener = function(){};
+                    window.devtoolsDetector.isOpen = false;
+                }
                 
-                var isTM = ${isThuyetMinh};
-                var checkPlayer = setInterval(function() {
-                    // Tự động Play để lấy link m3u8
+                var s = document.createElement('style');
+                s.innerHTML = 'html, body { margin:0!important; padding:0!important; width:100vw!important; height:100vh!important; overflow:hidden!important; background:#000!important; } ' +
+                              '#ssPlay { position:fixed!important; top:0!important; left:0!important; width:100vw!important; height:100vh!important; z-index:999999!important; display:flex!important; } ' +
+                              '#sub-cfg-modal, header, footer, iframe:not(#ssPlay iframe) { display:none!important; pointer-events:none!important; }';
+                document.head.appendChild(s);
+                
+                var checkJWP = setInterval(function() {
                     if (typeof jwplayer === 'function') {
-                        var p = jwplayer();
-                        if (p && p.getState && p.getState() !== 'playing' && p.getState() !== 'buffering') p.play();
-                    }
-                    var skip = document.querySelector('.jw-skip');
-                    if (skip) skip.click();
-                    
-                    // Nếu là Thuyết Minh, tìm và bấm vào nút đổi luồng âm thanh/server trên web
-                    if (isTM) {
-                        var tmButtons = document.querySelectorAll('button, a, div.server-item');
-                        for(var i = 0; i < tmButtons.length; i++) {
-                            var btnText = tmButtons[i].innerText || "";
-                            if(btnText.toLowerCase().indexOf('thuyết minh') !== -1 || btnText.toLowerCase().indexOf('lồng tiếng') !== -1) {
-                                tmButtons[i].click();
-                                break;
+                        var player = jwplayer();
+                        if (player.getState) {
+                            var state = player.getState();
+                            if (state !== 'playing' && state !== 'buffering') {
+                                player.play();
                             }
                         }
                     }
+                    var skip = document.querySelector('.jw-skip');
+                    if (skip) skip.click();
                 }, 1000);
             } catch(e) {}
         `;
         
         return JSON.stringify({
-            url: url,
+            url: streamLink,
             isEmbed: true, 
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                 "Referer": "https://vicdn.cc/",
-                "Custom-Js": customJS.replace(/\s+/g, ' ').trim()
+                "Custom-Js": customJS.replace(/\\s+/g, ' ').trim()
             },
             subtitles: []
         });
     } catch (e) {
         log("Lỗi parseDetailResponse: " + e);
-        return JSON.stringify({ url: url, isEmbed: true, headers: {} });
+        return JSON.stringify({ url: "", isEmbed: true, headers: {} });
     }
 }
 
