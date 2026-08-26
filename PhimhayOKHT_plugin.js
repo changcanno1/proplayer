@@ -1,4 +1,4 @@
-BASEURL = "http://vkey.vn/phimhayok";
+BASEURL = "https://phimhayok5.site";
 
 function getManifest() {
     return JSON.stringify({
