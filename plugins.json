@@ -58,6 +58,13 @@
       "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
     },
     {
+      "id": "CLB Phim Xưa",
+      "name": "CLB Phim Xưa",
+      "version": "1.2.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/CLBPhimxua_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/clbpxVIP.png"
+    },
+    {
       "id": "NOVAHD",
       "name": "NOVAHD",
       "version": "1.2.4",
