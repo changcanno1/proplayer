@@ -6,8 +6,8 @@ function getManifest() {
     return JSON.stringify({
         "id": "clbpxVIP",
         "name": "CLB Phim Xưa VIP",
-        "version": "1.2.2",
-        "info": "",
+        "version": "1.2.3",
+        "info": "Fix lỗi load link trên iOS",
         "BASEURL": "https://clbpx.alokillgtv.workers.dev",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/clbpxVIP.png",
         "isEnabled": true,
@@ -15,8 +15,7 @@ function getManifest() {
         "adblock": false,
         "type": "MOVIE",
         "author":"alokillgtv",
-        // Sửa playerType thành default để tương thích tốt với iOS AVPlayer
-        "playerType": "default", 
+        "playerType": "exoplayer", 
         "layoutType": "HORIZONTAL",
         popup_html: popup_html
     });
@@ -258,25 +257,32 @@ function parseDetailResponse(jsonResponse, fallbackUrl, datasend) {
             var streamObj = streams[0];
             var streamUrl = streamObj.url || "";
             
-            // Fix iOS 1: Tránh bị block bởi App Transport Security nếu link là HTTP thường
-            if (streamUrl.indexOf("http://") === 0) {
-                streamUrl = streamUrl.replace("http://", "https://");
+            // 1. Giả lập User-Agent của Mac/iOS Safari để tránh bị server chặn (403)
+            var headers = streamObj.headers || {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
+            };
+
+            // 2. Tự động nhận diện định dạng file/link
+            var isEmbed = false;
+            var mimeType = "video/mp4"; // Mặc định
+            
+            if (streamUrl.indexOf(".m3u8") !== -1) {
+                mimeType = "application/x-mpegURL"; 
+            } else if (streamUrl.indexOf(".mp4") === -1 && streamUrl.indexOf(".mkv") === -1 && streamUrl.indexOf("http") === 0) {
+                // Nếu link trả về là một webpage nhúng iframe thay vì file mp4/m3u8 trực tiếp
+                isEmbed = true;
+                mimeType = "text/html";
             }
 
-            // Fix iOS 2: Một số player trên iOS bị lỗi stream nếu dính User-Agent của Windows.
-            // Trừ khi API bắt buộc, ưu tiên để header lấy mặc định theo thiết bị.
-            var headers = streamObj.headers || {};
-            
-            // Fix iOS 3: Sử dụng chuẩn MIME Type của Apple cho HLS
-            var mimeType = "video/mp4";
-            if (streamUrl.indexOf(".m3u8") !== -1) {
-                mimeType = "application/vnd.apple.mpegurl";
+            // Ghi đè isEmbed nếu có config rõ ràng từ API trả về
+            if (typeof streamObj.isEmbed !== 'undefined') {
+                isEmbed = streamObj.isEmbed;
             }
 
             return JSON.stringify({
                 url: streamUrl,
                 mimeType: mimeType,
-                isEmbed: false, // Fix iOS 4: Phải khai báo isEmbed rõ ràng
+                isEmbed: isEmbed,
                 headers: headers
             });
         }
