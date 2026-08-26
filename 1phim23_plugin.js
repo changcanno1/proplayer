@@ -1,5 +1,5 @@
-var BASEURL = "https://www.1phim23.com";
-var BASEAPI = "https://www.1phim23.com";
+var BASEURL = "https://www.1phim24.com";
+var BASEAPI = "https://www.1phim24.com";
 var BASELINK = BASEURL;
 // https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
@@ -7,7 +7,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "phimlongtieng",
       "name": "Nguồn Phim Lồng Tiếng",
-      "version": "1.0",
+      "version": "1.1.3",
       "author": "Alokillgtv",
       "info": "",
       "baseUrl": "https://www.1phim23.com",
@@ -17,7 +17,6 @@ function getManifest() {
       "adblock": false,
       "layoutType": "HORIZONTAL",
       "type": "MOVIE",
-      debug: true,
       "subtitleCat": false,
       "playerType": "exoplayer"
     });
@@ -264,9 +263,9 @@ function parseListResponse(html, $url) {
         var $doc = _$(html);
         var items = [];
         $doc.find(".list-film li").each(function() {
-            var id = this.find("a").attr("href") + "/tap-1";
+            var id = this.find("a").attr("href");
             var title = this.find("a").attr("title");
-            console.log("listMV " + title)
+            //console.log("listMV " + title)
             var poster = this.find("img").attr("src");
             var background = poster;
             var quality = this.find(".HD").text();
@@ -334,7 +333,7 @@ function parseMovieDetail(html, url) {
         var backdropUrl = posterUrl;
         var title = $doc.find('meta[property="og:title"]').attr("content");;
         var originName = title;
-        var description = $doc.find('.detail-content-main').text("content");
+        var description = decodeHTMLtext($doc.find('.detail-content-main').text());
         var director = "";
         var casts = "";
         var category = $doc.find("dt:content('Genre:')").next().text();;
@@ -522,8 +521,8 @@ function parseMovieDetail(html, url) {
       isEmbed: true,
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": typeof BASEURL !== "undefined" ? BASEURL : "https://www.1phim23.com/",
-        "Origin": typeof BASEURL !== "undefined" ? BASEURL : "https://www.1phim23.com/"
+        "Referer": BASEURL,
+        "Origin": BASEURL
       }
     });
 
@@ -532,13 +531,11 @@ function parseMovieDetail(html, url) {
 
   } catch (e) {
     console.log("parseDetailResponse[err]:\n " + e);
-    return JSON.stringify({
-      url: "",
-      mimeType: "",
-      isEmbed: false,
-      headers: {},
-      subtitles: []
-    });
+return JSON.stringify({ 
+  url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+  mimeType: "video/mp4", 
+  isEmbed: false, headers: {}, subtitles: [] 
+});
   }
 }
 
@@ -589,9 +586,9 @@ function parseEmbedResponse(html, url) {
     var stream = "";
     var mimeType = "application/x-mpegURL";
     var m3u8regexp = "https?:\\/\\/[^\"'\\s]+\\/hls\\/[^\"'\\s]+\\.m3u8";
-    var referer = "https://www.1phim23.com/";
+    var referer = BASEURL;
     // 1. Xử lý nguồn 1phim23.com
-    if (url.indexOf("1phim23.com") > -1) {
+    if (url.indexOf(BASEURL) > -1) {
       stream = url;
       //stream = "https://www.1phim23.com/pmm2/ff65116ecc6f7c2a47ea2f944cf5eef3.m3u8";
       stream = extractAndBuildWorkerUrl(html);
