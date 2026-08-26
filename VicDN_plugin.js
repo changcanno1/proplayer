@@ -8,14 +8,14 @@ function getManifest() {
     return JSON.stringify({
         id: "vicdn",
         name: "ViCDN Pro",
-        description: "Bản Master: Fix dứt điểm Search, lấy dữ liệu thẳng từ server. Anti-Detector mạnh mẽ.",
-        version: "7.3.0",
+        description: "Bản Master: Lấy dữ liệu thẳng từ API. Cập nhật cơ chế EmbedToPlay mượt mà.",
+        version: "7.4.0",
         baseUrl: BASEURL,
         iconUrl: BASEURL + "/vicdn.png",
         isEnabled: true,
         adblock: false,
         type: "MOVIE",
-        playerType: "embed" // [BẮT BUỘC] Dùng embed để mở Webview kèm CustomJS
+        playerType: "embedtoplay" // [CẬP NHẬT] Đổi từ embed sang embedtoplay để tự bắt link phát Native
     });
 }
 
@@ -138,7 +138,6 @@ function parseListResponse(html) {
 // -----------------------------------------------------------------------------
 function parseSearchResponse(html, url) {
     try {
-        // Tìm vị trí của mảng JSON trong HTML
         var startTag = "const allData = [";
         var startIdx = html.indexOf(startTag);
         
@@ -147,13 +146,9 @@ function parseSearchResponse(html, url) {
             return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
         }
         
-        // Đặt con trỏ vào đúng ký tự "[" để bắt đầu mảng JSON
         var jsonStart = startIdx + "const allData = ".length;
-        
-        // Tìm dấu "];" kết thúc của mảng JSON
         var endIdx = html.indexOf("];let filteredData", jsonStart);
         if (endIdx === -1) {
-            // Dự phòng nếu Web đổi code
             endIdx = html.indexOf("];", jsonStart);
         }
         
@@ -161,12 +156,10 @@ function parseSearchResponse(html, url) {
             return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
         }
         
-        // Cắt chính xác chuỗi JSON: từ "[" đến "]"
         var jsonString = html.substring(jsonStart, endIdx + 1);
         var allData = JSON.parse(jsonString);
         var items = [];
         
-        // Không cần dùng If-Else để lọc từ khóa nữa, vì Server đã tự động gom kết quả vào allData rồi!
         for (var i = 0; i < allData.length; i++) {
             var item = allData[i];
             
@@ -187,7 +180,6 @@ function parseSearchResponse(html, url) {
         }
         
         log("Tìm kiếm thành công, số phim nhận từ Server: " + items.length);
-        
         return JSON.stringify({
             "items": items,
             "pagination": { "currentPage": 1, "totalPages": 1 }
@@ -200,7 +192,7 @@ function parseSearchResponse(html, url) {
 }
 
 // -----------------------------------------------------------------------------
-// BÓC TÁCH CHI TIẾT VÀ DANH SÁCH TẬP NATIVE
+// BÓC TÁCH CHI TIẾT VÀ DANH SÁCH TẬP
 // -----------------------------------------------------------------------------
 function parseMovieDetail(html, url) {
     try {
@@ -228,7 +220,7 @@ function parseMovieDetail(html, url) {
                 var splitEpi = itemEpi.split("|");
                 if(splitEpi.length >= 2) {
                     episodes.push({
-                        id: splitEpi[1].trim(), // Lấy thẳng link Player làm ID
+                        id: splitEpi[1].trim(), // Lấy thẳng link Player làm ID (VD: https://vicdn.cc/tv-278275-1-1)
                         name: "Tập " + splitEpi[0].trim(),
                         slug: "tap-" + splitEpi[0].trim()
                     });
@@ -270,55 +262,23 @@ function parseMovieDetail(html, url) {
 }
 
 // -----------------------------------------------------------------------------
-// INJECT CUSTOM-JS XỬ LÝ JWPLAYER MÃ HÓA
+// XỬ LÝ TRẢ VỀ LINK ĐỂ APP TỰ SNIFF THEO CHẾ ĐỘ EMBEDTOPLAY
 // -----------------------------------------------------------------------------
 function parseDetailResponse(html, url) {
     try {
-        var streamLink = url;
-
-        var customJS = `
-            try {
-                if (window.devtoolsDetector) {
-                    window.devtoolsDetector.launch = function(){};
-                    window.devtoolsDetector.addListener = function(){};
-                    window.devtoolsDetector.isOpen = false;
-                }
-                
-                var s = document.createElement('style');
-                s.innerHTML = 'html, body { margin:0!important; padding:0!important; width:100vw!important; height:100vh!important; overflow:hidden!important; background:#000!important; } ' +
-                              '#ssPlay { position:fixed!important; top:0!important; left:0!important; width:100vw!important; height:100vh!important; z-index:999999!important; display:flex!important; } ' +
-                              '#sub-cfg-modal, header, footer, iframe:not(#ssPlay iframe) { display:none!important; pointer-events:none!important; }';
-                document.head.appendChild(s);
-                
-                var checkJWP = setInterval(function() {
-                    if (typeof jwplayer === 'function') {
-                        var player = jwplayer();
-                        if (player.getState) {
-                            var state = player.getState();
-                            if (state !== 'playing' && state !== 'buffering') {
-                                player.play();
-                            }
-                        }
-                    }
-                    var skip = document.querySelector('.jw-skip');
-                    if (skip) skip.click();
-                }, 1000);
-            } catch(e) {}
-        `;
-        
+        // Trả thẳng url (đã lấy được từ id tập bên trên) vào để app xử lý sniff m3u8
         return JSON.stringify({
-            url: streamLink,
-            isEmbed: true, 
+            url: url,
+            isEmbed: true, // Cần bằng true để kích hoạt WebView ẩn (sniffer) trong chế độ embedtoplay
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Referer": "https://vicdn.cc/",
-                "Custom-Js": customJS.replace(/\\s+/g, ' ').trim()
+                "Referer": "https://vicdn.cc/"
             },
             subtitles: []
         });
     } catch (e) {
         log("Lỗi parseDetailResponse: " + e);
-        return JSON.stringify({ url: "", isEmbed: true, headers: {} });
+        return JSON.stringify({ url: "", isEmbed: false, headers: {} });
     }
 }
 
