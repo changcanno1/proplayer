@@ -8,14 +8,14 @@ function getManifest() {
     return JSON.stringify({
         id: "vicdn",
         name: "ViCDN Pro",
-        description: "Bản Master: Lấy dữ liệu thẳng từ API. Cập nhật cơ chế EmbedToPlay mượt mà.",
-        version: "7.4.0",
+        description: "Bản Master: Tối ưu hoá EmbedToPlay, hỗ trợ lấy trực tiếp Master M3U8 để chọn Thuyết Minh/Vietsub trên Native Player.",
+        version: "7.5.0",
         baseUrl: BASEURL,
         iconUrl: BASEURL + "/vicdn.png",
         isEnabled: true,
         adblock: false,
         type: "MOVIE",
-        playerType: "embedtoplay" // [CẬP NHẬT] Đổi từ embed sang embedtoplay để tự bắt link phát Native
+        playerType: "embedtoplay" // Vẫn giữ nguyên chế độ bắt link Native
     });
 }
 
@@ -80,7 +80,6 @@ function getUrlList(slug, filtersJson) {
 }
 
 function getUrlSearch(keyword, filtersJson) {
-    // Gọi thẳng vào giao diện tìm kiếm của website
     return BASEURL + "/?q=" + encodeURIComponent(keyword.trim());
 }
 
@@ -103,10 +102,8 @@ function parseListResponse(html) {
 
         for (var i = 0; i < data.length; i++) {
             var item = data[i];
-            
             var pUrl = item.poster || "";
             if (pUrl && pUrl.indexOf("http") === -1) pUrl = "https://image.tmdb.org/t/p/w300/" + pUrl + ".jpg";
-            
             var bUrl = item.banner || "";
             if (bUrl && bUrl.indexOf("http") === -1) bUrl = "https://image.tmdb.org/t/p/w533_and_h300_face/" + bUrl + ".jpg";
 
@@ -128,33 +125,24 @@ function parseListResponse(html) {
             "pagination": { "currentPage": currentPage, "totalPages": totalPages }
         });
     } catch (e) {
-        log("Lỗi parseListResponse: " + e);
         return JSON.stringify({ "items": [], "pagination": { "currentPage": 1, "totalPages": 1 } });
     }
 }
 
 // -----------------------------------------------------------------------------
-// [FIX DỨT ĐIỂM] PARSER TÌM KIẾM TỪ HTML
+// PARSER TÌM KIẾM
 // -----------------------------------------------------------------------------
 function parseSearchResponse(html, url) {
     try {
         var startTag = "const allData = [";
         var startIdx = html.indexOf(startTag);
         
-        if (startIdx === -1) {
-            log("Không tìm thấy biến allData trong HTML Tìm Kiếm.");
-            return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
-        }
+        if (startIdx === -1) return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
         
         var jsonStart = startIdx + "const allData = ".length;
         var endIdx = html.indexOf("];let filteredData", jsonStart);
-        if (endIdx === -1) {
-            endIdx = html.indexOf("];", jsonStart);
-        }
-        
-        if (endIdx === -1) {
-            return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
-        }
+        if (endIdx === -1) endIdx = html.indexOf("];", jsonStart);
+        if (endIdx === -1) return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
         
         var jsonString = html.substring(jsonStart, endIdx + 1);
         var allData = JSON.parse(jsonString);
@@ -162,10 +150,8 @@ function parseSearchResponse(html, url) {
         
         for (var i = 0; i < allData.length; i++) {
             var item = allData[i];
-            
             var pUrl = item.poster || "";
             if (pUrl && pUrl.indexOf("http") === -1) pUrl = "https://image.tmdb.org/t/p/w300/" + pUrl + ".jpg";
-            
             var bUrl = item.banner || "";
             if (bUrl && bUrl.indexOf("http") === -1) bUrl = "https://image.tmdb.org/t/p/w533_and_h300_face/" + bUrl + ".jpg";
 
@@ -178,15 +164,8 @@ function parseSearchResponse(html, url) {
                 "episode_current": "Tập " + item.stt + "/" + item.total
             });
         }
-        
-        log("Tìm kiếm thành công, số phim nhận từ Server: " + items.length);
-        return JSON.stringify({
-            "items": items,
-            "pagination": { "currentPage": 1, "totalPages": 1 }
-        });
-        
+        return JSON.stringify({ "items": items, "pagination": { "currentPage": 1, "totalPages": 1 } });
     } catch (e) {
-        log("Lỗi parseSearchResponse: " + e.message);
         return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
     }
 }
@@ -200,9 +179,7 @@ function parseMovieDetail(html, url) {
         var data = json.data;
         
         var limg = data.banner || data.poster || "";
-        if (limg && limg.indexOf("http") === -1) {
-            limg = "https://image.tmdb.org/t/p/w533_and_h300_face/" + limg + ".jpg";
-        }
+        if (limg && limg.indexOf("http") === -1) limg = "https://image.tmdb.org/t/p/w533_and_h300_face/" + limg + ".jpg";
         
         var lname = data.vname || data.ename || "Đang cập nhật...";
         var ldes = data.content || "Không có mô tả.";
@@ -210,75 +187,133 @@ function parseMovieDetail(html, url) {
         var lduran = data.duration ? data.duration + " phút" : "";
         var status = "Tập " + data.stt + "/" + data.total;
         var category = (data.genre || []).join(" - ");
-        var year = data.year || 2026;
         
         var episodes = [];
-        
         if (data.list_episodes && data.list_episodes.length > 0) {
             for (var j = 0; j < data.list_episodes.length; j++) {
                 var itemEpi = data.list_episodes[j];
                 var splitEpi = itemEpi.split("|");
                 if(splitEpi.length >= 2) {
                     episodes.push({
-                        id: splitEpi[1].trim(), // Lấy thẳng link Player làm ID (VD: https://vicdn.cc/tv-278275-1-1)
+                        id: splitEpi[1].trim(), 
                         name: "Tập " + splitEpi[0].trim(),
                         slug: "tap-" + splitEpi[0].trim()
                     });
                 }
             }
         } else if (data.mkv) {
-            episodes.push({
-                id: data.mkv.trim(),
-                name: "Xem Ngay",
-                slug: "full"
-            });
+            episodes.push({ id: data.mkv.trim(), name: "Xem Ngay", slug: "full" });
         }
         
-        if (episodes.length === 0) {
-            episodes.push({ id: url, name: "Phim chưa có link", slug: "error" });
-        }
+        if (episodes.length === 0) episodes.push({ id: url, name: "Phim chưa có link", slug: "error" });
         
         return JSON.stringify({
-            id: url,
-            title: lname,
-            posterUrl: limg,
-            backdropUrl: limg,
-            description: ldes,
-            quality: (data.type || "HD").toUpperCase(),
-            year: year,
-            rating: 8.5,
-            status: status,
-            category: category,
-            episode_current: "Tập " + data.stt,
+            id: url, title: lname, posterUrl: limg, backdropUrl: limg, description: ldes,
+            quality: (data.type || "HD").toUpperCase(), year: data.year || 2026, rating: 8.5,
+            status: status, category: category, episode_current: "Tập " + data.stt,
             servers: [{ name: "VIP Server", episodes: episodes }],
-            duration: lduran,
-            casts: lactor
+            duration: lduran, casts: lactor
         });
-
     } catch (e) {
-        log("Lỗi parseMovieDetail: " + e);
         return JSON.stringify({ id: url, title: "Lỗi tải dữ liệu", servers: [] });
     }
 }
 
 // -----------------------------------------------------------------------------
-// XỬ LÝ TRẢ VỀ LINK ĐỂ APP TỰ SNIFF THEO CHẾ ĐỘ EMBEDTOPLAY
+// [CẬP NHẬT] BẮT MASTER M3U8 ĐỂ GIỮ NGUYÊN AUDIO TRACKS
 // -----------------------------------------------------------------------------
 function parseDetailResponse(html, url) {
     try {
-        // Trả thẳng url (đã lấy được từ id tập bên trên) vào để app xử lý sniff m3u8
+        // 1. Cố gắng trích xuất trực tiếp link M3U8 từ HTML
+        // Mục đích: Ép phát trực tiếp file Master chứa Audio Tracks mà không qua Sniffer
+        var m3u8 = "";
+        var m3u8Match = html.match(/(?:file|source|url|src|link)\s*["':=]+\s*["']?(https?:\/\/[^"'\s>]+\.m3u8[^"'\s>]*)/i);
+        if (!m3u8Match) m3u8Match = html.match(/(https?:\/\/[^"'\s>]+\.m3u8[^"'\s>]*)/i);
+        
+        if (m3u8Match && m3u8Match[1]) {
+            m3u8 = m3u8Match[1];
+            
+            // Trích xuất thêm Subtitles VTT (nếu web dùng sub rời)
+            var subtitles = [];
+            var tracksMatch = html.match(/tracks\s*:\s*(\[[\s\S]*?\])/);
+            if (tracksMatch) {
+                try {
+                    // Xử lý chuỗi JSON không chuẩn
+                    var tracksStr = tracksMatch[1].replace(/'/g, '"').replace(/([a-zA-Z0-9_]+)\s*:/g, '"$1":');
+                    var tracks = JSON.parse(tracksStr);
+                    for (var i = 0; i < tracks.length; i++) {
+                        var t = tracks[i];
+                        if (t.file && (t.kind === 'captions' || t.kind === 'subtitles')) {
+                            subtitles.push({ lang: t.label || "Vietsub", url: t.file });
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            return JSON.stringify({
+                url: m3u8,
+                isEmbed: false, // QUAN TRỌNG: false để ngắt sniffer, đưa thẳng Master M3U8 cho Native
+                mimeType: "application/x-mpegURL",
+                headers: {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                    "Referer": "https://vicdn.cc/"
+                },
+                subtitles: subtitles
+            });
+        }
+
+        // 2. Nếu web giấu kỹ link, dùng CustomJS can thiệp XHR/Fetch để ép bắt đúng file Master M3U8 đầu tiên
+        var customJS = `
+            (function() {
+                try { if (window.devtoolsDetector) window.devtoolsDetector.isOpen = false; } catch(e) {}
+                
+                var checkJWP = setInterval(function() {
+                    try {
+                        if (typeof jwplayer === 'function') {
+                            var p = jwplayer();
+                            if (p && p.getState && p.getState() !== 'playing' && p.getState() !== 'buffering') p.play();
+                        }
+                        var skip = document.querySelector('.jw-skip');
+                        if (skip) skip.click();
+                    } catch(e) {}
+                }, 1000);
+                
+                // Hàm đánh chặn mạng để tóm gọn m3u8 ngay từ khâu request
+                var sniffToApp = function(m3u8Url) {
+                    if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
+                        window.SnifferBridge.play(m3u8Url, "https://vicdn.cc/");
+                    }
+                };
+
+                // Đánh chặn XHR
+                var origOpen = XMLHttpRequest.prototype.open;
+                XMLHttpRequest.prototype.open = function(method, requestUrl) {
+                    if (typeof requestUrl === 'string' && requestUrl.indexOf('.m3u8') !== -1) sniffToApp(requestUrl);
+                    return origOpen.apply(this, arguments);
+                };
+
+                // Đánh chặn Fetch
+                var origFetch = window.fetch;
+                window.fetch = function() {
+                    var requestUrl = arguments[0];
+                    if (typeof requestUrl === 'string' && requestUrl.indexOf('.m3u8') !== -1) sniffToApp(requestUrl);
+                    return origFetch.apply(this, arguments);
+                };
+            })();
+        `;
+
         return JSON.stringify({
             url: url,
-            isEmbed: true, // Cần bằng true để kích hoạt WebView ẩn (sniffer) trong chế độ embedtoplay
+            isEmbed: true,
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Referer": "https://vicdn.cc/"
+                "Referer": "https://vicdn.cc/",
+                "Custom-Js": customJS.replace(/\s+/g, ' ').trim()
             },
             subtitles: []
         });
     } catch (e) {
-        log("Lỗi parseDetailResponse: " + e);
-        return JSON.stringify({ url: "", isEmbed: false, headers: {} });
+        return JSON.stringify({ url: url, isEmbed: true, headers: {} });
     }
 }
 
