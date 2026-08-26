@@ -57,7 +57,13 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
       "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
     },
-    
+    {
+      "id": "Phim Lồng Tiếng",
+      "name": "Phim Lồng Tiếng",
+      "version": "1.1.7",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/1phim23_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
+    },
     {
       "id": "NOVAHD",
       "name": "NOVAHD",
