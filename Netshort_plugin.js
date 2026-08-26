@@ -1,7 +1,6 @@
 var BASEURL = "https://netshort.com";
 var BASEAPI = "http://vkey.vn/novahd/api";
 var BASELINK = BASEURL;
-var popup_html = ""; // Đã xóa nội dung popup donate
 
 // https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
@@ -20,14 +19,6 @@ function getManifest() {
       "layoutType": "HORIZONTAL",
       "type": "shortfilm",
       "subtitleCat": false,
-      popup_html: popup_html,
-      "debug": true,
-      "playerType": "exoplayer"
-    });
-  }
-// ... (giữ nguyên phần code bên dưới)
-      "subtitleCat": false,
-      popup_html: popup_html,
       "debug": true,
       "playerType": "exoplayer"
     });
@@ -184,12 +175,6 @@ function getUrlSearch(keyword, filtersJson) {
       }
   }
 } // getUrlList, getUrlSearch
-// http://vkey.vn/animevv
-// /quoc-gia/M%E1%BB%B9
-// /top
-//filtersJson = "{page:5}"
-//getUrlList("/top", filtersJson)
-//getUrlSearch("girl", filtersJson)
 // ===== HÀM TẠO URL END ======
 
 // ===== HÀM TẠO KHỐI LIST PHIM BEGIN ======
@@ -277,8 +262,6 @@ function parseListResponse(html, url) {
         });
     }
 }
-//html = sourceHTML;
-//$data = parseJSDataIsolated(script);
 // ===== HÀM TẠO KHỐI LIST PHIM END ======
 
 // ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
@@ -312,14 +295,12 @@ function parseMovieDetail(html, url) {
         var extra = "";
 
         // Tách ID Video
-                // Tách ID Video
         var matchId = url.match(/(\d{17,20})(?:-ep-\d+)?(?:[?#]|$)/i);
         var idvideo = matchId ? matchId[1] : "";
 
         if (!idvideo) {
             throw new Error("Không thể trích xuất ID video từ URL: " + url);
         }
-
 
         var servers = [];
         for (var $h = 1; $h < 3; $h++) {
@@ -387,20 +368,12 @@ function parseMovieDetail(html, url) {
         });
     }
 }
-
-//var url = "https://novahd.cc/api/show/1413"
-//var url = "http://vkey.vn/novahd/api/show/1413"
-// https://novahd.cc/api/shows/1413
-//var html = sourceHTML;
-//JSON.parse(parseMovieDetail(sourceHTML, url))
 // ===== HÀM TẠO KHỐI CHI TIẾT PHIM END ======
 
 // ===== HÀM TẠO XỬ LÝ STREAM PHIM BEGIN ======
 {
  function parseDetailResponse(html, url) {
     log("parseEmbedResponse [url]: " + url); 
-    //log("parseEmbedResponse raw: " + html); 
-  //console.log("parseEmbedResponse [Raw]: " + html);
     try {
     
     function getQueryParam(url, param) {
@@ -413,10 +386,8 @@ function parseMovieDetail(html, url) {
     var sv = getQueryParam(url, "sv");           // "2"
     var eq = getQueryParam(url, "eq");           // "1"
 
-      // https://cdn-netshort.dramafren.org/index.php?action=resolve_watch&id=2087124383822565377&ep=28&server=1&_=1787627634991&lang=vi
       var stream = "https://cdn-netshort.dramafren.org/index.php?action=resolve_watch&id="+idvideo+"&ep="+ep+"&lang=vi&sv="+sv+"&eq=" + eq;
       var customJS = clearJS(rawJS);
-      // Mimetype application/x-mpegURL video/mp4
       console.log("parseEmbedResponse fetch\n" + stream);
   
       var $return = JSON.stringify({
@@ -448,7 +419,6 @@ function parseMovieDetail(html, url) {
     try {
         var responseData = JSON.parse(html);
 
-        // Trích xuất tham số eq từ URL (ví dụ eq=3 -> index 3)
         var eqMatch = url.match(/[?&]eq=(\d+)/i);
         var index = eqMatch ? parseInt(eqMatch[1], 10) : 1;
 
@@ -462,7 +432,6 @@ function parseMovieDetail(html, url) {
             return "video/mp4";
         }
 
-        // Sắp xếp các độ phân giải từ cao xuống thấp
         var sortedQualities = (responseData.qualities || []).slice().sort(function(a, b) {
             var resA = parseInt((a.quality.match(/(\d+)p/) || [0, 0])[1], 10);
             var resB = parseInt((b.quality.match(/(\d+)p/) || [0, 0])[1], 10);
@@ -516,7 +485,7 @@ function parseMovieDetail(html, url) {
 } // parseDetailResnse, parseEmbedResponse
 // ===== HÀM TẠO XỬ LÝ STREAM PHIM END ======
 
-// ==== HÀM TẠO CUSTOMpo SCRIPT BEGIN ====
+// ==== HÀM TẠO CUSTOM SCRIPT BEGIN ====
 function rawJS(){
  function LOG(msg, check) {
     var logMsg = msg;
@@ -1268,7 +1237,7 @@ BASE64 = {
         var fixedLine = currentLine;
         if (returnFixed) {
           // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
-          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
+          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
         }
   
         fixedLines.push(fixedLine);
