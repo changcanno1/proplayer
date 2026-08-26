@@ -72,6 +72,14 @@
       "iconUrl": "https://m.media-amazon.com/images/I/61fJ78I23IL.png",
       "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
     },
+     {
+      "id": "Netshort",
+      "name": "Netshort",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Netshort_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/netshort.png",
+      "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
+    },
     {
       "id": "Phimngan.net",
       "name": "Phimngan.net",
