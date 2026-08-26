@@ -6,7 +6,7 @@ function getManifest() {
     id: "phimfun",
     name: "Nguồn Phim Fun",
     description: "Nguồn phim mới.",
-    "version": "1.1.7",
+    "version": "1.1.8",
     info: "Nguồn phim dự phòng, có server riêng có thể sơ cưa khi những nguồn khác bị lỗi. Có cơ chế lưu lại tập vừa xem và có thể chuyển tập không cần quay lại menu phim.",
     baseUrl: "https://phimfun.net",
     iconUrl: "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png",
@@ -29,23 +29,28 @@ function log(msg) {
 function getHomeSections() {
   return JSON.stringify([
     {
-      "slug": "/the-loai/phim-chieu-rap-1",
-      "title": "Phim Lẻ",
+      "slug": "/the-loai/phim-cap-nhat-1",
+      "title": "Phim Mới Cập Nhật",
       "type": "Horizontal"
     },
     {
       "slug": "/the-loai/phim-le-1",
-      "title": "Phim Bộ",
+      "title": "Phim Lẻ",
       "type": "Horizontal"
     },
     {
       "slug": "/the-loai/phim-bo-1",
-      "title": "Thuyét Minh",
+      "title": "Phim Bộ",
       "type": "Horizontal"
     },
     {
-      "slug": "/the-loai/phim-cap-nhat-1",
-      "title": "Phim Mới",
+      "slug": "/the-loai/hoat-hinh-1",
+      "title": "Hoạt Hình",
+      "type": "Horizontal"
+    },
+    {
+      "slug": "/tuyen-tap-1",
+      "title": "Tuyển Tập",
       "type": "Grid"
     }
   ]);
@@ -90,6 +95,7 @@ function decodeHTMLEntities(str) {
     });
   } catch (e) {
     log("decodeHTMLEntities[err]:\n " + e);
+    return str || "";
   }
 }
 
@@ -198,7 +204,7 @@ function getUrlCategories() {
 
 function getUrlCountries() {
   try {
-    return "";
+    return "[]";
   } catch (e) {
     log("getUrlCountries[err]:\n " + e);
   }
@@ -206,7 +212,7 @@ function getUrlCountries() {
 
 function getUrlYears() {
   try {
-    return "";
+    return "[]";
   } catch (e) {
     log("getUrlYears[err]:\n " + e);
   }
@@ -217,89 +223,57 @@ function getUrlYears() {
 // =============================================================================
 
 function fixHref(href) {
-  try {
-    if (!href) return "";
-
-    let cleanHref = href.trim();
-    const ignorePattern =
-      /^(#|https?:\/\/|\/\/|mailto:|tel:|javascript:|data:|blob:)/i;
-
-    if (ignorePattern.test(cleanHref)) {
-      return cleanHref;
+  if (!href) return "";
+  var cleanHref = href.trim();
+  if (/^(#|https?:\/\/|\/\/|mailto:|tel:|javascript:|data:|blob:)/i.test(cleanHref)) {
+    if (cleanHref.indexOf("//") === 0) {
+      return "https:" + cleanHref;
     }
-
-    if (cleanHref.startsWith("/")) {
-      try {
-        const urlObj = new URL(BASEURL);
-        return urlObj.origin + cleanHref;
-      } catch (e) {
-        return BASEURL + cleanHref;
-      }
-    }
-
-    return BASEURL + cleanHref;
-  } catch (e) {
-    log("fixHref[err]:\n " + e);
+    return cleanHref;
   }
+  if (cleanHref.indexOf("/") === 0) {
+    return BASEURL + cleanHref;
+  }
+  return BASEURL + "/" + cleanHref;
 }
 
 function parseListResponse(html, $url) {
   try {
     if ($url) log("parseListResponse[url]: \n" + $url);
 
-    var quality = "";
     var items = [];
     _$(html)
-      .find(".MovieList")
+      .find(".MovieList, .TpSbList") // Hỗ trợ cả 2 dạng list trên trang chủ
       .find("li")
       .each(function () {
-        var href = this.find("a").attr("href");
+        var aTag = this.find("a");
+        var href = aTag.attr("href");
+        if (!href) return; // Nếu không có link thì bỏ qua
+        
         href = fixHref(href);
         href = href.replace("/phim/", "/xem-phim/");
-        var title = this.find("img").attr("alt");
-        title = decodeHTMLEntities(title);
-        var src = this.find("img").attr("src");
-        if (src.indexOf("base64") > -1) {
-          src = this.find("img").attr("data-src");
+        
+        var title = this.find(".Title").text() || this.find("h3").text() || this.find("img").attr("alt") || aTag.attr("title");
+        title = decodeHTMLEntities(title).trim();
+        
+        var imgTag = this.find("img");
+        var src = imgTag.attr("data-src") || imgTag.attr("src") || "";
+        
+        if (src.indexOf("base64") > -1 || src.indexOf("data:image") > -1) {
+          src = imgTag.attr("data-src") || src;
         }
         src = fixHref(src);
 
-        var episode_current = this.find(".mc__ep-badge").text().trim();
+        var episode_current = this.find(".TpTv").text().trim() || this.find(".mc__ep-badge").text().trim();
 
-        function isValidMediaUrl(url) {
-          if (!url || typeof url !== "string") return false;
-
-          var cleanUrl = url.trim();
-
-          if (
-            cleanUrl.indexOf("_spEsc") > -1 ||
-            cleanUrl.indexOf("'+") > -1 ||
-            cleanUrl.indexOf("+'") > -1 ||
-            cleanUrl.indexOf("${") > -1 ||
-            cleanUrl.indexOf("javascript:") > -1
-          ) {
-            return false;
-          }
-
-          var httpPattern = /^https?:\/\/[^\s"'<>+]+$/i;
-          return httpPattern.test(cleanUrl);
-        }
-
-        if (isValidMediaUrl(href)) {
-          var cleanThumb = (src || "").replace(/&amp;/g, "&").trim();
-
-          if (cleanThumb && cleanThumb.indexOf("http") !== 0) {
-            cleanThumb = "https:" + cleanThumb;
-          }
-
+        if (href) {
           items.push({
-            id: href.trim(),
-            title: (title || "").trim(),
-            posterUrl: cleanThumb,
-            backdropUrl: cleanThumb,
-            quality: quality || "",
-            lang: "",
-            episode_current: episode_current || "",
+            id: href,
+            title: title || "Chưa có tên",
+            posterUrl: src,
+            backdropUrl: src,
+            quality: "",
+            episode_current: episode_current
           });
         }
       });
@@ -314,14 +288,7 @@ function parseListResponse(html, $url) {
   } catch (e) {
     log("parseListResponse[err]:\n " + e);
     return JSON.stringify({
-      items: [
-        {
-          id: $url || "error_url",
-          title: "Lỗi: " + e,
-          posterUrl: "",
-          backdropUrl: "",
-        },
-      ],
+      items: [],
       pagination: {
         currentPage: 1,
         totalPages: 1,
@@ -531,7 +498,7 @@ function parseMovieDetail(html, url) {
   } catch (e) {
     log("parseMovieDetail[err]:\n " + e);
     return JSON.stringify({
-      id: slug || url || "error",
+      id: url || "error",
       title: "error",
       servers: [],
     });
@@ -661,7 +628,6 @@ function parseEmbedResponse(html, url, datasend) {
       return JSON.stringify({ url: "", isEmbed: false, headers: {} });
     }
 
-    var domainMatch = url.match(/^(https?:\/\/[^\/]+)/);
     var targetDomain = "https://moviking.neuronix.sbs";
 
     // 2. MẸO: Đóng gói metadata vào Query String để Tầng 2 đọc lại
@@ -682,7 +648,7 @@ function parseEmbedResponse(html, url, datasend) {
     // 3. Trả về isEmbed = true để App gọi POST /geturl
     return JSON.stringify({
       url: nextUrl,
-      isEmbed: true, // Bật isEmbed để App tiếp tục chuỗi Fetch
+      isEmbed: true, 
       postBody: postBody,
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -726,8 +692,6 @@ function parseEmbedResponse(html, url, datasend) {
                          "&lang=" + lang;
 
     console.log("🎯 Final Stream Bitluna URL:", finalStreamUrl);
-
-    // 4. Mã Interceptor chèn vào WebView/Player của App để sửa file M3U8
     
     // 5. Trả về isEmbed: false -> Báo App dừng chuỗi Fetch và đưa link cho Player phát!
 
@@ -744,11 +708,9 @@ function parseEmbedResponse(html, url, datasend) {
     }
     else{
       console.log("parseEmbedResponse [Tầng 4]: " + url);
-      console.log("parseEmbedResponse [Tầng 4]: raw" + html);
       var result = extractMediaInfo(html, url);
       console.log("Link stream: " + result.link)
       console.log("Link sub: " + result.sub);
-      // mimeType: "application/x-mpegURL",
       return JSON.stringify({
         url: result.link,
         mimeType: "application/x-mpegURL",
@@ -770,14 +732,13 @@ function parseEmbedResponse(html, url, datasend) {
   } catch (e) {
     console.log("[Lỗi parseEmbedResponse]", e);
     return JSON.stringify({ 
-      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-      mimeType: "video/mp4", 
+      url: "", 
       isEmbed: false, headers: {}, subtitles: [] 
     });
   }
 }
+
 function extractMediaInfo(htmlString, baseUrl) {
-    // 1. Bóc tách tất cả các biến JS (var, let, const) trong HTML vào Map
     var varsMap = {};
     var varRegex = /(?:var|let|const)\s+([a-zA-Z0-9_]+)\s*=\s*["']([^"']*)["']/g;
     var vMatch;
@@ -785,23 +746,18 @@ function extractMediaInfo(htmlString, baseUrl) {
         varsMap[vMatch[1]] = vMatch[2];
     }
 
-    // 2. ƯU TIÊN LẤY CDN TỪ BIẾN 'var cdn = ...' TRONG HTML
     var targetCdn = "";
     if (varsMap["cdn"]) {
         targetCdn = varsMap["cdn"].trim();
-        // Nếu CDN thiếu protocol (vd: "cdn4.bitluna.shop") -> Bổ sung https://
         if (!/^https?:\/\//i.test(targetCdn)) {
             targetCdn = "https://" + targetCdn;
         }
-        // Xóa dấu / ở cuối CDN nếu có
         targetCdn = targetCdn.replace(/\/+$/, "");
     } else if (baseUrl) {
-        // Dự phòng nếu HTML không có var cdn -> Lấy Domain từ baseUrl
         var originMatch = baseUrl.match(/^(https?:\/\/[^\/]+)/i);
         targetCdn = originMatch ? originMatch[1] : "";
     }
 
-    // 3. Trích xuất biểu thức 'var url = ...' trong HTML
     var rawLink = "";
     var urlLineMatch = htmlString.match(/var\s+url\s*=\s*([^;\r\n]+)/);
 
@@ -812,30 +768,24 @@ function extractMediaInfo(htmlString, baseUrl) {
 
         for (var i = 0; i < parts.length; i++) {
             var part = parts[i].trim();
-            // Nếu là chuỗi hằng số ('https://No/segment/'...)
             var strMatch = part.match(/^["']([^"']*)["']$/);
             if (strMatch) {
                 assembled += strMatch[1];
             } else if (varsMap[part] !== undefined) {
-                // Nếu là tên biến (videoId, token1, token3...)
                 assembled += varsMap[part];
             }
         }
         rawLink = assembled;
     }
 
-    // 4. GỘP CDN: Thay thế 'https://No', 'http://No', '//No' bằng targetCdn
     var finalStreamUrl = "";
     if (rawLink) {
         finalStreamUrl = rawLink.replace(/^(https?:)?\/\/(No|undefined|null)(?=\/|$)/i, targetCdn);
-
-        // Trường hợp link là đường dẫn tương đối (/segment/...)
         if (/^\//.test(finalStreamUrl)) {
             finalStreamUrl = targetCdn + finalStreamUrl;
         }
     }
 
-    // 5. Trích xuất Subtitle Tiếng Việt nếu có
     var tracksMatch = htmlString.match(/tracks:\s*(\[[\s\S]*?\])\s*,/);
     var rawSub = "";
     if (tracksMatch) {
@@ -848,7 +798,6 @@ function extractMediaInfo(htmlString, baseUrl) {
         } catch (e) {}
     }
 
-    // Bù Domain CDN cho Subtitle
     if (rawSub && !/^https?:\/\//i.test(rawSub)) {
         rawSub = rawSub.replace(/^(https?:)?\/\/(No|undefined|null)(?=\/|$)/i, "");
         if (rawSub.startsWith("/")) {
@@ -878,6 +827,7 @@ function parseCategoriesResponse(apiResponseJson) {
 function parseCountriesResponse(html) {
   return "[]";
 }
+
 function parseYearsResponse(html) {
   return "[]";
 }
