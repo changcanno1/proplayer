@@ -6,7 +6,7 @@ function getManifest() {
         "name": "phimhayok",
         "description": "Nguồn xem phim Online ổn định",
         "version": "1.1.3",
-        "baseUrl": "http://vkey.vn/phimhayok",
+        "baseUrl": "https://phimhayok5.site",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimhayok.png",
         "isEnabled": true,
         "layoutType": "HORIZONTAL",
