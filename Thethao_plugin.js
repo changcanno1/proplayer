@@ -1,5 +1,5 @@
 // =============================================================================
-// PLUGIN VAX: TINHLAGI TV (KẾT HỢP DATA M3U VÀ UI MOVIE - FIX XOAY MÀN HÌNH & LOGO)
+// PLUGIN VAX: TINHLAGI TV (TỐI ƯU FOLDER & BÌA TRẬN ĐẤU DYNAMIC)
 // =============================================================================
 
 var BASE_URL = "https://tinhlagi.pro/s.m3u";
@@ -9,11 +9,10 @@ function getManifest() {
     return JSON.stringify({
         id: "ThethaoTV_TinhLaGi_Pro",
         name: "TV - Thể Thao Pro",
-        description: "Có màn hình chờ, hiển thị đúng Logo trận đấu. Fix triệt để lỗi giật lag do tự động xoay màn hình liên tục.",
-        version: "5.0.0",
+        description: "Rút gọn danh mục kênh, xếp Giờ Vàng lên đầu. Tích hợp ảnh bìa trận đấu tự động siêu nhẹ.",
+        version: "6.0.0",
         baseUrl: BASE_URL,
         isEnabled: true,
-        // Dùng LIST & MOVIE để có màn hình thông tin giống code 2
         layoutType: "LIST",
         type: "MOVIE", 
         playerType: "exoplayer"
@@ -23,32 +22,20 @@ function getManifest() {
 function getHomeSections() {
     return JSON.stringify([
         { slug: "tam-diem-dang-live", title: "🔥 Tâm Điểm Đang Live", type: "List" },
-        { slug: "cola-tv", title: "🔴 Cola TV", type: "List" },
-        { slug: "chuoi-chien-tv", title: "🔴 Chuối Chiên TV", type: "List" },
-        { slug: "vua-san-co-tv", title: "🔴 Vua Sân Cỏ TV", type: "List" },
-        { slug: "xoi-lac-z-tv", title: "🔴 Xôi Lạc Z TV", type: "List" },
-        { slug: "bia-om-tv", title: "🔴 Bia Ôm TV", type: "List" },
-        { slug: "socolive-tv", title: "🔴 Socolive TV", type: "List" },
         { slug: "gio-vang-tv", title: "🔴 Giờ Vàng TV", type: "List" },
-        { slug: "nau-xoi-tv", title: "🔴 Nấu Xôi TV", type: "List" },
-        { slug: "phao-hoa-tv", title: "🔴 Pháo Hoa TV", type: "List" },
-        { slug: "sp-tv-china", title: "🔴 SP TV (CHINA)", type: "List" },
+        { slug: "cola-tv", title: "🔴 Cola TV", type: "List" },
+        { slug: "bia-om-tv", title: "🔴 Bia Ôm TV", type: "List" },
+        { slug: "phao-hoa-tv", title: "🔴 Pháo Hoa TV", type: "List" }
     ]);
 }
 
 function getPrimaryCategories() {
     return JSON.stringify([
         { name: "🔥 Tâm Điểm Đang Live", slug: "tam-diem-dang-live" },
-        { name: "🔴 Cola TV", slug: "cola-tv" },
-        { name: "🔴 Chuối Chiên TV", slug: "chuoi-chien-tv" },
-        { name: "🔴 Vua Sân Cỏ TV", slug: "vua-san-co-tv" },
-        { name: "🔴 Xôi Lạc Z TV", slug: "xoi-lac-z-tv" },
-        { name: "🔴 Bia Ôm TV", slug: "bia-om-tv" },
-        { name: "🔴 Socolive TV", slug: "socolive-tv" },
         { name: "🔴 Giờ Vàng TV", slug: "gio-vang-tv" },
-        { name: "🔴 Nấu Xôi TV", slug: "nau-xoi-tv" },
-        { name: "🔴 Pháo Hoa TV", slug: "phao-hoa-tv" },
-        { name: "🔴 SP TV (CHINA)", slug: "sp-tv-china" },
+        { name: "🔴 Cola TV", slug: "cola-tv" },
+        { name: "🔴 Bia Ôm TV", slug: "bia-om-tv" },
+        { name: "🔴 Pháo Hoa TV", slug: "phao-hoa-tv" }
     ]);
 }
 
@@ -61,21 +48,15 @@ function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; }
 
 // =============================================================================
-// HELPERS (LƯU TRỮ VÀ TỐI ƯU HÓA)
+// HELPERS
 // =============================================================================
 
 let channelList = [];
 const CATEGORY_MAP = {
-    "cola-tv": "🔴 Cola TV",
-    "chuoi-chien-tv": "🔴 Chuối Chiên TV",
-    "vua-san-co-tv": "🔴 Vua Sân Cỏ TV",
-    "xoi-lac-z-tv": "🔴 Xôi Lạc Z TV",
-    "bia-om-tv": "🔴 Bia Ôm TV",
-    "socolive-tv": "🔴 Socolive TV",
     "gio-vang-tv": "🔴 Giờ Vàng TV",
-    "nau-xoi-tv": "🔴 Nấu Xôi TV",
-    "phao-hoa-tv": "🔴 Pháo Hoa TV",
-    "sp-tv-china": "🔴 SP TV (CHINA)"
+    "cola-tv": "🔴 Cola TV",
+    "bia-om-tv": "🔴 Bia Ôm TV",
+    "phao-hoa-tv": "🔴 Pháo Hoa TV"
 };
 
 const RX_LOGO = /tvg-logo="([^"]+)"/i;
@@ -86,7 +67,6 @@ function parseM3U(text) {
     const lines = text.split("\n");
     const channels = [];
     let currentChannel = null;
-    let count = 0;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -123,7 +103,6 @@ function parseM3U(text) {
         } else if (!line.startsWith("#")) {
             if (currentChannel) {
                 currentChannel.url = line;
-                // LOẠI BỎ LUỒNG FLV ĐỂ TRÁNH LỖI PLAYER
                 if (line.toLowerCase().indexOf('.flv') === -1) {
                     channels.push(currentChannel);
                 }
@@ -144,7 +123,6 @@ function processChannelTitle(channelName, nowMs, currentYear) {
     const day = parseInt(match[3], 10);
     const month = parseInt(match[4], 10);
     
-    // So sánh thời gian thực để tìm trận Đang Live
     const eventTimestamp = Date.UTC(currentYear, month - 1, day, hour - 7, minute, 0, 0);
     
     return {
@@ -155,7 +133,7 @@ function processChannelTitle(channelName, nowMs, currentYear) {
 }
 
 // =============================================================================
-// PARSE DANH SÁCH & BỘ LỌC KÊNH
+// PARSE LIST VÀ TẠO BÌA TRẬN ĐẤU (DYNAMIC POSTER)
 // =============================================================================
 
 function parseListResponse(html, apiUrl) {
@@ -184,26 +162,29 @@ function parseListResponse(html, apiUrl) {
         for (let i = 0; i < filteredChannels.length; i++) {
             const channel = filteredChannels[i];
             const matchInfo = processChannelTitle(channel.name, nowMs, currentYear);
-            const logo = channel.tvgLogo || FALLBACK_POSTER_URL;
             
-            // Đóng gói data truyền sang màn hình Detail (Code 2)
+            // TẠO ẢNH BÌA THEO CODE 2
+            const timeDisplay = matchInfo.isLive ? "ĐANG LIVE" : matchInfo.timeStr;
+            const textOverlay = encodeURIComponent("───── ⚽ ─────\n\n" + matchInfo.title + "\n\n" + timeDisplay + "\n\n──────────────");
+            const dynamicPoster = "https://placehold.co/400x600/0f172a/f8fafc.png?text=" + textOverlay;
+
             const payload = {
                 title: matchInfo.title,
-                logo: logo,
+                // Ưu tiên truyền logo từ M3U sang Detail Screen, nếu không có lấy Dynamic Poster
+                logo: channel.tvgLogo || dynamicPoster, 
                 url: channel.url,
                 group: channel.tvgGroup,
                 userAgent: channel.props["http-user-agent"] || "",
                 referer: channel.props["http-referrer"] || ""
             };
             
-            // Mã hoá ID để chuyển sang parseMovieDetail
             const itemUrl = BASE_URL + "#data=" + encodeURIComponent(JSON.stringify(payload));
 
             items.push({
                 id: itemUrl,
                 title: matchInfo.title,
-                posterUrl: logo,
-                backdropUrl: logo,
+                posterUrl: dynamicPoster, // Bìa ngoài list áp dụng chuẩn Code 2
+                backdropUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
                 quality: matchInfo.isLive ? "🔴 LIVE" : matchInfo.timeStr,
                 episode_current: channel.tvgGroup
             });
@@ -218,7 +199,7 @@ function parseListResponse(html, apiUrl) {
 function parseSearchResponse(html, apiUrl) { return parseListResponse(html, apiUrl); }
 
 // =============================================================================
-// CHI TIẾT KÊNH (MÀN HÌNH CHỜ MOVIE - LẤY LOGO CHUẨN)
+// CHI TIẾT KÊNH & EXOPLAYER
 // =============================================================================
 
 function parseMovieDetail(html, url) {
@@ -231,7 +212,6 @@ function parseMovieDetail(html, url) {
 
         if (!data) return "{}";
 
-        // Tạo nút chọn Server giống code 2 nhưng lấy tên đài phát
         const episodes = [{
             id: data.url + "|headers=" + encodeURIComponent(JSON.stringify({ ua: data.userAgent, ref: data.referer })),
             name: "📺 " + (data.group || "Xem Ngay"),
@@ -241,8 +221,7 @@ function parseMovieDetail(html, url) {
         return JSON.stringify({
             id: url,
             title: data.title,
-            // LOGO chuẩn lấy từ file M3U thay vì logo TinhLaGi mặc định
-            posterUrl: data.logo,
+            posterUrl: data.logo, // Trả lại logo chuẩn khi vào màn hình Detail
             backdropUrl: data.logo,
             description: "🌟 HỆ THỐNG TRỰC TIẾP TỐC ĐỘ CAO.\nHệ thống đã tự động lọc để chỉ giữ lại các link M3U8 ổn định nhất.",
             servers: [{ name: "Danh sách tập", episodes: episodes }]
@@ -251,10 +230,6 @@ function parseMovieDetail(html, url) {
         return JSON.stringify({ id: url, title: "Trực Tiếp Bóng Đá", servers: [] });
     }
 }
-
-// =============================================================================
-// BÓC TÁCH LINK CHẠY EXOPLAYER (XÓA CHẾ ĐỘ ÉP XOAY MÀN HÌNH)
-// =============================================================================
 
 function parseDetailResponse(html, apiUrl) {
     try {
@@ -279,8 +254,6 @@ function parseDetailResponse(html, apiUrl) {
                 "Referer": referer, 
                 "Origin": referer
             }
-            // ĐÃ XÓA HOÀN TOÀN cờ isLandscape, isPortrait, isRotate
-            // App sẽ tự động xoay màn hình tự nhiên khi bấm Play hoặc Back (Sẽ không còn bị lag khựng)
         });
     } catch (error) {
         return "{}";
