@@ -1,5 +1,5 @@
 // =============================================================================
-// PLUGIN VAX: TINHLAGI TV (TỐI ƯU FOLDER & BÌA TRẬN ĐẤU DYNAMIC)
+// PLUGIN VAX: TINHLAGI TV (TỐI ƯU LUỒNG LIVE, ƯU TIÊN GIỜ VÀNG & BÌA POSTER TO)
 // =============================================================================
 
 var BASE_URL = "https://tinhlagi.pro/s.m3u";
@@ -9,8 +9,8 @@ function getManifest() {
     return JSON.stringify({
         id: "ThethaoTV_TinhLaGi_Pro",
         name: "TV - Thể Thao Pro",
-        description: "Rút gọn danh mục kênh, xếp Giờ Vàng lên đầu. Tích hợp ảnh bìa trận đấu tự động siêu nhẹ.",
-        version: "6.0.0",
+        description: "Ưu tiên Giờ Vàng lên top đầu mục Live. Xóa sạch các luồng cũ. Tăng kích thước chữ tự động cho bìa trận đấu.",
+        version: "7.0.0",
         baseUrl: BASE_URL,
         isEnabled: true,
         layoutType: "LIST",
@@ -59,6 +59,9 @@ const CATEGORY_MAP = {
     "phao-hoa-tv": "🔴 Pháo Hoa TV"
 };
 
+// CHỈ GIỮ LẠI CÁC KÊNH NÀY TRONG HỆ THỐNG (CHẶN TỪ VÒNG NGOÀI)
+const ALLOWED_KEYWORDS = ["giờ vàng", "cola", "bia ôm", "pháo hoa"];
+
 const RX_LOGO = /tvg-logo="([^"]+)"/i;
 const RX_GROUP = /group-title="([^"]+)"/i;
 const RX_CHANNEL_NAME = /^(?:🟢\s*)?(\d{1,2}):(\d{2})\s+(\d{2})\/(\d{2})\s+(.+)$/;
@@ -103,7 +106,19 @@ function parseM3U(text) {
         } else if (!line.startsWith("#")) {
             if (currentChannel) {
                 currentChannel.url = line;
-                if (line.toLowerCase().indexOf('.flv') === -1) {
+                
+                // KIỂM TRA XEM KÊNH CÓ THUỘC DANH SÁCH CHO PHÉP KHÔNG
+                const grpLower = currentChannel.tvgGroup.toLowerCase();
+                let isAllowed = false;
+                for (let k = 0; k < ALLOWED_KEYWORDS.length; k++) {
+                    if (grpLower.indexOf(ALLOWED_KEYWORDS[k]) !== -1) {
+                        isAllowed = true;
+                        break;
+                    }
+                }
+
+                // XÓA FLV VÀ XÓA CÁC ĐÀI BỊ CẤM NGAY TỪ ĐẦU
+                if (isAllowed && line.toLowerCase().indexOf('.flv') === -1) {
                     channels.push(currentChannel);
                 }
                 currentChannel = null;
@@ -132,8 +147,23 @@ function processChannelTitle(channelName, nowMs, currentYear) {
     };
 }
 
+// BÓC TÁCH TITLE ĐỂ LÀM CHỮ TRÊN BÌA TO RÕ RÀNG HƠN
+function formatPosterText(title, timeDisplay) {
+    let team1 = title, sep = "", team2 = "";
+    // Phân tách đội bằng "vs" hoặc "-"
+    let match = title.match(/(.*?)\s+(vs|-)\s+(.*)/i);
+    if (match) {
+        team1 = match[1].trim();
+        sep = "vs";
+        team2 = match[3].trim();
+        // Càng xuống nhiều dòng thì API ảnh càng tự động phóng to chữ
+        return team1 + "\n\n" + sep + "\n\n" + team2 + "\n\n\n[ " + timeDisplay + " ]";
+    }
+    return title + "\n\n\n[ " + timeDisplay + " ]";
+}
+
 // =============================================================================
-// PARSE LIST VÀ TẠO BÌA TRẬN ĐẤU (DYNAMIC POSTER)
+// PARSE LIST
 // =============================================================================
 
 function parseListResponse(html, apiUrl) {
@@ -147,15 +177,23 @@ function parseListResponse(html, apiUrl) {
         const nowMs = Date.now();
         const currentYear = new Date().getUTCFullYear();
 
-        let filteredChannels = channelList;
+        let filteredChannels = [];
 
-        if (category) {
-            if (category === "tam-diem-dang-live") {
-                filteredChannels = channelList.filter(c => processChannelTitle(c.name, nowMs, currentYear).isLive);
-            } else {
-                const targetGroup = CATEGORY_MAP[category] ? CATEGORY_MAP[category].toLowerCase() : category.toLowerCase();
-                filteredChannels = channelList.filter(c => c.tvgGroup.toLowerCase().includes(targetGroup));
-            }
+        if (category === "tam-diem-dang-live") {
+            // Lấy trận đang Live
+            filteredChannels = channelList.filter(c => processChannelTitle(c.name, nowMs, currentYear).isLive);
+            
+            // THUẬT TOÁN ĐẨY GIỜ VÀNG TV LÊN TRÊN CÙNG
+            filteredChannels.sort((a, b) => {
+                const isGvA = a.tvgGroup.toLowerCase().indexOf("giờ vàng") !== -1 ? 1 : 0;
+                const isGvB = b.tvgGroup.toLowerCase().indexOf("giờ vàng") !== -1 ? 1 : 0;
+                return isGvB - isGvA; // 1 (Giờ Vàng) sẽ xếp trước 0 (Các đài khác)
+            });
+        } else if (category) {
+            const targetGroup = CATEGORY_MAP[category] ? CATEGORY_MAP[category].toLowerCase() : category.toLowerCase();
+            filteredChannels = channelList.filter(c => c.tvgGroup.toLowerCase().includes(targetGroup));
+        } else {
+            filteredChannels = channelList;
         }
 
         const items = [];
@@ -163,14 +201,13 @@ function parseListResponse(html, apiUrl) {
             const channel = filteredChannels[i];
             const matchInfo = processChannelTitle(channel.name, nowMs, currentYear);
             
-            // TẠO ẢNH BÌA THEO CODE 2
+            // TẠO ẢNH BÌA THEO FORMAT MỚI
             const timeDisplay = matchInfo.isLive ? "ĐANG LIVE" : matchInfo.timeStr;
-            const textOverlay = encodeURIComponent("───── ⚽ ─────\n\n" + matchInfo.title + "\n\n" + timeDisplay + "\n\n──────────────");
+            const textOverlay = encodeURIComponent(formatPosterText(matchInfo.title, timeDisplay));
             const dynamicPoster = "https://placehold.co/400x600/0f172a/f8fafc.png?text=" + textOverlay;
 
             const payload = {
                 title: matchInfo.title,
-                // Ưu tiên truyền logo từ M3U sang Detail Screen, nếu không có lấy Dynamic Poster
                 logo: channel.tvgLogo || dynamicPoster, 
                 url: channel.url,
                 group: channel.tvgGroup,
@@ -183,7 +220,7 @@ function parseListResponse(html, apiUrl) {
             items.push({
                 id: itemUrl,
                 title: matchInfo.title,
-                posterUrl: dynamicPoster, // Bìa ngoài list áp dụng chuẩn Code 2
+                posterUrl: dynamicPoster, 
                 backdropUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
                 quality: matchInfo.isLive ? "🔴 LIVE" : matchInfo.timeStr,
                 episode_current: channel.tvgGroup
@@ -221,7 +258,7 @@ function parseMovieDetail(html, url) {
         return JSON.stringify({
             id: url,
             title: data.title,
-            posterUrl: data.logo, // Trả lại logo chuẩn khi vào màn hình Detail
+            posterUrl: data.logo, 
             backdropUrl: data.logo,
             description: "🌟 HỆ THỐNG TRỰC TIẾP TỐC ĐỘ CAO.\nHệ thống đã tự động lọc để chỉ giữ lại các link M3U8 ổn định nhất.",
             servers: [{ name: "Danh sách tập", episodes: episodes }]
