@@ -20,6 +20,7 @@ function getManifest() {
 
 function getHomeSections() {
   return JSON.stringify([
+    { slug: "tam-diem-dang-live", title: "🔥 Tâm Điểm Đang Live", type: "Horizontal", path: "" },
     { slug: "cola-tv", title: "🔴 Cola TV", type: "Horizontal", path: "" },
     { slug: "chuoi-chien-tv", title: "🔴 Chuối Chiên TV", type: "Horizontal", path: "" },
     { slug: "vua-san-co-tv", title: "🔴 Vua Sân Cỏ TV", type: "Horizontal", path: "" },
@@ -35,6 +36,7 @@ function getHomeSections() {
 
 function getPrimaryCategories() {
   return JSON.stringify([
+    { name: "🔥 Tâm Điểm Đang Live", slug: "tam-diem-dang-live" },
     { name: "Cola TV", slug: "cola-tv" },
     { name: "Chuối Chiên TV", slug: "chuoi-chien-tv" },
     { name: "Vua Sân Cỏ TV", slug: "vua-san-co-tv" },
@@ -107,7 +109,7 @@ function parseListResponse(html, apiUrl) {
         posterUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
         backdropUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
         quality: isLive(matchInfo.dateTime) ? "LIVE" : matchInfo.dateTime,
-        episode_current: channel.url.includes(".m3u8") ? "HSL" : "FLV"
+        episode_current: channel.url.includes(".m3u8") ? "HLS" : "OTHER"
       });
     });
 
@@ -146,11 +148,10 @@ function parseDetailResponse(html, apiUrl) {
     } = getChannel(channelList, channelId);
 
     console.log("ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] Name: ", name);
-      if (url.includes(".flv")) {
-      // FLV (flv)
-      console.log(
-        `ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] Manifest type FLV`
-      );
+    
+    // Mặc dù đã ẩn FLV ở ngoài list, vẫn giữ logic parse này đề phòng cache hoặc search
+    if (url.includes(".flv")) {
+      console.log(`ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] Manifest type FLV`);
       console.log("ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] URL:", url);
       return JSON.stringify({
        isEmbed: false,
@@ -164,9 +165,7 @@ function parseDetailResponse(html, apiUrl) {
       });
     } else {
       // HLS (m3u8)
-      console.log(
-        `ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] Manifest type HLS (M3U8)`
-      );
+      console.log(`ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] Manifest type HLS (M3U8)`);
       console.log("ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] URL:", url);
       return JSON.stringify({
         isEmbed: false,
@@ -209,7 +208,6 @@ function parseYearsResponse(html) {
 const BASE_URL = "https://tinhlagi.pro/s.m3u";
 const FALLBACK_POSTER_URL = "https://i.ibb.co/rKHf363x/fallback-thumbnail.webp";
 let channelList = [];
-// Use GROUP_MAP to rename and merge the channel into tvg-group.
 const GROUP_MAP = {
   "🔴 cola tv": "🔴 Cola TV",
   "🔴 chuối chiên tv": "🔴 Chuối Chiên TV",
@@ -223,7 +221,6 @@ const GROUP_MAP = {
   "🔴 sp tv (china)": "🔴 SP TV (CHINA)",
 };
 
-// Use CATEGORY_MAP to convert the slug to tvg-group.
 const CATEGORY_MAP = {
   "cola-tv": "🔴 Cola TV",
   "chuoi-chien-tv": "🔴 Chuối Chiên TV",
@@ -248,19 +245,37 @@ function extractParamFromUrl(url, param) {
 }
 
 function filterChannels(channels, [filterKey, filterValue]) {
-  // filter channels by category
+  // LỌC 1: BỎ TOÀN BỘ KÊNH CÓ LINK .flv
+  let validChannels = channels.filter(channel => {
+    return channel.url && !channel.url.toLowerCase().includes('.flv');
+  });
+
+  // LỌC 2: THEO THỂ LOẠI / TÌM KIẾM
   if (filterValue && filterKey === "category") {
-    return channels.filter(
+    
+    // Nếu là mục Tâm Điểm Đang Live, lọc các trận đang diễn ra
+    if (filterValue === "tam-diem-dang-live") {
+      return validChannels.filter(channel => {
+        const matchInfo = parseChannelName(channel.name);
+        return isLive(matchInfo.dateTime);
+      });
+    }
+
+    // Các category bình thường
+    return validChannels.filter(
       (channel) => CATEGORY_MAP[filterValue] === channel.tvgGroup
     );
   }
+
   if (filterValue && filterKey === "search") {
-    return channels.filter((channel) => {
+    return validChannels.filter((channel) => {
       const name = channel.name.toLowerCase();
       filterValue = filterValue.toLowerCase();
       return name.indexOf(filterValue) >= 0;
     });
   }
+
+  return validChannels;
 }
 
 function getChannel(channels, channelId) {
@@ -310,7 +325,6 @@ function parseM3U(text) {
       const idMatch = line.match(/tvg-id="([^"]+)"/i);
       if (idMatch && idMatch[1]) currentChannel.tvgId = idMatch[1];
 
-      // Capture all catchup attributes
       const catchupMatch = line.match(/catchup="([^"]+)"/i);
       if (catchupMatch) currentChannel.props.catchup = catchupMatch[1];
 
@@ -361,7 +375,6 @@ function parseM3U(text) {
   return channels;
 }
 
-// Convert Base64/Base64Url to Hex for ClearKey
 function base64ToHex(base64) {
   if (!base64) return "";
   let b64 = base64.replace(/-/g, "+").replace(/_/g, "/");
@@ -380,7 +393,6 @@ function base64ToHex(base64) {
   }
 }
 
-// A handmade atob function for QuickJS
 function atob(input) {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -412,7 +424,7 @@ function atob(input) {
 
 function parseChannelName(channelName) {
   const match = channelName.trim().match(
-    /^(?:🟢\s*)?(\d{2}:\d{2})\s+(\d{2}\/\d{2})\s+(.+)$/
+    /^(?:🟢\s*)?(\d{1,2}:\d{2})\s+(\d{2}\/\d{2})\s+(.+)$/
   );
   if (!match) {
     return {
@@ -427,27 +439,9 @@ function parseChannelName(channelName) {
 }
 
 function isLive(dateTime) {
-  // dateTime format: "22:30-05/08"
-  var match = /^(\d{2}):(\d{2})-(\d{2})\/(\d{2})$/.exec(dateTime);
-
-  if (!match) {
-    return false;
-  }
-  var hour = Number(match[1]);
-  var minute = Number(match[2]);
-  var day = Number(match[3]);
-  var month = Number(match[4]);
-  var now = new Date();
-  var year = now.getUTCFullYear();
-  // GMT+7 -> UTC
-  var eventTime = Date.UTC(year, month - 1, day, hour - 7, minute);
-
-  return eventTime <= Date.now();
-}
-
-function isLive(dateTime) {
   // dateTime format: "22:30-05/08" hoặc "3:30-05/08"
   // Mặc định GMT+7
+  if (!dateTime) return false;
   var match = /^(\d{1,2}):(\d{2})-(\d{2})\/(\d{2})$/.exec(dateTime);
 
   if (!match) {
