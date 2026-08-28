@@ -2,116 +2,100 @@
   "version": 1,
   "plugins": [
     {
-      "id": "NguonCVip",
-      "name": "NguonCVip",
+      "id": "nguoncnew",
+      "name": "Nguồn C VIP",
       "version": "1.5.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncHT_plugin.js",
-      "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/nguonC.png"
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png?cache=true",
+      "info": "Phim hay, xem mượt. Nếu nguồn không vào được hãy thử truy cập bằng nút đăng nhập ở kho plugin để xem họ đổi domain gì và bạn tự đổi lại trên app và báo cho tác giả biết."
     },
     {
-      "id": "Vsmov",
-      "name": "PhimVsmov",
-      "version": "1.1.0",
+      "id": "vsmov",
+      "name": "Nguồn Vsmov",
+      "version": "1.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
-      "iconUrl": "https://vsmov.com/VSmov.png"
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vsmov.png?cache=true",
+      "info": "Nguồn phim lồng tiếng và phụ đề mới, xe rắt nhanh và mượt. Có hỗ trợ phụ đề song ngữ luôn."
     },
     {
-      "id": "VicDn",
-      "name": "PhimVicDn",
-      "version": "1.5.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
-      "iconUrl": "https://vicdn.cc/vicdn.png"
+      "id": "vicdn",
+      "name": "Nguồn Vicdn",
+      "version": "1.5",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimVicdnHT_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png?cache=true",
+      "info": "Nguồn phim siêu xịn có chất lượng cao.\n\nHỗ trợ nhiều luồng phát từ vietsub tới thuyết minh và lồng tiếng,\n\nPlayer siêu xịn với tốc độ tải video vô cùng mượt mà.\n\nHỗ trợ anh em chuyển tập và lưu lịch sử lại ngay khi đang xem."
     },
     {
-      "id": "PhimHayOK",
-      "name": "PhimHayOK",
-      "version": "1.1.3",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimhayOKHT_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimhayok.png"
-    },
-    {
-      "id": "PhimHDCSS",
-      "name": "PhimHDCSS",
-      "version": "1.1.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
-      "iconUrl": "https://phimhdcss.com/favicon.ico"
-    },
-     {
-      "id": "PhimBom",
-      "name": "PhimBom",
-      "version": "1.2.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
-    },
-    {
-      "id": "PhimFUN",
-      "name": "PhimFUN",
-      "version": "1.1.7",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
-      "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
-    },
-     {
       "id": "kkphim",
       "name": "KKPhim",
       "version": "1.0.2",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
-      "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim.png"
+      "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim.png",
+      "info": "Nguồn phim của youngbi. Báo tác giả ngay khi có lỗi."
     },
     {
-      "id": "Onflix",
-      "name": "Onfix",
-      "version": "1.9.0",
+      "id": "onflix",
+      "name": "Onflix Phim",
+      "version": "1.9",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/OnflixHT_plugin.js",
-      "iconUrl": "https://onflix.lat/app/asset/logo.png"
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png?cache=true",
+      "info": "Phim hay, xem mượt. Nếu nguồn không vào được hãy thử truy cập bằng nút đăng nhập ở kho plugin để xem họ đổi domain gì và bạn tự đổi lại trên app và báo cho tác giả biết."
     },
     {
-      "id": "NOVAHD",
-      "name": "NOVAHD",
-      "version": "1.2.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NovaHDHT_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/novahd.png"
+      "id": "phimhayok",
+      "name": "Phim Hay Ok",
+      "version": "1.1.3",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimhayOKHT_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimhayok.png?cache=true",
+      "info": "Phim hay, xem mượt. Nếu nguồn không vào được hãy thử truy cập bằng nút đăng nhập ở kho plugin để xem họ đổi domain gì và bạn tự đổi lại trên app và báo cho tác giả biết."
     },
     {
-      "id": "Phim Lồng Tiếng",
-      "name": "Phim Lồng Tiếng",
-      "version": "1.1.7",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/1phim23_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
+      "id": "phimhdcs",
+      "name": "PhimHDCSS",
+      "version": "1.1.4",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
+      "iconUrl": "https://phimhdcss.com/favicon.ico",
+      "info": "Nguồn phim của youngbi. Báo tác giả ngay khi có lỗi."
     },
     {
-      "id": "HHpandatv",
-      "name": "HHpandatv",
-      "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/hhpanda_plugin.js",
-      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNZWj2x3KVRTGvKRc6jyinavcjgQxZVTFhzpwtdWyvbB_SfUir-WEHgDc&s=10"
-    },
-    {
-      "id": "Hh3D",
-      "name": "Hoạt Hình 3D",
+      "id": "yanhh3d",
+      "name": "Yanhh3D",
       "version": "1.3.5",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HH3DNew_plugin.js",
-      "iconUrl": "https://hoathinh3d.co/wp-content/uploads/2023/09/favicon.png"
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yanhh3d.png?cache=true",
+      "info": "Trang này bị nhà mạng chặn nên cần dns để xem. Bạn tải app 1.1.1.1 về dùng hoặc thử bật DNS và DPI trong app này."
     },
     {
-      "id": "AnimeHay09",
-      "name": "AnimeHay09",
+      "id": "animevv",
+      "name": "Nguồn Animevv",
+      "version": "1.2.3",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/AnimevvNew_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/animevv.png?cache=true",
+      "info": "Nguồn phim Animevv, nguồn này dùng servers riêng của họ nên cũng khá mượt mà..."
+    },
+    {
+      "id": "animehay",
+      "name": "Nguồn Anime Hay",
       "version": "1.0.7",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Animehay09New_plugin.js",
-      "iconUrl": "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/i/c72e2f68-1a1c-48a2-aa5f-edf7eaaf3548/d77q5ev-af22ff5c-be81-4e24-bf0e-13836c6c939e.png"
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/animehay.png?cache=true",
+      "info": "Nguồn phim anime chất lượng."
     },
     {
-      "id": "Anime47",
-      "name": "Anime47",
+      "id": "anime47",
+      "name": "Nguồn Anime47",
       "version": "1.3.2",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Animie47New_plugin.js",
-      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBfZXavFvLlt56VptIFEx-RSQI-oSTGEEjJT7D9hNKJA&s"
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/anime47.png?cache=true",
+      "info": "Nguồn Anime47 siêu xịn, cập nhật siêu nhanh.\nCó servers riêng nên xem vô cùng mượt mà.\nĐã vượt và bỏ qua cơ chế đăng nhập cứ xem thoải mái."
     },
     {
-      "id": "Truyền hình",
-      "name": "Truyền hình ",
-      "version": "1.0.3",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VTV_plugin.js",
-      "iconUrl": "https://bcp.cdnchinhphu.vn/Uploaded/tranthithom/2021_07_26/logo-vtv.png"
+      "id": "hhpanda",
+      "name": "Nguồn HH Panda",
+      "version": "1.2.4",
+      "scriptUrl": "https://vaxplugin.alokillgtv.workers.dev/Plugins/movie/hhpanda_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hhpanda.png?cache=true",
+      "info": "Nguồn phim hoạt hình chất lượng cao, tuy nhiên cơ chế chiếu phát của nó rất khó chịu. Chỉ phát được trên máy chủ của họ còn phát qua app sẽ bị mất góc không tràn viền. Vì thế đã tích hợp bộ chỉnh kích cỡ video vào bên trong video. Bạn có thể chỉnh sao cho vừa màn hình. Chỉ cần chỉnh 1 lần là các lần sau sẽ dùng như vậy."
     }
-]
+  ]
 }
