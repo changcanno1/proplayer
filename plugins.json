@@ -87,7 +87,7 @@
     },
     {
       "id": "shortflix",
-      "name": "PhimNgắnHay",
+      "name": "shortflix",
       "version": "1.2.2",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortflixupda_plugin.js",
       "iconUrl": "https://m.media-amazon.com/images/I/61fJ78I23IL.png",
