@@ -16,8 +16,8 @@ var DEV = false;
 
 function getManifest() {
     return JSON.stringify({
-        "id": "shortflix",
-        "name": "Phim Ngắn Shortflix",
+        "id": "Shortflix",
+        "name": "Shortflix",
         "description": "Phim Ngắn lồng tiếng vietsub hay",
         "version": "1.3",
         "info": "",
