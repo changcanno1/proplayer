@@ -2,187 +2,187 @@
   "version": 1,
   "plugins": [
     {
-      "id": "NguonCVip",
+      "id": "nguoncvip",
       "name": "NguonCVip",
       "version": "1.5.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncHT_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/NguoncHT_plugin.js",
       "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/nguonC.png"
     },
     {
-      "id": "Vsmov",
+      "id": "vsmov",
       "name": "PhimVsmov",
       "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/VsmovHT_plugin.js",
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
-      "id": "VicDn",
+      "id": "vicdn",
       "name": "PhimVicDn",
       "version": "1.5.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/VicDN_plugin.js",
       "iconUrl": "https://vicdn.cc/vicdn.png"
     },
     {
-      "id": "PhimHDCSS",
+      "id": "phimhdcss",
       "name": "PhimHDCSS",
       "version": "1.1.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/PhimHDCS_plugin.js",
       "iconUrl": "https://phimhdcss.com/favicon.ico"
     },
     {
-      "id": "PhimBom",
+      "id": "phimbom",
       "name": "PhimBom",
       "version": "1.2.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/PhimBom_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
     },
     {
-      "id": "PhimFUN",
+      "id": "phimfun",
       "name": "PhimFUN",
       "version": "1.1.7",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/PhimfunHT_plugin.js",
       "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
     },
     {
-      "id": "PhimHayOK",
+      "id": "phimhayok",
       "name": "PhimHayOK",
       "version": "1.1.3",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimhayOKHT_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/PhimhayOKHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimhayok.png"
     },
     {
-      "id": "Phim Lồng Tiếng",
+      "id": "phimlongtieng",
       "name": "Phim Lồng Tiếng",
       "version": "1.1.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/1phim23_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/1phim23_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
     },
     {
       "id": "kkphim",
       "name": "KKPhim",
       "version": "1.0.2",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/kkphim_plugin.js",
       "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim.png"
     },
     {
-      "id": "Onflix",
+      "id": "onflix",
       "name": "Onfix",
       "version": "1.9.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/OnflixHT_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/OnflixHT_plugin.js",
       "iconUrl": "https://onflix.lat/app/asset/logo.png"
     },
     {
-      "id": "Rổ Phim",
+      "id": "rophim",
       "name": "Rổ Phim",
       "version": "1.2.6",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
     {
-      "id": "NOVAHD",
+      "id": "novahd",
       "name": "NOVAHD",
       "version": "1.2.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NovaHDHT_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/NovaHDHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/novahd.png"
     },
     {
       "id": "shortflix",
       "name": "shortflix",
       "version": "1.2.2",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortflixupda_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/Shortflixupda_plugin.js",
       "iconUrl": "https://m.media-amazon.com/images/I/61fJ78I23IL.png",
       "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
     },
     {
-      "id": "Shortdrama",
+      "id": "shortdrama",
       "name": "Shortdrama",
       "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Nartodrama_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/Nartodrama_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nartodrama.png"
     },
     {
-      "id": "Dramabox",
+      "id": "dramabox",
       "name": "Dramabox",
       "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Dramabox_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/Dramabox_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/dramabox.png"
     },
     {
-      "id": "ShortFilm",
+      "id": "shortfilm",
       "name": "ShortFilm",
       "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortmax_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/Shortmax_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortmax.png"
     },
     {
-      "id": "Netshort",
+      "id": "netshort",
       "name": "Netshort",
       "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Netshort_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/Netshort_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/netshort.png",
       "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
     },
     {
-      "id": "Mê Phim Ngắn",
+      "id": "mephimngan",
       "name": "Mê Phim Ngắn",
       "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/mephimngan_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/mephimngan_plugin.js",
       "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
     },
     {
-      "id": "Phimngan.net",
+      "id": "phimngannet",
       "name": "Phimngan.net",
       "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/phimngannet_plugin.js",
       "iconUrl": "https://downloadr2.apkmirror.com/wp-content/uploads/2024/02/58/65c425da5bb6e_live.shorttv.apps.png"
     },
     {
-      "id": "Hh3D",
+      "id": "hh3d",
       "name": "Hoạt Hình 3D",
       "version": "1.3.5",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HH3DNew_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/HH3DNew_plugin.js",
       "iconUrl": "https://hoathinh3d.co/wp-content/uploads/2023/09/favicon.png"
     },
     {
-      "id": "HHpandatv",
+      "id": "hhpandatv",
       "name": "HHpandatv",
       "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/hhpanda_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/hhpanda_plugin.js",
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNZWj2x3KVRTGvKRc6jyinavcjgQxZVTFhzpwtdWyvbB_SfUir-WEHgDc&s=10"
     },
     {
-      "id": "AnimeHay09",
+      "id": "animehay09",
       "name": "AnimeHay09",
       "version": "1.0.7",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Animehay09New_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/Animehay09New_plugin.js",
       "iconUrl": "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/i/c72e2f68-1a1c-48a2-aa5f-edf7eaaf3548/d77q5ev-af22ff5c-be81-4e24-bf0e-13836c6c939e.png"
     },
     {
-      "id": "Anime47",
+      "id": "anime47",
       "name": "Anime47",
       "version": "1.3.2",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Animie47New_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/Animie47New_plugin.js",
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBfZXavFvLlt56VptIFEx-RSQI-oSTGEEjJT7D9hNKJA&s"
     },
     {
-      "id": "ThethaoTV",
+      "id": "thethaotv",
       "name": "ThethaoTV",
       "version": "1.0.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Thethao_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/Thethao_plugin.js",
       "iconUrl": "https://yt3.googleusercontent.com/kJ7itr1ZrmnC7UmE79u3yQIhcHP6vfI9RZLlgIlgXwdWhtwMjzjLTmxs6sI0pbg_R-ZYQ5Or-g=s160-c-k-c0x00ffffff-no-rj"
     },
     {
-      "id": "SportEngTV",
+      "id": "sportengtv",
       "name": "SportEngTv",
       "version": "1.0.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/SportsEng_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/SportsEng_plugin.js",
       "iconUrl": "https://i.ibb.co/WN9gstLN/logo.png"
     },
     {
-      "id": "Truyền hình",
-      "name": "Truyền hình ",
+      "id": "truyenhinh",
+      "name": "Truyền hình",
       "version": "1.0.3",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VTV_plugin.js",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/VTV_plugin.js",
       "iconUrl": "https://bcp.cdnchinhphu.vn/Uploaded/tranthithom/2021_07_26/logo-vtv.png"
     }
   ]
