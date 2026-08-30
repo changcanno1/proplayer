@@ -1,16 +1,16 @@
 // =============================================================================
 // CONFIGURATION & METADATA
 // =============================================================================
+
 function getManifest() {
     return JSON.stringify({
         "id": "nguoncnew",
         "name": "Phim NguonC VIP",
-        "version": "1.5.9",
+        "version": "1.5.5", // Cập nhật version
         "baseUrl": "https://phim.nguonc.com",
-        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png",
+        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguonC.png",
         "isEnabled": true,
         "type": "MOVIE",
-        "author": "Alokillgtv",
         "playerType": "embedtoexoplay"
     });
 }
@@ -52,49 +52,35 @@ function getUrlList(slug, filtersJson) {
     try {
         var filters = JSON.parse(filtersJson || "{}");
         var page = filters.page || 1;
-        var sort = filters.sort || "updated"; // updated, view, year
+        var sort = filters.sort || "updated";
 
-        // Handle "Phim Mới Cập Nhật" specially if no filter
         if (slug === 'phim-moi-cap-nhat' && !filters.category && !filters.country && !filters.year) {
             return "https://phim.nguonc.com/api/films/phim-moi-cap-nhat?page=" + page;
         }
 
-        // Priority 1: Category Support //v1/api/the-loai/{slug}
         if (filters.category) {
             return "https://phim.nguonc.com/api/films/the-loai/" + filters.category + "?page=" + page + "&sort=" + sort;
         }
 
-        // Priority 2: Country Support //v1/api/quoc-gia/{slug}
         if (filters.country) {
             return "https://phim.nguonc.com/api/films/quoc-gia/" + filters.country + "?page=" + page + "&sort=" + sort;
         }
 
-        // Priority 3: Year Support //v1/api/nam-phat-hanh/{year}
         if (filters.year) {
             return "https://phim.nguonc.com/api/films/nam-phat-hanh/" + filters.year + "?page=" + page + "&sort=" + sort;
         }
 
-        // --- Slug-based Logic (if no active filter) ---
-
-        // Handle Years (4 digits)
         if (/^\d{4}$/.test(slug)) {
             return "https://phim.nguonc.com/api/films/nam-phat-hanh/" + slug + "?page=" + page + "&sort=" + sort;
         }
 
-        // Handle specific Lists (Danh sách)
         var listSlugs = ['phim-le', 'phim-bo', 'phim-dang-chieu', 'tv-shows', 'subteam'];
-        // Note: 'hoat-hinh' is sometimes a list, sometimes a category. 
-        // On NguonC, 'hoat-hinh' is usually in 'the-loai' but let's check standard lists.
-        // NguonC commonly puts 'phim-hoat-hinh' in lists or 'hoat-hinh' in genres.
-
         if (listSlugs.indexOf(slug) >= 0) {
-            // If slug is 'hoat-hinh', prefer 'the-loai' logic unless we know it's a list
             if (slug !== 'hoat-hinh') {
                 return "https://phim.nguonc.com/api/films/danh-sach/" + slug + "?page=" + page + "&sort=" + sort;
             }
         }
 
-        // Handle Countries (Fallback if slug matches country list)
         var countrySlugs = [
             'au-my', 'anh', 'trung-quoc', 'indonesia', 'viet-nam', 'phap', 'hong-kong',
             'han-quoc', 'nhat-ban', 'thai-lan', 'dai-loan', 'nga', 'ha-lan',
@@ -104,7 +90,6 @@ function getUrlList(slug, filtersJson) {
             return "https://phim.nguonc.com/api/films/quoc-gia/" + slug + "?page=" + page + "&sort=" + sort;
         }
 
-        // Default to Genres (Thể loại)
         return "https://phim.nguonc.com/api/films/the-loai/" + slug + "?page=" + page + "&sort=" + sort;
 
     } catch (e) {
@@ -113,22 +98,15 @@ function getUrlList(slug, filtersJson) {
 }
 
 function getUrlSearch(keyword, filtersJson) {
-    try {
-        var filters = JSON.parse(filtersJson || "{}");
-        var page = filters.page || 1;
-        return "https://phim.nguonc.com/api/films/search?keyword=" + encodeURIComponent(keyword) + "&page=" + page;
-    } catch (e) {
-        return "https://phim.nguonc.com/api/films/search?keyword=" + encodeURIComponent(keyword) + "&page=1";
-    }
+    var filters = JSON.parse(filtersJson || "{}");
+    return "https://phim.nguonc.com/api/films/search?keyword=" + encodeURIComponent(keyword);
 }
-
 
 function getUrlDetail(slug) {
     if (slug.indexOf("http") === 0) return slug;
     return "https://phim.nguonc.com/api/film/" + slug;
 }
 
-// Just returning the home page to trigger the parser, which will return hardcoded data
 function getUrlCategories() { return "https://phim.nguonc.com"; }
 function getUrlCountries() { return "https://phim.nguonc.com"; }
 function getUrlYears() { return "https://phim.nguonc.com"; }
@@ -137,11 +115,9 @@ function getUrlYears() { return "https://phim.nguonc.com"; }
 // PARSERS
 // =============================================================================
 
-function parseListResponse(apiResponseJson, url) {
-    console.log("List\n" + url)
+function parseListResponse(apiResponseJson) {
     try {
         var response = JSON.parse(apiResponseJson);
-        // Handle NguonC structure: sometimes data is array directly (search), sometimes an object (list)
         var data = response.data || {};
         var items = [];
 
@@ -153,11 +129,9 @@ function parseListResponse(apiResponseJson, url) {
             items = data.items;
         }
 
-        // Handle NguonC 'paginate' structure
-        // User provided: "paginate": { "current_page": 1, ... }
         var paginate = response.paginate || response.pagination || (data.params && data.params.pagination) || {};
 
-        var movies = items.map(function (item) {
+        var movies = items.map(function(item) {
             return {
                 id: item.slug,
                 title: item.name,
@@ -165,19 +139,15 @@ function parseListResponse(apiResponseJson, url) {
                 backdropUrl: getImageUrl(item.poster_url),
                 year: item.year || 0,
                 quality: item.quality || "",
-                // Handle different field names for current episode
                 episode_current: item.current_episode || item.episode_current || "",
-                // Handle different field names for language
                 lang: item.language || item.lang || ""
             };
         });
 
-        // Determine pagination values
         var currentPage = paginate.current_page || paginate.currentPage || 1;
         var totalItems = paginate.total_items || paginate.totalItems || 0;
         var itemsPerPage = paginate.items_per_page || paginate.itemsPerPage || paginate.totalItemsPerPage || 24;
 
-        // Calculate total pages if not provided directly
         var totalPages = paginate.total_page || paginate.totalPages || 0;
         if (totalPages === 0 && itemsPerPage > 0) {
             totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -205,25 +175,24 @@ function parseSearchResponse(apiResponseJson) {
 function parseMovieDetail(apiResponseJson) {
     try {
         var response = JSON.parse(apiResponseJson);
-        // Normalize movie object (supports standard and potential variants)
-        var movie = response.movie || response.data?.item || response.data || {};
+        
+        // ĐÃ SỬA: Loại bỏ toán tử ?. gây lỗi SyntaxError
+        var dataItem = (response.data && response.data.item) ? response.data.item : null;
+        var movie = response.movie || dataItem || response.data || {};
 
-        // Normalize episodes
-        var rawEpisodes = movie.episodes || response.episodes || response.data?.item?.episodes || [];
+        var dataEpisodes = (response.data && response.data.item && response.data.item.episodes) ? response.data.item.episodes : null;
+        var rawEpisodes = movie.episodes || response.episodes || dataEpisodes || [];
 
         var servers = [];
         if (Array.isArray(rawEpisodes)) {
-            rawEpisodes.forEach(function (server) {
+            rawEpisodes.forEach(function(server) {
                 var episodes = [];
                 var serverItems = server.items || server.server_data || [];
 
                 if (Array.isArray(serverItems)) {
-                    serverItems.forEach(function (ep) {
+                    serverItems.forEach(function(ep) {
                         var embed = ep.embed || ep.link_embed || "";
                         var m3u8 = ep.m3u8 || ep.link_m3u8 || "";
-
-                        // Use Embed URL as ID to allow scraping Referer/M3u8 details
-                        // If no embed, use m3u8 directly.
                         var link = embed || m3u8;
 
                         if (link) {
@@ -245,16 +214,14 @@ function parseMovieDetail(apiResponseJson) {
             });
         }
 
-        // Helper to extract category/country/year
-        // Handles both { "1": { group: ..., list: [...] } } AND typical arrays
-        var extractGroup = function (categoryObj, groupName) {
+        var extractGroup = function(categoryObj, groupName) {
             if (!categoryObj) return "";
-
-            // If it's an object with keys "1", "2"...
             for (var key in categoryObj) {
                 var group = categoryObj[key];
                 if (group && group.group && group.group.name === groupName && group.list && group.list.length > 0) {
-                    return group.list.map(function (item) { return item.name; }).join(", ");
+                    return group.list.map(function(item) {
+                        return item.name;
+                    }).join(", ");
                 }
             }
             return "";
@@ -274,7 +241,7 @@ function parseMovieDetail(apiResponseJson) {
             servers: servers,
             episode_current: movie.current_episode || movie.episode_current || "",
             lang: movie.language || movie.lang || "",
-            casts: movie.casts || movie.actor || "", // Fallback to 'actor' if casts is missing
+            casts: movie.casts || movie.actor || "", 
             director: movie.director || "",
             category: extractGroup(movie.category, "Thể loại"),
             country: extractGroup(movie.category, "Quốc gia"),
@@ -286,44 +253,40 @@ function parseMovieDetail(apiResponseJson) {
     }
 }
 
-
 function parseDetailResponse(html, url) {
     try {
         var customjs = runJS();
         return JSON.stringify({
             "url": url,
+            "isEmbed": true, // Bật isEmbed để kích hoạt Sniffer
             "headers": {
                 "Referer": "https://embed.streamc.xyz/",
                 "Origin": "https://embed.streamc.xyz/",
                 "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-                // Đánh lừa thuật toán Client Hints của tường lửa
                 "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
                 "Sec-Ch-Ua-Mobile": "?1",
                 "Sec-Ch-Ua-Platform": '"Android"',
-                
-                // Khai báo kiểu dữ liệu được chấp nhận giống như trình duyệt thật
                 "Accept": "*/*",
                 "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
                 "X-Requested-With": "com.android.chrome",
-                "Block-Ads": true,
+                "Block-Ads": "true",
                 "Block-Css": "html,body,*",
                 "Custom-Js": customjs.trim()
             },
             "subtitles": []
         });
-        
+
     } catch (e) {
-      return JSON.stringify({ 
-        url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-        mimeType: "video/mp4", 
-        isEmbed: false, headers: {}, subtitles: [] 
-      });
+        return JSON.stringify({ "url": "", "headers": {} });
     }
 }
 
+// ĐÃ SỬA: Thêm hàm parseEmbedResponse bắt buộc cho embedtoexoplay
+function parseEmbedResponse(htmlContent, url) {
+    return JSON.stringify({ url: "", isEmbed: false });
+}
 
-
-function runJS(referer) {
+function runJS() {
     return `
 function bridgeLog(msg, check) {
     try {
@@ -337,13 +300,9 @@ function bridgeLog(msg, check) {
       }
     } catch(e) {}
   }
-
 (function injectCSS() {
   try {
-    // 1. Khai báo nội dung CSS
-    const cssStyle = "body,html,*{display:none!important;background:black!important;opacity:0!important;z-index:-999999}";
-
-    // 2. Tạo thẻ <style>
+    const cssStyle = "body,html,*{display:none!important,backgroud:black!important;opacity:0!important;z-index:-999999}";
     const styleElement = document.createElement('style');
     styleElement.type = 'text/css';
     styleElement.setAttribute('data-injected-by', 'custom-script');
@@ -354,16 +313,15 @@ function bridgeLog(msg, check) {
       styleElement.appendChild(document.createTextNode(cssStyle));
     }
 
-    // 3. Tìm vị trí để chèn
     const targetNode = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
 
     if (targetNode) {
       targetNode.appendChild(styleElement);
-      bridgeLog("Chèn css ngay lập tức.");
+      bridgeLog("Chèn css ngay lập tức.")
     } else {
       document.addEventListener('DOMContentLoaded', function () {
         (document.head || document.documentElement).appendChild(styleElement);
-        bridgeLog("Chèn Css sau khi load xong");
+        bridgeLog("Chèn Css sau khi load xong")
       });
     }
   } catch (error) {
@@ -379,23 +337,19 @@ function bridgeLog(msg, check) {
   var isFinished = 0;
   var timeoutTimer = null;
 
-  // =========================================================================
-  // 1. GIỚI HẠN THỜI GIAN 20 GIÂY (TIMEOUT)
-  // =========================================================================
   bridgeLog("Đang tiến hành tìm link Video, xin chờ....", true);
 
   timeoutTimer = setTimeout(function() {
     if (hasDispatchedAny === 0 && isFinished === 0) {
       isFinished = 1;
-      bridgeLog("❌ [TIMEOUT] Đã quá 20 giây nhưng không tìm thấy Blob M3U8!", false);
-      bridgeLog("Không tìm thấy link video (Hết thời gian 20s).", true);
+      bridgeLog("❌ [TIMEOUT] Đã quá 10 giây nhưng không tìm thấy Blob M3U8!", false);
+      bridgeLog("Không tìm thấy link video (Hết thời gian 10s).", true);
       
-      // Fallback khi không tìm thấy
       if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
         window.SnifferBridge.play("https://google.com", "");
       }
     }
-  }, 20000);
+  }, 20000); 
 
   function stopTimeout() {
     if (timeoutTimer) {
@@ -404,9 +358,6 @@ function bridgeLog(msg, check) {
     }
   }
 
-  // =========================================================================
-  // 2. KIỂM TRA M3U8 HỢP LỆ
-  // =========================================================================
   function isValidM3U8(content) {
     if (typeof content !== 'string') return false;
     var trimmed = content.trim();
@@ -414,87 +365,26 @@ function bridgeLog(msg, check) {
           (trimmed.indexOf('#EXTINF') !== -1 || trimmed.indexOf('#EXT-X-STREAM-INF') !== -1);
   }
 
-  // =========================================================================
-  // 3. HÀM XỬ LÝ VÀ GỬI M3U8 TỚI WORKER
-  // =========================================================================
-  
-  async function processAndPlayM3u8(m3u8Content) {
-    try {
-      const workerUrl = "https://nguonc.alokillgtv.workers.dev/";
-      
-      // Kiểm tra tham số referer truyền vào từ AutoIt/JS wrapper
-      const passedReferer = "${referer}";
-      const finalReferer = (passedReferer && passedReferer !== "${referer}") ? passedReferer : window.location.href;
-
-      // Nén m3u8Content sang Base64
-      const base64Content = btoa(unescape(encodeURIComponent(m3u8Content)));
-
-      // Gửi request POST tới Worker
-      const response = await fetch(workerUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          m3u8_base64: base64Content,
-          referer: finalReferer
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error("Worker response error status: " + response.status);
-      }
-
-      const data = await response.json();
-
-      // Nếu Worker lưu cache thành công và trả về play_url
-      if (data && data.play_url) {
-        const headerJson = JSON.stringify({
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Referer": finalReferer,
-          "Origin": "https://phim.nguonc.com"
-        });
-
-        // Gọi lại hàm Native với đường dẫn play=true từ Worker
-        if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
-          window.SnifferBridge.play(data.play_url + "#.m3u8", headerJson);
-        }
-      } else {
-        bridgeLog('❌ [WORKER ERROR]: Không nhận được play_url từ Worker');
-      }
-    } catch (error) {
-      bridgeLog('❌ [PROCESS ERROR]: ' + error.message);
-    }
-  }
-
-  // =========================================================================
-  // 4. CHUYỂN NỘI DUNG M3U8 VỀ APP (LOCAL SERVER)
-  // =========================================================================
   function dispatchM3u8ToApp(m3u8Content) {
     if (!m3u8Content || hasDispatchedAny === 1) return;
     hasDispatchedAny = 1;
     isFinished = 1;
-    stopTimeout();
+    stopTimeout(); 
 
-    bridgeLog('🎯 [LOCAL-DISPATCH] Đã tìm thấy M3U8! Đang gửi lên Worker...');
-    bridgeLog("🎯 Bắt link thành công! Đang xử lý video...", true);
+    bridgeLog('🎯 [LOCAL-DISPATCH] Đã tìm thấy M3U8! Đang nạp vào Local Player...');
+    bridgeLog("🎯 Bắt link thành công! Đang phát video...", true);
 
     try {
-      if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
-        window.SnifferBridge.log("M3U8\\n" + m3u8Content);
+      if (window.SnifferBridge && typeof window.SnifferBridge.playM3u8Content === 'function') {
+        window.SnifferBridge.playM3u8Content(m3u8Content, window.location.href);
+      } else {
+        bridgeLog('❌ SnifferBridge.playM3u8Content không khả dụng!');
       }
-       bridgeLog('🎯 Đang bắn link cho native');
-      SnifferBridge.playM3u8Content(m3u8Content, JSON.stringify({"Origin":"https://phim.nguonc.com","Referer":"${referer}"}))
-      // Thực thi gửi m3u8 lên Worker
-      //processAndPlayM3u8(m3u8Content);
     } catch(e) {
       bridgeLog('❌ [DISPATCH ERROR]: ' + e.message);
     }
   }
 
-  // =========================================================================
-  // 5. HOOK URL.createObjectURL (BẮT TRỰC TIẾP DỮ LIỆU BLOB M3U8)
-  // =========================================================================
   try {
     if (typeof URL !== 'undefined' && URL.createObjectURL) {
       var originalCreateObjectURL = URL.createObjectURL;
@@ -532,9 +422,6 @@ function bridgeLog(msg, check) {
   `;
 }
 
-
-
-// Hardcoded Categories (Genres)
 function parseCategoriesResponse(apiResponseJson) {
     var genres = [
         { name: "Hành Động", slug: "hanh-dong" },
@@ -563,7 +450,6 @@ function parseCategoriesResponse(apiResponseJson) {
     return JSON.stringify(genres);
 }
 
-// Hardcoded Countries
 function parseCountriesResponse(apiResponseJson) {
     var countries = [
         { name: "Âu Mỹ", value: "au-my" },
@@ -586,7 +472,6 @@ function parseCountriesResponse(apiResponseJson) {
     return JSON.stringify(countries);
 }
 
-// Hardcoded Years
 function parseYearsResponse(apiResponseJson) {
     var years = [];
     for (var i = 2026; i >= 2004; i--) {
@@ -598,6 +483,5 @@ function parseYearsResponse(apiResponseJson) {
 function getImageUrl(path) {
     if (!path) return "";
     if (path.indexOf("http") === 0) return path;
-    // Base image URL for NguonC
     return "https://img.phimapi.com/" + path;
 }
