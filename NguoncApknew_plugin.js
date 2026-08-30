@@ -1,6 +1,7 @@
 // =============================================================================
 // CONFIGURATION & METADATA
 // =============================================================================
+
 function getManifest() {
     return JSON.stringify({
         "id": "nguoncnew",
@@ -10,7 +11,6 @@ function getManifest() {
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png",
         "isEnabled": true,
         "type": "MOVIE",
-        popuphtml: popuphtm,
         "author": "Alokillgtv",
         "playerType": "embedtoexoplay"
     });
