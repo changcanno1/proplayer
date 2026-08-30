@@ -6,13 +6,13 @@ function getManifest() {
   return JSON.stringify({
     id: "Truyền hình",
     name: "Truyền hình",
-    version: "1.0.2",
+    version: "1.0.3", // Đã update version
     baseUrl: BASE_URL,
     iconUrl: "https://i.ibb.co/KjVv0WRP/tvpub-logo.jpg",
     isEnabled: true,
     isAdult: false,
-    type: "IPTV",
-    layoutType: "HORIZONTAL",
+    type: "MOVIE", // Chuyển từ IPTV sang MOVIE để tắt cơ chế ép zoom chậm chạp
+    layoutType: "LIST", // Chuyển sang LIST nhìn danh sách kênh sẽ gọn và dễ chọn hơn
     playerType: "exoplayer",
     debug: true
   });
@@ -98,8 +98,20 @@ function parseListResponse(html, apiUrl) {
         }
       } = channel;
 
+      // Đóng gói data streamId thật để chuyển sang parseMovieDetail
+      const streamId = licenseKey ? licenseKey + "&channelId=" + channel.channelId + `|User-Agent=Dalvik/2.1.0&Referer=${BASE_URL}` : "?channelId=" + channel.channelId;
+      
+      const payload = {
+          title: channel.name,
+          logo: channel.tvgLogo || FALLBACK_POSTER_URL,
+          streamId: streamId,
+          group: channel.tvgGroup
+      };
+      
+      const itemUrl = BASE_URL + "#data=" + encodeURIComponent(JSON.stringify(payload));
+
       items.push({
-        id: licenseKey ? licenseKey + "&channelId=" + channel.channelId + `|User-Agent=Dalvik/2.1.0&Referer=${BASE_URL}` : "?channelId=" + channel.channelId,
+        id: itemUrl,
         title: channel.name,
         description: `Channel "${channel.name}" is hosted on server TVPub.`,
         posterUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
@@ -114,7 +126,7 @@ function parseListResponse(html, apiUrl) {
       pagination: { currentPage: 1, totalPages: 1 }
     });
   } catch (error) {
-    console.error("⛔ [parseDetailResponse in tvpub_plugin.js] ERROR MESSAGE: ", error);
+    console.error("⛔ [parseListResponse] ERROR MESSAGE: ", error);
     return JSON.stringify({
         items: [],
         pagination: { currentPage: 1, totalPages: 1 }
@@ -124,6 +136,36 @@ function parseListResponse(html, apiUrl) {
 
 function parseSearchResponse(html, apiUrl) {
   return parseListResponse(html, apiUrl);
+}
+
+// BỔ SUNG: Hàm parseMovieDetail cho chế độ MOVIE để tắt zoom
+function parseMovieDetail(html, url) {
+    try {
+        let data = null;
+        const hashIdx = url.indexOf("#data=");
+        if (hashIdx !== -1) {
+            data = JSON.parse(decodeURIComponent(url.substring(hashIdx + 6)));
+        }
+
+        if (!data) return "{}";
+
+        const episodes = [{
+            id: data.streamId, // Trả lại streamId thật cho parseDetailResponse
+            name: "📺 Xem Ngay",
+            slug: "link-1"
+        }];
+
+        return JSON.stringify({
+            id: url,
+            title: data.title,
+            posterUrl: data.logo, 
+            backdropUrl: data.logo,
+            description: `Đang phát kênh trực tiếp: ${data.title}\nNhóm kênh: ${data.group || 'N/A'}`,
+            servers: [{ name: "Nguồn Phát", episodes: episodes }]
+        });
+    } catch (e) {
+        return JSON.stringify({ id: url, title: "Trực Tiếp Truyền Hình", servers: [] });
+    }
 }
 
 function parseDetailResponse(html, apiUrl) {
@@ -143,15 +185,10 @@ function parseDetailResponse(html, apiUrl) {
       }
     } = getChannel(channelList, channelId);
     
-    console.log("ℹ️ [parseDetailResponse in tvpub_plugin.js] Name: ", name);
-    // Handle license_type and manifest_type
-    // Value manifest_type = dash or mdp
-    // Value license_type = clearkey
+    console.log("ℹ️ [parseDetailResponse] Name: ", name);
+
     if (licenseType === "clearkey") {
       const clearKey = getClearKey(html, licenseKey);
-    
-      console.log(`ℹ️ [parseDetailResponse in tvpub_plugin.js] Manifest type DASH (MPD) - ClearKey: `, clearKey);
-      console.log("ℹ️ [parseDetailResponse in tvpub_plugin.js] URL:", url);
       return JSON.stringify({
         isEmbed: false,
         url: url,
@@ -166,11 +203,8 @@ function parseDetailResponse(html, apiUrl) {
         }
       });
     }
-    else if (licenseType === "widevine") { // Value manifest_type = dash or mdp, Value license_type = widevine
+    else if (licenseType === "widevine") { 
       const licenseUrl = apiUrl.substring(0, apiUrl.indexOf("&channelId"));
-      
-      console.log(`ℹ️ [parseDetailResponse in tvpub_plugin.js] Manifest type DASH (MPD) - Widevine: `, apiUrl);
-      console.log("ℹ️ [parseDetailResponse in tvpub_plugin.js] URL:", url);
       return JSON.stringify({
         isEmbed: false,
         url: url,
@@ -184,9 +218,7 @@ function parseDetailResponse(html, apiUrl) {
         }
       });
     }
-    else { // No manifest_type and licenseType, Normal HLS (m3u8)
-      console.log(`ℹ️ [parseDetailResponse in tvpub_plugin.js] Manifest type HLS (M3U8)`);
-      console.log("ℹ️ [parseDetailResponse in tvpub_plugin.js] URL:", url);
+    else { 
       return JSON.stringify({
         isEmbed: false,
         url: url,
@@ -199,33 +231,23 @@ function parseDetailResponse(html, apiUrl) {
       });
     }
   } catch (error) {
-    console.error("⛔ [parseDetailResponse in tvpub_plugin.js] ERROR MESSAGE: ", error);
+    console.error("⛔ [parseDetailResponse] ERROR MESSAGE: ", error);
     return "{}";
   }
 }
 
-function parseCategoriesResponse(html) {
-  return "[]";
-}
-function parseCountriesResponse(html) {
-  return "[]";
-}
-function parseYearsResponse(html) {
-  return "[]";
-}
+function parseCategoriesResponse(html) { return "[]"; }
+function parseCountriesResponse(html) { return "[]"; }
+function parseYearsResponse(html) { return "[]"; }
 
 // =============================================================================
 // NHÓM 4: HELPERS
 // =============================================================================
 
-// ======================================
-// VARIABLES
-// ======================================
-
 const BASE_URL = "https://raw.githubusercontent.com/quanlehong539/TVPub/refs/heads/main/TVPub%20IPTV";
 const FALLBACK_POSTER_URL = "https://i.ibb.co/rKHf363x/fallback-thumbnail.webp";
 let channelList = [];
-// Use GROUP_MAP to rename and merge the channel into tvg-group.
+
 const GROUP_MAP = {
   vtv: "VTV ⭐",
   "thời sự": "VTV ⭐",
@@ -251,7 +273,7 @@ const GROUP_MAP = {
   "🇨🇳| trung quốc": "Trung Quốc 🌐",
   "cctv": "Trung Quốc 🌐"
 };
-// Use CATEGORY_MAP to convert the slug to tvg-group.
+
 const CATEGORY_MAP = {
   vtv: "VTV ⭐",
   antvhd: "VTV ⭐",
@@ -273,10 +295,6 @@ const CATEGORY_MAP = {
   "china": "Trung Quốc 🌐"
 };
 
-// ======================================
-// FUNCTIONS
-// ======================================
-
 function extractParamFromUrl(url, param) {
   if (!url) return "";
   var match = url.match(new RegExp("[?&]" + param + "=([^&]+)"));
@@ -284,7 +302,6 @@ function extractParamFromUrl(url, param) {
 }
 
 function filterChannels(channels, [filterKey, filterValue]) {
-  // filter channels by category
   if (filterValue && filterKey === "category") {
     return channels.filter(
       (channel) => CATEGORY_MAP[filterValue] === channel.tvgGroup
@@ -301,7 +318,6 @@ function filterChannels(channels, [filterKey, filterValue]) {
 
 function getChannel(channels, channelId) {
   if (channelId === undefined || channelId === null || channelId === "") return {};
-  const numId = parseInt(channelId, 10);
   return channels.find(channel => String(channel.channelId) === String(channelId)) || {};
 }
 
@@ -351,7 +367,6 @@ function parseM3U(text) {
         }
       }
 
-      // Capture all catchup attributes
       const catchupMatch = line.match(/catchup="([^"]+)"/i);
       if (catchupMatch) currentChannel.props.catchup = catchupMatch[1];
 
@@ -407,7 +422,6 @@ function startsWithRegex(str, prefix) {
   return regex.test(str);
 }
 
-// Convert Base64/Base64Url to Hex for ClearKey
 function base64ToHex(base64) {
   if (!base64) return "";
   let b64 = base64.replace(/-/g, "+").replace(/_/g, "/");
@@ -421,63 +435,50 @@ function base64ToHex(base64) {
     }
     return result.toLowerCase();
   } catch (e) {
-    console.error("Lỗi giải mã Base64:", e);
     return "";
   }
 }
 
-// A handmade atob function for QuickJS
 function atob(input) {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   let str = String(input).replace(/[\t\n\f\r ]/g, "");
-
   let output = "";
   let buffer = 0;
   let bits = 0;
 
   for (let i = 0; i < str.length; i++) {
     if (str[i] === "=") break;
-
     const index = chars.indexOf(str[i]);
     if (index === -1) {
       throw new Error("Invalid base64 character");
     }
-
     buffer = (buffer << 6) | index;
     bits += 6;
-
     if (bits >= 8) {
       bits -= 8;
       output += String.fromCharCode((buffer >> bits) & 0xff);
     }
   }
-
   return output;
 }
 
-// The getClearKey function is used for multiple IPTV sources.
 function getClearKey(html, licenseKey) {
   const clearKey = {}
-  try { // clearKey needs to be fetched.
-    // JSON format {"keys":[{"kid":"...","k":"..."}]}
+  try { 
     const keyData = JSON.parse(html);
-    console.log("ℹ️ [getClearKey in tvpub_plugin.js] clearKey NEEDS to be fetched - ", keyData);
     if (keyData.keys && Array.isArray(keyData.keys)) {
       keyData.keys.forEach((k) => {
         clearKey.drmKid = base64ToHex(k.kid);
         clearKey.drmKey = base64ToHex(k.k);
       });
-    } else if (keyData.kid && keyData.k) { // JSON format {"kid":"...","k":"..."}
+    } else if (keyData.kid && keyData.k) { 
       clearKey.drmKid = base64ToHex(keyData.kid);
       clearKey.drmKey = base64ToHex(keyData.k);
     }
-  } catch (error) { // clearKey does not require fetching.
-    console.log("ℹ️ [getClearKey in tvpub_plugin.js] clearKey does NOT require fetching - ", licenseKey);
-    // Hex format "KID:KEY" (e.g. license_key=aabb...:ccdd...)
+  } catch (error) { 
     if (licenseKey && licenseKey.includes(":") && licenseKey.split(":").length === 2) {
       const parts = licenseKey.split(":");
-
       if (
         /^[0-9a-fA-F]+$/.test(parts[0]) &&
         /^[0-9a-fA-F]+$/.test(parts[1])
@@ -488,18 +489,16 @@ function getClearKey(html, licenseKey) {
     }
     else {
       const keyData = JSON.parse(licenseKey);
-      // JSON format {"keys":[{"kid":"...","k":"..."}]}
       if (keyData.keys && Array.isArray(keyData.keys)) {
       keyData.keys.forEach((k) => {
         clearKey.drmKid = base64ToHex(k.kid);
         clearKey.drmKey = base64ToHex(k.k);
       });
-      } else if (keyData.kid && keyData.k) { // JSON format {"kid":"...","k":"..."}
+      } else if (keyData.kid && keyData.k) { 
         clearKey.drmKid = base64ToHex(keyData.kid);
         clearKey.drmKey = base64ToHex(keyData.k);
       }
     }
   }
-
   return clearKey
 }
