@@ -72,6 +72,13 @@
       "iconUrl": "https://onflix.lat/app/asset/logo.png"
     },
     {
+      "id": "Rổ Phim",
+      "name": "Rổ Phim",
+      "version": "1.2.6",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+    },
+    {
       "id": "NOVAHD",
       "name": "NOVAHD",
       "version": "1.2.4",
