@@ -165,6 +165,27 @@
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBfZXavFvLlt56VptIFEx-RSQI-oSTGEEjJT7D9hNKJA&s"
     },
     {
+      "id": "nettruyen",
+      "name": "nettruyen ",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Netruyen_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nettruyen.png"
+    },
+    {
+      "id": "truyenqqvn",
+      "name": "truyenqqvn ",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/TruyenQQVN_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/truyenqq.png"
+    },
+    {
+      "id": "truyenqq",
+      "name": "truyenqqvn ",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/TruyenQQ_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/truyenqq.png"
+    },
+    {
       "id": "ThethaoTV",
       "name": "ThethaoTV",
       "version": "1.0.1",
