@@ -1,5 +1,5 @@
-var BASEURL = "https://www.1phim24.com";
-var BASEAPI = "https://www.1phim24.com";
+var iddomain = "1phim"
+BASEURL = "https://vkey.vn/" + iddomain;
 var BASELINK = BASEURL;
 // https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
@@ -7,7 +7,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "phimlongtieng",
       "name": "Nguồn Phim Lồng Tiếng",
-      "version": "1.1.3",
+      "version": "1.1.4",
       "author": "Alokillgtv",
       "info": "",
       "baseUrl": "https://www.1phim23.com",
@@ -15,7 +15,6 @@ function getManifest() {
       "isEnabled": true,
       "isAdult": false,
       "adblock": false,
-      "layoutType": "HORIZONTAL",
       "type": "MOVIE",
       "subtitleCat": false,
       "playerType": "exoplayer"
@@ -50,6 +49,23 @@ function getManifest() {
           {"slug": "/phim-moi","title": "Phim Mới","type": "Grid"}
       ]);
   }
+
+
+if (typeof httpRequest === "function") {
+  var res = httpRequest("https://vaxplugin.alokillgtv.workers.dev/jsonStore/domain.json?debug=9780752&time=2323", {method: "POST"});
+  if (res && res.isSuccessful) {
+    var resobj = JSON.parse(res.body);
+    BASEURL = resobj[iddomain].new;   
+  } else {
+    BASEURL = "https://vkey.vn/" + iddomain;
+  }
+} else {
+  BASEURL = "https://vkey.vn/" + iddomain;
+}
+
+BASELINK = BASEURL;
+console.log("BASEURL " + BASEURL);
+
   
   // Hàm khởi tạo thẻ chủ đề
   function getLISTmenu() {
@@ -1376,7 +1392,7 @@ BASE64 = {
         var fixedLine = currentLine;
         if (returnFixed) {
           // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
-          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
+          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
         }
   
         fixedLines.push(fixedLine);
