@@ -174,19 +174,24 @@ function getUrlYears() { return ""; }
 function parseListResponse(html) {
     try {
         var items = [];
-        var regexList = new RegExp('<div class="module-item-pic"><a\\s+href="([^"]+)"\\s+title="([^"]+)"[\\s\\S]*?<img[^>]*data-src="([^"]+)"', 'g');
-        var matchList;
         
-        while ((matchList = regexList.exec(html)) !== null) {
-          if(matchList[3]){
-            var cleanThumb = matchList[3].replace(/&amp;/g, '&'); 
-            items.push({
-                "id": matchList[1],          
-                "title": matchList[2].trim(), 
-                "posterUrl": cleanThumb,  
-                "backdropUrl": cleanThumb
-            });
-          }
+        // ĐÃ THAY THẾ: Dùng lệnh split cắt nhỏ khối phim để tăng tốc độ load trang chủ/tìm kiếm, tránh Catastrophic Backtracking do Regex
+        var blocks = html.split('class="module-item-pic"');
+        for (var i = 1; i < blocks.length; i++) {
+            var block = blocks[i];
+            var linkMatch = block.match(/href="([^"]+)"/);
+            var titleMatch = block.match(/title="([^"]+)"/);
+            var imgMatch = block.match(/data-src="([^"]+)"/);
+            
+            if (linkMatch && titleMatch && imgMatch) {
+                var cleanThumb = imgMatch[1].replace(/&amp;/g, '&'); 
+                items.push({
+                    "id": linkMatch[1],          
+                    "title": titleMatch[1].trim(), 
+                    "posterUrl": cleanThumb,  
+                    "backdropUrl": cleanThumb
+                });
+            }
         }
         
         var totalPages = 1; 
@@ -242,7 +247,7 @@ function parseMovieDetail(html) {
     var status = "????";
     var duration = "1:09:00 | 16 | 16";
     var rating = "????";
-	  var servers = [{}];
+      var servers = [{}];
   try {
     
     rmatch = html.match(/meta\s+property="og:image"\s+content="([^"]+)"/i);
@@ -267,10 +272,10 @@ function parseMovieDetail(html) {
     if (rmatch && rmatch[1]) { duration = rmatch[1].trim(); }
     
     var split = duration.replace(/\s|\s+/gi,"").split("|");
-	  var stime = split[0];
-	  var firstEP = Number(split[1]);
-	  var lastEP = Number(split[1]);
-	  duration = "Độ Dài: " + stime + ", Tập: " + firstEP + "/" + lastEP;
+      var stime = split[0];
+      var firstEP = Number(split[1]);
+      var lastEP = Number(split[1]);
+      duration = "Độ Dài: " + stime + ", Tập: " + firstEP + "/" + lastEP;
     
 
 // Bước 1: Tìm vùng HTML nằm trong class video-info-actor
@@ -289,11 +294,11 @@ if (containerMatch) {
     // Kết quả: [ 'Kiều Minh Tuấn', 'Mạc Văn Khoa', 'Mỹ Uyên', 'Ngọc Trinh', 'Trương Thế Vinh' ]
 } 
 
-	var rmatch = html.match(/video-info-footer display[\s\S]*?href="([\s\S]*?)"/i);
+    var rmatch = html.match(/video-info-footer display[\s\S]*?href="([\s\S]*?)"/i);
     if (rmatch && rmatch[1]) { lurl = rmatch[1] }
-	
-	if(lurl.indexOf("full") > -1){
-		servers = [
+    
+    if(lurl.indexOf("full") > -1){
+        servers = [
             {
                 name: "Server",
                 episodes: [
@@ -301,9 +306,9 @@ if (containerMatch) {
                 ]
             }
         ];
-	}
-	else{
-	var surl = lurl.match(/([\s\S]*?\/tap-)(\d+)([\s\S]*)/);
+    }
+    else{
+    var surl = lurl.match(/([\s\S]*?\/tap-)(\d+)([\s\S]*)/);
     var furl = surl[1];
     var eurl = surl[3];
     var episodes = [];
@@ -320,9 +325,9 @@ if (containerMatch) {
                 episodes: episodes
             }
     ];
-	}       
-	var streamUrl = "";
-	var rmatch = html.match(/id="streaming-sv"[^>]*?data-link="(https?:[^"]*)"/i);
+    }       
+    var streamUrl = "";
+    var rmatch = html.match(/id="streaming-sv"[^>]*?data-link="(https?:[^"]*)"/i);
     if (rmatch && rmatch[1]) { streamUrl = rmatch[1]; }
     return JSON.stringify({
         id: streamUrl,
@@ -362,8 +367,8 @@ function parseDetailResponse(html) {
         var streamUrl = "";
         
         var rmatch = html.match(/id="streaming-sv"[^>]*?data-link="(https?:[^"]*)"/i);
-   	    if (rmatch && rmatch[1]) { streamUrl = rmatch[1]; }
-		
+           if (rmatch && rmatch[1]) { streamUrl = rmatch[1]; }
+        
           return JSON.stringify({
               url: streamUrl,
               "headers": {
