@@ -2,7 +2,7 @@
   "version": 1,
   "plugins": [
     {
-      "id": "nguoncvip",
+      "id": "nguoncnew",
       "name": "NguonCVip",
       "version": "1.5.4",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/main/NguoncHT_plugin.js",
