@@ -23,13 +23,6 @@
       "iconUrl": "https://vicdn.cc/vicdn.png"
     },
     {
-      "id": "PhimHayOK",
-      "name": "PhimHayOK",
-      "version": "1.1.3",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimhayOKHT_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimhayok.png"
-    },
-    {
       "id": "PhimHDCSS",
       "name": "PhimHDCSS",
       "version": "1.1.4",
@@ -49,6 +42,13 @@
       "version": "1.1.7",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
       "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
+    },
+     {
+      "id": "PhimHayOK",
+      "name": "PhimHayOK",
+      "version": "1.1.3",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimhayOKHT_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimhayok.png"
     },
      {
       "id": "kkphim",
@@ -80,13 +80,6 @@
       "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
     },
     {
-      "id": "Phimngan.net",
-      "name": "Phimngan.net",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
-      "iconUrl": "https://downloadr2.apkmirror.com/wp-content/uploads/2024/02/58/65c425da5bb6e_live.shorttv.apps.png"
-    },
-    {
       "id": "Shortdrama",
       "name": "Shortdrama",
       "version": "1.1.0",
@@ -99,6 +92,13 @@
       "version": "1.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortmax_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortmax.png"
+    },
+    {
+      "id": "Phimngan.net",
+      "name": "Phimngan.net",
+      "version": "1.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
+      "iconUrl": "https://downloadr2.apkmirror.com/wp-content/uploads/2024/02/58/65c425da5bb6e_live.shorttv.apps.png"
     },
     {
       "id": "Netshort",
@@ -116,18 +116,18 @@
       "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
     },
     {
-      "id": "HHpandatv",
-      "name": "HHpandatv",
-      "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/hhpanda_plugin.js",
-      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNZWj2x3KVRTGvKRc6jyinavcjgQxZVTFhzpwtdWyvbB_SfUir-WEHgDc&s=10"
-    },
-    {
       "id": "Hh3D",
       "name": "Hoạt Hình 3D",
       "version": "1.3.5",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HH3DNew_plugin.js",
       "iconUrl": "https://hoathinh3d.co/wp-content/uploads/2023/09/favicon.png"
+    },
+    {
+      "id": "HHpandatv",
+      "name": "HHpandatv",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/hhpanda_plugin.js",
+      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNZWj2x3KVRTGvKRc6jyinavcjgQxZVTFhzpwtdWyvbB_SfUir-WEHgDc&s=10"
     },
     {
       "id": "AnimeHay09",
