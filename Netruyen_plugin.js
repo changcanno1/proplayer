@@ -1,6 +1,6 @@
 var iddomain = "nettruyen"
 BASEURL = "https://vkey.vn/" + iddomain;
-var popup_html = "";
+
 // https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
   try{
@@ -225,7 +225,7 @@ function formatToCompactNumber(text) {
 
   return text.replace(regex, (match) => {
     // Lấy dấu phân tách gốc (nếu có)
-    const separator = match.includes(',') ? ',' : (match.includes('.') ? '');
+    const separator = match.includes(',') ? ',' : (match.includes('.') ? '.' : '');
     
     // Xóa bỏ tất cả dấu chấm/phẩy để lấy số thuần túy
     const cleanNum = match.replace(/[.,]/g, '');
