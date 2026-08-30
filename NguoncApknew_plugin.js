@@ -1,12 +1,11 @@
 // =============================================================================
 // CONFIGURATION & METADATA
 // =============================================================================
-
 function getManifest() {
     return JSON.stringify({
         "id": "nguoncnew",
         "name": "Phim NguonC VIP",
-        "version": "1.5.5",
+        "version": "1.5.9",
         "baseUrl": "https://phim.nguonc.com",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png",
         "isEnabled": true,
@@ -114,9 +113,15 @@ function getUrlList(slug, filtersJson) {
 }
 
 function getUrlSearch(keyword, filtersJson) {
-    var filters = JSON.parse(filtersJson || "{}");
-    return "https://phim.nguonc.com/api/films/search?keyword=" + encodeURIComponent(keyword);
+    try {
+        var filters = JSON.parse(filtersJson || "{}");
+        var page = filters.page || 1;
+        return "https://phim.nguonc.com/api/films/search?keyword=" + encodeURIComponent(keyword) + "&page=" + page;
+    } catch (e) {
+        return "https://phim.nguonc.com/api/films/search?keyword=" + encodeURIComponent(keyword) + "&page=1";
+    }
 }
+
 
 function getUrlDetail(slug) {
     if (slug.indexOf("http") === 0) return slug;
@@ -132,7 +137,8 @@ function getUrlYears() { return "https://phim.nguonc.com"; }
 // PARSERS
 // =============================================================================
 
-function parseListResponse(apiResponseJson) {
+function parseListResponse(apiResponseJson, url) {
+    console.log("List\n" + url)
     try {
         var response = JSON.parse(apiResponseJson);
         // Handle NguonC structure: sometimes data is array directly (search), sometimes an object (list)
@@ -307,13 +313,17 @@ function parseDetailResponse(html, url) {
         });
         
     } catch (e) {
-        return JSON.stringify({ "url": "", "headers": {} });
+      return JSON.stringify({ 
+        url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+        mimeType: "video/mp4", 
+        isEmbed: false, headers: {}, subtitles: [] 
+      });
     }
 }
 
 
 
-function runJS() {
+function runJS(referer) {
     return `
 function bridgeLog(msg, check) {
     try {
@@ -327,10 +337,11 @@ function bridgeLog(msg, check) {
       }
     } catch(e) {}
   }
+
 (function injectCSS() {
   try {
-    // 1. Khai báo nội dung CSS của bạn ở đây
-    const cssStyle = "body,html,*{display:none!important,backgroud:black!important;opacity:0!important;z-index:-999999}";
+    // 1. Khai báo nội dung CSS
+    const cssStyle = "body,html,*{display:none!important;background:black!important;opacity:0!important;z-index:-999999}";
 
     // 2. Tạo thẻ <style>
     const styleElement = document.createElement('style');
@@ -338,28 +349,24 @@ function bridgeLog(msg, check) {
     styleElement.setAttribute('data-injected-by', 'custom-script');
 
     if (styleElement.styleSheet) {
-      // Dành cho các trình duyệt IE cũ
       styleElement.styleSheet.cssText = cssStyle;
     } else {
-      // Dành cho trình duyệt hiện đại
       styleElement.appendChild(document.createTextNode(cssStyle));
     }
 
-    // 3. Tìm vị trí để chèn (ưu tiên <head>, nếu chưa có head thì lấy documentElement)
+    // 3. Tìm vị trí để chèn
     const targetNode = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
 
     if (targetNode) {
       targetNode.appendChild(styleElement);
-      bridgeLog("Chèn css ngay lập tức.")
+      bridgeLog("Chèn css ngay lập tức.");
     } else {
-      // Fallback: Nếu DOM chưa sẵn sàng, chờ DOMContentLoaded rồi mới chèn
       document.addEventListener('DOMContentLoaded', function () {
         (document.head || document.documentElement).appendChild(styleElement);
-        bridgeLog("Chèn Css sau khi load xong")
+        bridgeLog("Chèn Css sau khi load xong");
       });
     }
   } catch (error) {
-    // Bắt toàn bộ lỗi để đảm bảo script chính vẫn tiếp tục chạy bình thường
     bridgeLog('Không thể chèn CSS tự động, bỏ qua lỗi:', error);
   }
 })();
@@ -372,25 +379,23 @@ function bridgeLog(msg, check) {
   var isFinished = 0;
   var timeoutTimer = null;
 
-  
-
   // =========================================================================
-  // 1. GIỚI HẠN THỜI GIAN 10 GIÂY (TIMEOUT)
+  // 1. GIỚI HẠN THỜI GIAN 20 GIÂY (TIMEOUT)
   // =========================================================================
   bridgeLog("Đang tiến hành tìm link Video, xin chờ....", true);
 
   timeoutTimer = setTimeout(function() {
     if (hasDispatchedAny === 0 && isFinished === 0) {
       isFinished = 1;
-      bridgeLog("❌ [TIMEOUT] Đã quá 10 giây nhưng không tìm thấy Blob M3U8!", false);
-      bridgeLog("Không tìm thấy link video (Hết thời gian 10s).", true);
+      bridgeLog("❌ [TIMEOUT] Đã quá 20 giây nhưng không tìm thấy Blob M3U8!", false);
+      bridgeLog("Không tìm thấy link video (Hết thời gian 20s).", true);
       
       // Fallback khi không tìm thấy
       if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
         window.SnifferBridge.play("https://google.com", "");
       }
     }
-  }, 20000); // 10,000 ms = 10 giây
+  }, 20000);
 
   function stopTimeout() {
     if (timeoutTimer) {
@@ -410,31 +415,85 @@ function bridgeLog(msg, check) {
   }
 
   // =========================================================================
-  // 3. CHUYỂN NỘI DUNG M3U8 VỀ APP (LOCAL SERVER)
+  // 3. HÀM XỬ LÝ VÀ GỬI M3U8 TỚI WORKER
+  // =========================================================================
+  
+  async function processAndPlayM3u8(m3u8Content) {
+    try {
+      const workerUrl = "https://nguonc.alokillgtv.workers.dev/";
+      
+      // Kiểm tra tham số referer truyền vào từ AutoIt/JS wrapper
+      const passedReferer = "${referer}";
+      const finalReferer = (passedReferer && passedReferer !== "${referer}") ? passedReferer : window.location.href;
+
+      // Nén m3u8Content sang Base64
+      const base64Content = btoa(unescape(encodeURIComponent(m3u8Content)));
+
+      // Gửi request POST tới Worker
+      const response = await fetch(workerUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          m3u8_base64: base64Content,
+          referer: finalReferer
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Worker response error status: " + response.status);
+      }
+
+      const data = await response.json();
+
+      // Nếu Worker lưu cache thành công và trả về play_url
+      if (data && data.play_url) {
+        const headerJson = JSON.stringify({
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Referer": finalReferer,
+          "Origin": "https://phim.nguonc.com"
+        });
+
+        // Gọi lại hàm Native với đường dẫn play=true từ Worker
+        if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
+          window.SnifferBridge.play(data.play_url + "#.m3u8", headerJson);
+        }
+      } else {
+        bridgeLog('❌ [WORKER ERROR]: Không nhận được play_url từ Worker');
+      }
+    } catch (error) {
+      bridgeLog('❌ [PROCESS ERROR]: ' + error.message);
+    }
+  }
+
+  // =========================================================================
+  // 4. CHUYỂN NỘI DUNG M3U8 VỀ APP (LOCAL SERVER)
   // =========================================================================
   function dispatchM3u8ToApp(m3u8Content) {
     if (!m3u8Content || hasDispatchedAny === 1) return;
     hasDispatchedAny = 1;
     isFinished = 1;
-    stopTimeout(); // Hủy đếm ngược 10s khi đã lấy thành công
+    stopTimeout();
 
-    bridgeLog('🎯 [LOCAL-DISPATCH] Đã tìm thấy M3U8! Đang nạp vào Local Player...');
-    bridgeLog("🎯 Bắt link thành công! Đang phát video...", true);
+    bridgeLog('🎯 [LOCAL-DISPATCH] Đã tìm thấy M3U8! Đang gửi lên Worker...');
+    bridgeLog("🎯 Bắt link thành công! Đang xử lý video...", true);
 
     try {
-      if (window.SnifferBridge && typeof window.SnifferBridge.playM3u8Content === 'function') {
-        // Truyền trực tiếp nội dung M3U8 thô + URL hiện tại làm Referer/BaseURL
-        window.SnifferBridge.playM3u8Content(m3u8Content, window.location.href);
-      } else {
-        bridgeLog('❌ SnifferBridge.playM3u8Content không khả dụng!');
+      if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
+        window.SnifferBridge.log("M3U8\\n" + m3u8Content);
       }
+       bridgeLog('🎯 Đang bắn link cho native');
+      SnifferBridge.playM3u8Content(m3u8Content, JSON.stringify({"Origin":"https://phim.nguonc.com","Referer":"${referer}"}))
+      // Thực thi gửi m3u8 lên Worker
+      //processAndPlayM3u8(m3u8Content);
     } catch(e) {
       bridgeLog('❌ [DISPATCH ERROR]: ' + e.message);
     }
   }
 
   // =========================================================================
-  // 4. HOOK URL.createObjectURL (BẮT TRỰC TIẾP DỮ LIỆU BLOB M3U8)
+  // 5. HOOK URL.createObjectURL (BẮT TRỰC TIẾP DỮ LIỆU BLOB M3U8)
   // =========================================================================
   try {
     if (typeof URL !== 'undefined' && URL.createObjectURL) {
@@ -446,7 +505,6 @@ function bridgeLog(msg, check) {
         if (isFinished === 0 && blob && (blob instanceof Blob || blob instanceof File)) {
           var processContent = function(content) {
             if (isValidM3U8(content)) {
-              //bridgeLog('🎯 [FOUND-BLOB]: Phát hiện M3U8 từ Blob RAM!');
               dispatchM3u8ToApp(content);
             }
           };
