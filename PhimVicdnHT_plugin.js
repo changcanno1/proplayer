@@ -1,5 +1,5 @@
 // =============================================================================
-// CẤU HÌNH DOMAIN VICDN - FIX LỖI MÀN HÌNH ĐEN WEBVIEW
+// CẤU HÌNH DOMAIN VICDN - ÉP WEBVIEW HIỂN THỊ BẰNG DATA URI
 // =============================================================================
 var BASEURL = "https://vicdn.cc"; 
 var BASEAPI = BASEURL + "/api"; 
@@ -9,13 +9,13 @@ function getManifest() {
         id: "vicdn", 
         name: "ViCDN Pro", 
         description: "Mở trực tiếp Webview trang gốc để hỗ trợ Vietsub & Thuyết minh.", 
-        version: "7.4.2", 
+        version: "7.4.3", 
         baseUrl: BASEURL, 
         iconUrl: BASEURL + "/vicdn.png", 
         isEnabled: true, 
         adblock: false, 
         type: "MOVIE", 
-        playerType: "embed" // [BẮT BUỘC]
+        playerType: "embed" 
     });
 } 
 
@@ -171,7 +171,6 @@ function parseMovieDetail(html, url) {
         var category = (data.genre || []).join(" - "); 
         var year = data.year || 2026; 
         
-        // Trích xuất slug chuẩn xác để ghép link. Nếu web dùng /phim/slug, bạn có thể thêm vào.
         var movieSlug = data.slug || url.split('/').pop();
         var webviewUrl = BASEURL + "/" + movieSlug; 
 
@@ -205,23 +204,38 @@ function parseMovieDetail(html, url) {
 } 
 
 // -----------------------------------------------------------------------------
-// KHỞI CHẠY WEBVIEW (ĐÃ XÓA CUSTOM-JS GÂY LỖI)
+// ÉP WEBVIEW MỞ BẰNG DATA URI REDIRECT TRÁNH MÀN HÌNH ĐEN
 // -----------------------------------------------------------------------------
 function parseDetailResponse(html, url) { 
     try { 
-        // Trả về trực tiếp URL web gốc, không ép thêm JS để tránh crash WebView
+        var htmlRedirect = `
+            <html>
+                <head>
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <style>body { background: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; }</style>
+                </head>
+                <body>
+                    <p>Đang tải giao diện...</p>
+                    <script>
+                        setTimeout(function() {
+                            window.location.href = "${url}";
+                        }, 500);
+                    </script>
+                </body>
+            </html>
+        `;
+        
+        var dataUri = "data:text/html;charset=utf-8," + encodeURIComponent(htmlRedirect);
+        
         return JSON.stringify({ 
-            url: url, 
+            url: dataUri, 
             isEmbed: true, 
-            headers: { 
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Referer": BASEURL
-            }, 
+            headers: {}, 
             subtitles: [] 
         }); 
     } catch (e) { 
         log("Lỗi parseDetailResponse: " + e); 
-        return JSON.stringify({ url: "", isEmbed: true, headers: {} }); 
+        return JSON.stringify({ url: "", isEmbed: true }); 
     }
 } 
 
