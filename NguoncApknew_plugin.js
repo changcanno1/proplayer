@@ -6,7 +6,7 @@ function getManifest() {
     return JSON.stringify({
         "id": "nguoncnew",
         "name": "Phim NguonC VIP",
-        "version": "1.5.9",
+        "version": "1.6",
         "baseUrl": "https://phim.nguonc.com",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png",
         "isEnabled": true,
@@ -306,8 +306,8 @@ function parseDetailResponse(html, url) {
                 "Accept": "*/*",
                 "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
                 "X-Requested-With": "com.android.chrome",
-                "Block-Ads": true,
-                "Block-Css": "html,body,*",
+                "Block-Ads": false,
+                "Block-Css": "",
                 "Custom-Js": customjs.trim()
             },
             "subtitles": []
