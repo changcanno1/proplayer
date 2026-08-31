@@ -43,7 +43,6 @@ function getManifest() {
   function getHomeSections() {
       localStorage.clear();
       return JSON.stringify([
-          {"slug": "/phim-hay-vn2-duoc-xem-nhieu/top","title": "Xem Nhiều","type": "Horizontal"},
           {"slug": "/the-loai/hanh-dong-1","title": "Hành Động","type": "Horizontal"},
           {"slug": "/the-loai/tinh-cam-19","title": "Tình Cảm","type": "Horizontal"},
           {"slug": "/the-loai/co-trang-tong-hop-26","title": "Cổ Trang Tổng Hợp","type": "Horizontal"},
@@ -59,8 +58,6 @@ function getManifest() {
           {"slug": "/the-loai/phim-le-hay-31","title": "Phim Lẻ Hay","type": "Horizontal"},
           {"slug": "/the-loai/phim-le-33","title": "Phim Lẻ","type": "Horizontal"},
           {"slug": "/the-loai/hoat-hinh-anime-29","title": "Hoạt Hình - Anime","type": "Horizontal"},
-          {"slug": "/the-loai/ca-nhac-32","title": "Ca Nhạc","type": "Horizontal"},
-          {"slug": "/the-loai3/top-drama-youtube-35","title": "TOP Drama Youtube","type": "Horizontal"},
           {"slug": "/danh-muc/trung-quoc-7","title": "Trung Quốc","type": "Horizontal"},
           {"slug": "/danh-muc/han-quoc-10","title": "Hàn Quốc","type": "Horizontal"},
           {"slug": "/danh-muc/thai-lan-8","title": "Thái Lan","type": "Horizontal"},
@@ -74,8 +71,6 @@ function getManifest() {
           {"slug": "/danh-muc/le-tong-hop-16","title": "Lẻ Tổng Hợp","type": "Horizontal"},
           {"slug": "/danh-muc/ca-nhac-hai-cuoi-21","title": "Ca Nhạc - Hài Cười","type": "Horizontal"},
           {"slug": "/danh-muc/thieu-nhi-kinh-phat-26","title": "Thiếu Nhi - Kinh Phật","type": "Horizontal"},
-          {"slug": "/danh-muc2/phim-drama-tiktok-19","title": "Phim Drama TikTok","type": "Horizontal"},
-          {"slug": "/danh-muc2/top-ca-nhac-28","title": "TOP Ca Nhạc","type": "Horizontal"},
           {"slug": "/danh-sach-phim/","title": "Phim Mới","type": "Grid"}
       ]);
   }
@@ -83,7 +78,7 @@ function getManifest() {
   // Hàm khởi tạo thẻ chủ đề
   function getLISTmenu() {
     try{
-      return `[{"link":"/the-loai/hanh-dong-1","name":"Hành Động"},{"link":"/the-loai/tinh-cam-19","name":"Tình Cảm"},{"link":"/the-loai/co-trang-tong-hop-26","name":"Cổ Trang Tổng Hợp"},{"link":"/the-loai/ngon-tinh-xuyen-khong-4","name":"Ngôn Tình Xuyên Không"},{"link":"/the-loai/tinh-cam-hai-huoc-20","name":"Tình Cảm Hài Hước"},{"link":"/the-loai/tinh-cam-hanh-dong-5","name":"Tình cảm Hành động"},{"link":"/the-loai/co-bac-xa-hoi-den-16","name":"Cờ Bạc Xã Hội Đen"},{"link":"/the-loai/hanh-dong-hinh-su-22","name":"Hành Động Hình Sự"},{"link":"/the-loai/hanh-dong-hai-huoc-24","name":"Hành động Hài Hước"},{"link":"/the-loai/vo-thuat-17","name":"Võ Thuật"},{"link":"/the-loai/vo-thuat-kiem-hiep-6","name":"Võ Thuật Kiếm Hiệp"},{"link":"/the-loai/bi-an-kinh-di-27","name":"Bí ẩn - Kinh dị"},{"link":"/the-loai/phim-le-hay-31","name":"Phim Lẻ Hay"},{"link":"/the-loai/phim-le-33","name":"Phim Lẻ"},{"link":"/the-loai/hoat-hinh-anime-29","name":"HOẠT HÌNH - ANIME"},{"link":"/the-loai/ca-nhac-32","name":"Ca Nhạc"},{"link":"/the-loai3/top-drama-youtube-35","name":"TOP Drama YOUTUBE"},{"link":"/danh-muc/trung-quoc-7","name":"Trung Quốc"},{"link":"/danh-muc/han-quoc-10","name":"Hàn Quốc"},{"link":"/danh-muc/thai-lan-8","name":"Thái Lan"},{"link":"/danh-muc/hong-kong-9","name":"Hồng Kông"},{"link":"/danh-muc/my-2","name":"Mỹ"},{"link":"/danh-muc/viet-nam-1","name":"Việt Nam"},{"link":"/danh-muc/nhat-ban-11","name":"Nhật Bản"},{"link":"/danh-muc/nhieu-quoc-gia-17","name":"Nhiều quốc gia"},{"link":"/danh-muc/chieu-rap-23","name":"Chiếu rạp"},{"link":"/danh-muc/le-de-cu-20","name":"Lẻ Đề Cử"},{"link":"/danh-muc/le-tong-hop-16","name":"LẺ Tổng Hợp"},{"link":"/danh-muc/ca-nhac-hai-cuoi-21","name":"Ca Nhạc - Hài Cười"},{"link":"/danh-muc/thieu-nhi-kinh-phat-26","name":"Thiếu nhi - Kinh Phật"},{"link":"/danh-muc2/phim-drama-tiktok-19","name":"Phim Drama TikTok"},{"link":"/danh-muc2/top-ca-nhac-28","name":"TOP CA NHẠC"}]`;
+      return `[{"link":"/the-loai/hanh-dong-1","name":"Hành Động"},{"link":"/the-loai/tinh-cam-19","name":"Tình Cảm"},{"link":"/the-loai/co-trang-tong-hop-26","name":"Cổ Trang Tổng Hợp"},{"link":"/the-loai/ngon-tinh-xuyen-khong-4","name":"Ngôn Tình Xuyên Không"},{"link":"/the-loai/tinh-cam-hai-huoc-20","name":"Tình Cảm Hài Hước"},{"link":"/the-loai/tinh-cam-hanh-dong-5","name":"Tình cảm Hành động"},{"link":"/the-loai/co-bac-xa-hoi-den-16","name":"Cờ Bạc Xã Hội Đen"},{"link":"/the-loai/hanh-dong-hinh-su-22","name":"Hành Động Hình Sự"},{"link":"/the-loai/hanh-dong-hai-huoc-24","name":"Hành động Hài Hước"},{"link":"/the-loai/vo-thuat-17","name":"Võ Thuật"},{"link":"/the-loai/vo-thuat-kiem-hiep-6","name":"Võ Thuật Kiếm Hiệp"},{"link":"/the-loai/bi-an-kinh-di-27","name":"Bí ẩn - Kinh dị"},{"link":"/the-loai/phim-le-hay-31","name":"Phim Lẻ Hay"},{"link":"/the-loai/phim-le-33","name":"Phim Lẻ"},{"link":"/the-loai/hoat-hinh-anime-29","name":"HOẠT HÌNH - ANIME"},{"link":"/danh-muc/trung-quoc-7","name":"Trung Quốc"},{"link":"/danh-muc/han-quoc-10","name":"Hàn Quốc"},{"link":"/danh-muc/thai-lan-8","name":"Thái Lan"},{"link":"/danh-muc/hong-kong-9","name":"Hồng Kông"},{"link":"/danh-muc/my-2","name":"Mỹ"},{"link":"/danh-muc/viet-nam-1","name":"Việt Nam"},{"link":"/danh-muc/nhat-ban-11","name":"Nhật Bản"},{"link":"/danh-muc/nhieu-quoc-gia-17","name":"Nhiều quốc gia"},{"link":"/danh-muc/chieu-rap-23","name":"Chiếu rạp"},{"link":"/danh-muc/le-de-cu-20","name":"Lẻ Đề Cử"},{"link":"/danh-muc/le-tong-hop-16","name":"LẺ Tổng Hợp"},{"link":"/danh-muc/ca-nhac-hai-cuoi-21","name":"Ca Nhạc - Hài Cười"},{"link":"/danh-muc/thieu-nhi-kinh-phat-26","name":"Thiếu nhi - Kinh Phật"}]`;
     } catch(e){
       log("getLISTmenu[err]:\n " + e);
       return `[
