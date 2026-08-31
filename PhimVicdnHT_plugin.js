@@ -1,5 +1,5 @@
 // =============================================================================
-// CẤU HÌNH DOMAIN VICDN - FIX HIỂN THỊ WEBVIEW ĐỂ CHỌN TẬP & SUB
+// CẤU HÌNH DOMAIN VICDN - FIX HIỂN THỊ WEBVIEW TRANG GỐC ĐỂ CHỌN TẬP & SUB
 // =============================================================================
 var BASEURL = "https://vicdn.cc"; 
 var BASEAPI = BASEURL + "/api"; 
@@ -8,8 +8,8 @@ function getManifest() {
     return JSON.stringify({ 
         id: "vicdn", 
         name: "ViCDN Pro", 
-        description: "Mở trực tiếp Webview để chọn tập và hỗ trợ hiển thị Phụ đề Vietsub.", 
-        version: "7.4.0", 
+        description: "Mở trực tiếp Webview trang gốc để hỗ trợ Vietsub & Thuyết minh.", 
+        version: "7.4.1", 
         baseUrl: BASEURL, 
         iconUrl: BASEURL + "/vicdn.png", 
         isEnabled: true, 
@@ -38,15 +38,9 @@ function getHomeSections() {
         { "link": "/type/vien-tuong/", "name": "Viễn Tưởng", "type": "Horizontal" }, 
         { "link": "/type/hinh-su/", "name": "Hình Sự", "type": "Horizontal" } 
     ]; 
-    var menulist = []; 
-    for (var i = 0; i < listurl.length; i++) { 
-        menulist.push({ 
-            slug: listurl[i].link, 
-            title: listurl[i].name, 
-            type: listurl[i].type 
-        }); 
-    } 
-    return JSON.stringify(menulist);
+    return JSON.stringify(listurl.map(function(item) {
+        return { slug: item.link, title: item.name, type: item.type };
+    }));
 } 
 
 function getPrimaryCategories() { 
@@ -92,7 +86,7 @@ function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; } 
 
 // -----------------------------------------------------------------------------
-// PARSER DANH SÁCH (ĐỌC TỪ API JSON)
+// PARSER DANH SÁCH & TÌM KIẾM
 // -----------------------------------------------------------------------------
 function parseListResponse(html) { 
     try { 
@@ -116,27 +110,18 @@ function parseListResponse(html) {
         } 
         var totalPages = json.pagination ? parseInt(json.pagination.total_pages) : 1; 
         var currentPage = json.pagination ? parseInt(json.pagination.current_page) : 1; 
-        return JSON.stringify({ 
-            "items": items, 
-            "pagination": { "currentPage": currentPage, "totalPages": totalPages } 
-        }); 
+        return JSON.stringify({ "items": items, "pagination": { "currentPage": currentPage, "totalPages": totalPages } }); 
     } catch (e) { 
-        log("Lỗi parseListResponse: " + e); 
         return JSON.stringify({ "items": [], "pagination": { "currentPage": 1, "totalPages": 1 } }); 
     }
 } 
 
-// -----------------------------------------------------------------------------
-// PARSER TÌM KIẾM TỪ HTML
-// -----------------------------------------------------------------------------
 function parseSearchResponse(html, url) { 
     try { 
         var startTag = "const allData = ["; 
         var startIdx = html.indexOf(startTag); 
-        if (startIdx === -1) { 
-            log("Không tìm thấy biến allData trong HTML Tìm Kiếm."); 
-            return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } }); 
-        } 
+        if (startIdx === -1) return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } }); 
+        
         var jsonStart = startIdx + "const allData = ".length; 
         var endIdx = html.indexOf("];let filteredData", jsonStart); 
         if (endIdx === -1) endIdx = html.indexOf("];", jsonStart); 
@@ -160,18 +145,14 @@ function parseSearchResponse(html, url) {
                 "episode_current": "Tập " + item.stt + "/" + item.total 
             }); 
         } 
-        return JSON.stringify({ 
-            "items": items, 
-            "pagination": { "currentPage": 1, "totalPages": 1 } 
-        }); 
+        return JSON.stringify({ "items": items, "pagination": { "currentPage": 1, "totalPages": 1 } }); 
     } catch (e) { 
-        log("Lỗi parseSearchResponse: " + e.message); 
         return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } }); 
     }
 } 
 
 // -----------------------------------------------------------------------------
-// BÓC TÁCH CHI TIẾT (CHỈ TẠO 1 NÚT ĐỂ MỞ WEBVIEW)
+// BÓC TÁCH CHI TIẾT (TẠO 1 NÚT DUY NHẤT TRỎ VỀ TRANG WEB GỐC CỦA PHIM)
 // -----------------------------------------------------------------------------
 function parseMovieDetail(html, url) { 
     try { 
@@ -190,25 +171,13 @@ function parseMovieDetail(html, url) {
         var category = (data.genre || []).join(" - "); 
         var year = data.year || 2026; 
         
+        // Tạo link web gốc dựa vào slug của phim thay vì bóc link iframe
+        var webviewUrl = BASEURL + "/" + data.slug;
+
         var episodes = []; 
-        var webviewUrl = BASEURL;
-
-        // Lấy link web của phim để mở Webview (Lấy link tập 1 nếu có)
-        if (data.list_episodes && data.list_episodes.length > 0) { 
-            var firstEpi = data.list_episodes[0].split("|"); 
-            if(firstEpi.length >= 2) {
-                webviewUrl = firstEpi[1].trim(); 
-            }
-        } else if (data.mkv) { 
-            webviewUrl = data.mkv.trim(); 
-        } else {
-            webviewUrl = BASEURL + "/" + data.slug;
-        }
-
-        // CHỈ tạo 1 nút duy nhất để người dùng click vào sẽ nhảy ra Webview của web
         episodes.push({ 
             id: webviewUrl, 
-            name: "Mở Webview Chọn Tập & Phụ Đề", 
+            name: "Mở Trang Phim (Chọn Tập & Vietsub)", 
             slug: "webview_mode" 
         }); 
 
@@ -224,7 +193,7 @@ function parseMovieDetail(html, url) {
             status: status, 
             category: category, 
             episode_current: "Tập " + data.stt, 
-            servers: [{ name: "VIP Server (Webview)", episodes: episodes }], 
+            servers: [{ name: "VIP Server (Webview Gốc)", episodes: episodes }], 
             duration: lduran, 
             casts: lactor 
         }); 
@@ -235,14 +204,10 @@ function parseMovieDetail(html, url) {
 } 
 
 // -----------------------------------------------------------------------------
-// INJECT CUSTOM-JS (BỎ CSS ẨN GIAO DIỆN ĐỂ TỰ CHỌN SUB)
+// INJECT CUSTOM-JS VÀ TRẢ VỀ LINK WEB
 // -----------------------------------------------------------------------------
 function parseDetailResponse(html, url) { 
     try { 
-        var streamLink = url; 
-        
-        // Đoạn JS này chỉ tắt DevTools để tránh web bị đơ, 
-        // KHÔNG ẩn giao diện nữa để bạn có thể tự thao tác chọn tập và bật Vietsub
         var customJS = ` 
             try { 
                 if (window.devtoolsDetector) { 
@@ -254,8 +219,8 @@ function parseDetailResponse(html, url) {
         `; 
         
         return JSON.stringify({ 
-            url: streamLink, 
-            isEmbed: true,  // Mở thẳng bằng Webview
+            url: url, // url này giờ là link trang chủ phim (ví dụ: https://vicdn.cc/phim-a)
+            isEmbed: true, 
             headers: { 
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36", 
                 "Referer": "https://vicdn.cc/", 
