@@ -16,13 +16,6 @@
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
-      "id": "VicDn",
-      "name": "PhimVicDn",
-      "version": "1.5.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
-      "iconUrl": "https://vicdn.cc/vicdn.png"
-    },
-    {
       "id": "PhimHDCSS",
       "name": "PhimHDCSS",
       "version": "1.1.4",
@@ -77,6 +70,13 @@
       "version": "1.2.6",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+    },
+    {
+      "id": "VicDn",
+      "name": "PhimVicDn",
+      "version": "1.5.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
+      "iconUrl": "https://vicdn.cc/vicdn.png"
     },
     {
       "id": "NOVAHD",
