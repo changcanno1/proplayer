@@ -1,5 +1,5 @@
 // =============================================================================
-// CẤU HÌNH DOMAIN VICDN - TỐI ƯU HÓA BỞI JS EXPERT
+// CẤU HÌNH DOMAIN VICDN - BẢN FINAL TỐI ƯU HÓA (FIX PHỤ ĐỀ + THUYẾT MINH)
 // =============================================================================
 var BASEURL = "https://vicdn.cc"; 
 var BASEAPI = BASEURL + "/api"; 
@@ -8,8 +8,8 @@ function getManifest() {
     return JSON.stringify({ 
         id: "vicdn", 
         name: "ViCDN Pro", 
-        description: "Bản Master: Fix dứt điểm Search, lấy dữ liệu thẳng từ server. Kèm tự động bắt Vietsub.", 
-        version: "7.3.1", 
+        description: "Bản Master: Fix dứt điểm Search, lấy dữ liệu thẳng từ server. Tự động bóc tách Phụ Đề, Thuyết Minh.", 
+        version: "7.4.0", 
         baseUrl: BASEURL, 
         iconUrl: BASEURL + "/vicdn.png", 
         isEnabled: true, 
@@ -80,7 +80,6 @@ function getUrlList(slug, filtersJson) {
 } 
 
 function getUrlSearch(keyword, filtersJson) { 
-    // Gọi thẳng vào giao diện tìm kiếm của website
     return BASEURL + "/?q=" + encodeURIComponent(keyword.trim()); 
 } 
 
@@ -221,7 +220,7 @@ function parseMovieDetail(html, url) {
                 var splitEpi = itemEpi.split("|"); 
                 if(splitEpi.length >= 2) { 
                     episodes.push({ 
-                        id: splitEpi[1].trim(), // Lấy thẳng link Player làm ID
+                        id: splitEpi[1].trim(), 
                         name: "Tập " + splitEpi[0].trim(), 
                         slug: "tap-" + splitEpi[0].trim() 
                     }); 
@@ -263,57 +262,83 @@ function parseMovieDetail(html, url) {
 } 
 
 // -----------------------------------------------------------------------------
-// INJECT CUSTOM-JS XỬ LÝ JWPLAYER MÃ HÓA & FIX TÌM KIẾM VIETSUB
+// INJECT CUSTOM-JS XỬ LÝ JWPLAYER MÃ HÓA & TRÍCH XUẤT VIETSUB, THUYẾT MINH
 // -----------------------------------------------------------------------------
-function parseDetailResponse(html, url) { 
-    try { 
-        var streamLink = url; 
+function parseDetailResponse(html, url) {
+    try {
+        var streamLink = url;
         var subs = [];
+        
+        // 1. DỰ ĐOÁN LINK PHỤ ĐỀ DỰA TRÊN ID PHIM (Fallback)
+        var keyMatch = url.match(/([a-z]+-\d+-\d+-\d+|[a-z]+-\d+-\d+)/i);
+        var key = keyMatch ? keyMatch[1] : url.split('/').pop();
+        
+        subs.push({ url: "https://vicdn.cc/sub/" + key + "-vi.vtt", lang: "Vietsub", label: "Vietsub" });
+        subs.push({ url: "https://vicdn.cc/sub/" + key + "-en.vtt", lang: "English", label: "English" });
 
-        // 1. Tách link Phụ đề (Vietsub/English) truyền cho Native Player (nếu App hỗ trợ)
+        // 2. UNPACK JAVASCRIPT ĐỂ TÌM LINK M3U8 (THUYẾT MINH) VÀ PHỤ ĐỀ ẨN
         try {
-            var trackRegex = /file["']?\s*:\s*["']([^"']*\.(vtt|srt|css)[^"']*)["']/gi;
-            var match;
-            while ((match = trackRegex.exec(html)) !== null) {
-                var trackUrl = match[1];
-                if (!subs.some(s => s.url === trackUrl)) {
-                    var tLang = (trackUrl.toLowerCase().includes("eng") || trackUrl.toLowerCase().includes("/e")) ? "English" : "Vietsub";
-                    subs.push({ url: trackUrl, lang: tLang, label: tLang });
+            var unpacked = html;
+            // Thuật toán giải mã đoạn eval(function(p,a,c,k,e,d)...)
+            var packRegex = /eval\s*\(\s*function\s*\(\s*p\s*,\s*a\s*,\s*c\s*,\s*k\s*,\s*e\s*,\s*d\s*\).*?return\s+p\s*}\s*\(\s*'(.*?)'\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*'([^']*)'\.split\('\|'\)/;
+            var match = html.match(packRegex);
+            
+            if (match) {
+                var p = match[1];
+                var a = parseInt(match[2]);
+                var c = parseInt(match[3]);
+                var k = match[4].split('|');
+                var e = function(c) {
+                    return (c < a ? '' : e(parseInt(c / a))) + ((c = c % a) > 35 ? String.fromCharCode(c + 29) : c.toString(36));
+                };
+                while (c--) {
+                    if (k[c]) {
+                        p = p.replace(new RegExp('\\b' + e(c) + '\\b', 'g'), k[c]);
+                    }
                 }
+                unpacked = p; // Lấy được code gốc không che
             }
 
-            var regexApi = /https?:\/\/[a-zA-Z0-9.-]+\/api\/subtitle\/[^"']+/gi;
-            var matchApi = html.match(regexApi);
-            if (matchApi) {
-                for (var k = 0; k < matchApi.length; k++) {
-                    var sUrl = matchApi[k];
-                    if (!subs.some(s => s.url === sUrl)) {
-                        var langLabel = sUrl.includes("/e") ? "English" : "Vietsub";
-                        subs.push({ url: sUrl, lang: langLabel, label: langLabel });
+            // Quét toàn bộ link .vtt, .srt, .m3u8 trong code đã giải mã
+            var linkRegex = /https?:\/\/[^\s"'`]+\.(vtt|srt|css|m3u8)[^\s"'`]*/gi;
+            var linkMatches = unpacked.match(linkRegex);
+            if (linkMatches) {
+                for (var i = 0; i < linkMatches.length; i++) {
+                    var sUrl = linkMatches[i].replace(/\\/g, ''); // Xóa ký tự escape nếu có
+                    
+                    // Kiểm tra trùng lặp
+                    var exists = false;
+                    for(var j = 0; j < subs.length; j++) { if(subs[j].url === sUrl) exists = true; }
+                    
+                    if (!exists) {
+                        var tLang = "Vietsub";
+                        // Phân loại link Thuyết minh hay Phụ đề
+                        if (sUrl.indexOf(".m3u8") !== -1) {
+                            tLang = (sUrl.indexOf("c0") !== -1 || sUrl.indexOf("female") !== -1) ? "Thuyết Minh Nữ" : 
+                                    (sUrl.indexOf("bZ") !== -1 || sUrl.indexOf("male") !== -1) ? "Thuyết Minh Nam" : "Âm Thanh Gốc";
+                        } else if (sUrl.toLowerCase().indexOf("en") !== -1 || sUrl.toLowerCase().indexOf("eng") !== -1) {
+                            tLang = "English";
+                        }
+                        subs.push({ url: sUrl, lang: tLang, label: tLang });
                     }
                 }
             }
         } catch (ex) {
-            log("Lỗi Regex bắt Subtitle: " + ex);
+            log("Lỗi unpack/regex: " + ex);
         }
 
-        // 2. Ép Webview hiển thị và tự động chạy Vietsub
+        // 3. JAVASCRIPT TIÊM VÀO WEBVIEW
+        // Chỉ tắt cảnh báo Devtools để không bị văng, Giữ nguyên UI gốc của Web để chạy phụ đề trên WebView
         var customJS = `
             try {
+                // Tắt Anti-Devtools để chống màn hình đen
                 if (window.devtoolsDetector) {
                     window.devtoolsDetector.launch = function(){};
                     window.devtoolsDetector.addListener = function(){};
                     window.devtoolsDetector.isOpen = false;
                 }
                 
-                var s = document.createElement('style');
-                s.innerHTML = 'html, body { margin:0!important; padding:0!important; width:100vw!important; height:100vh!important; overflow:hidden!important; background:#000!important; } ' +
-                              '#ssPlay { position:fixed!important; top:0!important; left:0!important; width:100vw!important; height:100vh!important; z-index:1!important; display:flex!important; } ' +
-                              '#sub-vi-overlay, #sub-en-overlay { z-index: 99999 !important; font-size: 20px !important; display: block !important; } ' + 
-                              '#sub-cfg-modal { z-index: 100000 !important; } ' + 
-                              'header, footer, nav, .container-fluid { display:none!important; pointer-events:none!important; }';
-                document.head.appendChild(s);
-                
+                // Vòng lặp Auto Play và Bỏ qua Intro
                 var checkJWP = setInterval(function() {
                     if (typeof jwplayer === 'function') {
                         var player = jwplayer();
@@ -322,46 +347,30 @@ function parseDetailResponse(html, url) {
                             if (state !== 'playing' && state !== 'buffering') {
                                 player.play();
                             }
-                            
-                            // Tự động bật track phụ đề (Captions) nếu đang bị tắt (Dành cho webview)
-                            try {
-                                var tracks = player.getCaptionsList();
-                                if (tracks && tracks.length > 1 && player.getCurrentCaptions() === 0) {
-                                    var viIndex = 1;
-                                    for (var i = 0; i < tracks.length; i++) {
-                                        if (tracks[i].label && tracks[i].label.toLowerCase().includes('vi')) {
-                                            viIndex = i;
-                                            break;
-                                        }
-                                    }
-                                    player.setCurrentCaptions(viIndex);
-                                }
-                            } catch(err) {}
                         }
                     }
-                    
-                    // Tự động ấn nút Skip (Bỏ qua Intro)
                     var skip = document.querySelector('.jw-skip, #jw-custom-skip-intro');
                     if (skip && skip.style.display !== 'none') skip.click();
-                }, 1000);
+                }, 1500);
             } catch(e) {}
         `;
+
+        return JSON.stringify({
+            url: streamLink,
+            isEmbed: true,
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Referer": "https://vicdn.cc/",
+                "Custom-Js": customJS.replace(/\s+/g, ' ').trim()
+            },
+            subtitles: subs // Xuất list Sub + Thuyết Minh ra cho Native App
+        });
         
-        return JSON.stringify({ 
-            url: streamLink, 
-            isEmbed: true, 
-            headers: { 
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36", 
-                "Referer": "https://vicdn.cc/", 
-                "Custom-Js": customJS.replace(/\s+/g, ' ').trim() 
-            }, 
-            subtitles: subs // Chứa mảng phụ đề đã phân tích
-        }); 
-    } catch (e) { 
-        log("Lỗi parseDetailResponse: " + e); 
-        return JSON.stringify({ url: "", isEmbed: true, headers: {}, subtitles: [] }); 
-    } 
-} 
+    } catch (e) {
+        log("Lỗi parseDetailResponse: " + e);
+        return JSON.stringify({ url: "", isEmbed: true, headers: {}, subtitles: [] });
+    }
+}
 
 function parseEmbedResponse(htmlContent, url) { 
     return JSON.stringify({ url: "", isEmbed: false }); 
