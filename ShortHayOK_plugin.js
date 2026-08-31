@@ -9,7 +9,6 @@ function getManifest() {
       "id": "phimnganok",
       "name": "Nguồn Phimnganok",
       "version": "1.1",
-      "author": "Alokillgtv",
       "info": "",
       "baseUrl": BASEURL,
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimnganok.png",
