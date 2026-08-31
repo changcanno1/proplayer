@@ -79,13 +79,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
     {
-      "id": "VicDn",
-      "name": "PhimVicDn",
-      "version": "1.5.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimVicdnHT_plugin.js",
-      "iconUrl": "https://vicdn.cc/vicdn.png"
-    },
-    {
       "id": "NOVAHD",
       "name": "NOVAHD",
       "version": "1.2.4",
