@@ -1,5 +1,5 @@
 // =============================================================================
-// CẤU HÌNH DOMAIN VICDN - FIX HIỂN THỊ WEBVIEW TRANG GỐC ĐỂ CHỌN TẬP & SUB
+// CẤU HÌNH DOMAIN VICDN - FIX LỖI MÀN HÌNH ĐEN WEBVIEW
 // =============================================================================
 var BASEURL = "https://vicdn.cc"; 
 var BASEAPI = BASEURL + "/api"; 
@@ -9,13 +9,13 @@ function getManifest() {
         id: "vicdn", 
         name: "ViCDN Pro", 
         description: "Mở trực tiếp Webview trang gốc để hỗ trợ Vietsub & Thuyết minh.", 
-        version: "7.4.1", 
+        version: "7.4.2", 
         baseUrl: BASEURL, 
         iconUrl: BASEURL + "/vicdn.png", 
         isEnabled: true, 
         adblock: false, 
         type: "MOVIE", 
-        playerType: "embed" // [BẮT BUỘC] Dùng embed để mở Webview
+        playerType: "embed" // [BẮT BUỘC]
     });
 } 
 
@@ -152,12 +152,12 @@ function parseSearchResponse(html, url) {
 } 
 
 // -----------------------------------------------------------------------------
-// BÓC TÁCH CHI TIẾT (TẠO 1 NÚT DUY NHẤT TRỎ VỀ TRANG WEB GỐC CỦA PHIM)
+// BÓC TÁCH CHI TIẾT
 // -----------------------------------------------------------------------------
 function parseMovieDetail(html, url) { 
     try { 
         var json = typeof html === 'string' ? JSON.parse(html) : html; 
-        var data = json.data; 
+        var data = json.data || {}; 
         
         var limg = data.banner || data.poster || ""; 
         if (limg && limg.indexOf("http") === -1) { 
@@ -167,12 +167,13 @@ function parseMovieDetail(html, url) {
         var ldes = data.content || "Không có mô tả."; 
         var lactor = (data.cast || []).join(" - "); 
         var lduran = data.duration ? data.duration + " phút" : ""; 
-        var status = "Tập " + data.stt + "/" + data.total; 
+        var status = "Tập " + (data.stt || "?") + "/" + (data.total || "?"); 
         var category = (data.genre || []).join(" - "); 
         var year = data.year || 2026; 
         
-        // Tạo link web gốc dựa vào slug của phim thay vì bóc link iframe
-        var webviewUrl = BASEURL + "/" + data.slug;
+        // Trích xuất slug chuẩn xác để ghép link. Nếu web dùng /phim/slug, bạn có thể thêm vào.
+        var movieSlug = data.slug || url.split('/').pop();
+        var webviewUrl = BASEURL + "/" + movieSlug; 
 
         var episodes = []; 
         episodes.push({ 
@@ -192,7 +193,7 @@ function parseMovieDetail(html, url) {
             rating: 8.5, 
             status: status, 
             category: category, 
-            episode_current: "Tập " + data.stt, 
+            episode_current: "Tập " + (data.stt || "1"), 
             servers: [{ name: "VIP Server (Webview Gốc)", episodes: episodes }], 
             duration: lduran, 
             casts: lactor 
@@ -204,27 +205,17 @@ function parseMovieDetail(html, url) {
 } 
 
 // -----------------------------------------------------------------------------
-// INJECT CUSTOM-JS VÀ TRẢ VỀ LINK WEB
+// KHỞI CHẠY WEBVIEW (ĐÃ XÓA CUSTOM-JS GÂY LỖI)
 // -----------------------------------------------------------------------------
 function parseDetailResponse(html, url) { 
     try { 
-        var customJS = ` 
-            try { 
-                if (window.devtoolsDetector) { 
-                    window.devtoolsDetector.launch = function(){}; 
-                    window.devtoolsDetector.addListener = function(){}; 
-                    window.devtoolsDetector.isOpen = false; 
-                } 
-            } catch(e) {} 
-        `; 
-        
+        // Trả về trực tiếp URL web gốc, không ép thêm JS để tránh crash WebView
         return JSON.stringify({ 
-            url: url, // url này giờ là link trang chủ phim (ví dụ: https://vicdn.cc/phim-a)
+            url: url, 
             isEmbed: true, 
             headers: { 
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36", 
-                "Referer": "https://vicdn.cc/", 
-                "Custom-Js": customJS.replace(/\s+/g, ' ').trim() 
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Referer": BASEURL
             }, 
             subtitles: [] 
         }); 
