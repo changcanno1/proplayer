@@ -1,5 +1,5 @@
 // =============================================================================
-// CẤU HÌNH DOMAIN VICDN - BẢN FINAL MASTER (FIX NATIVE SUBTITLE)
+// CẤU HÌNH DOMAIN VICDN - BẢN FINAL MASTER (FIX NATIVE SUBTITLE BẰNG API GỐC)
 // =============================================================================
 var BASEURL = "https://vicdn.cc"; 
 var BASEAPI = BASEURL + "/api"; 
@@ -8,14 +8,14 @@ function getManifest() {
     return JSON.stringify({ 
         id: "vicdn", 
         name: "ViCDN Pro", 
-        description: "Bản Master: Search API trực tiếp, Giải mã AES chèn Phụ đề thẳng vào Native Player.", 
+        description: "Bản Master: Fix dứt điểm Search, giải mã API lấy trực tiếp link Phụ đề sạch cho Native App.", 
         version: "8.0.0", 
         baseUrl: BASEURL, 
         iconUrl: BASEURL + "/vicdn.png", 
         isEnabled: true, 
         adblock: false, 
         type: "MOVIE", 
-        playerType: "embed" // [BẮT BUỘC]
+        playerType: "embed" // [BẮT BUỘC] Dùng embed để mở Webview kèm CustomJS
     }); 
 } 
 
@@ -31,13 +31,22 @@ function log(msg) {
 // MENU TRANG CHỦ & DANH MỤC
 // -----------------------------------------------------------------------------
 function getHomeSections() { 
-    return JSON.stringify([ 
+    var listurl = [ 
         { "link": "/update/", "name": "Phim Mới Cập Nhật", "type": "Grid" }, 
         { "link": "/type/hanh-dong/", "name": "Hành Động", "type": "Horizontal" }, 
         { "link": "/type/hoat-hinh/", "name": "Hoạt Hình", "type": "Horizontal" }, 
         { "link": "/type/vien-tuong/", "name": "Viễn Tưởng", "type": "Horizontal" }, 
         { "link": "/type/hinh-su/", "name": "Hình Sự", "type": "Horizontal" } 
-    ]); 
+    ]; 
+    var menulist = []; 
+    for (var i = 0; i < listurl.length; i++) { 
+        menulist.push({ 
+            slug: listurl[i].link, 
+            title: listurl[i].name, 
+            type: listurl[i].type 
+        }); 
+    } 
+    return JSON.stringify(menulist); 
 } 
 
 function getPrimaryCategories() { 
@@ -162,7 +171,7 @@ function parseSearchResponse(html, url) {
 } 
 
 // -----------------------------------------------------------------------------
-// BÓC TÁCH CHI TIẾT
+// BÓC TÁCH CHI TIẾT VÀ DANH SÁCH TẬP NATIVE
 // -----------------------------------------------------------------------------
 function parseMovieDetail(html, url) { 
     try { 
@@ -212,71 +221,80 @@ function parseMovieDetail(html, url) {
 } 
 
 // -----------------------------------------------------------------------------
-// INJECT CUSTOM-JS XỬ LÝ JWPLAYER MÃ HÓA & CƯỚP QUYỀN HIỂN THỊ PHỤ ĐỀ
+// INJECT CUSTOM-JS XỬ LÝ JWPLAYER MÃ HÓA & KÉO LINK PHỤ ĐỀ SẠCH (SRT)
 // -----------------------------------------------------------------------------
 function parseDetailResponse(html, url) {
     try {
+        var streamLink = url;
+        var subs = [];
+        
+        // --- THUẬT TOÁN KÉO LINK PHỤ ĐỀ SẠCH TỪ PHIMGOD ---
+        try {
+            var slug = "";
+            var ep = 1;
+            
+            // Lọc id phim và tập từ url. VD: https://vicdn.cc/tv-284822-1-6 -> slug: tv-284822-1 | ep: 6
+            var matchUrl = url.match(/([a-z]+-\d+(?:-\d+)?)-(\d+)$/i);
+            if (matchUrl) {
+                slug = matchUrl[1];
+                ep = parseInt(matchUrl[2]) || 1;
+            } else {
+                var parts = url.split('/');
+                slug = parts[parts.length - 1];
+            }
+
+            // Quét mã lech bí mật từ biến allData có sẵn trong HTML
+            var lech = "";
+            var startTag = "const allData = [";
+            var startIdx = html.indexOf(startTag);
+            if (startIdx !== -1) {
+                var jsonStart = startIdx + startTag.length - 1;
+                var endIdx = html.indexOf("];let filteredData", jsonStart);
+                if (endIdx === -1) endIdx = html.indexOf("];", jsonStart);
+                if (endIdx !== -1) {
+                    var jsonString = html.substring(jsonStart, endIdx + 1);
+                    var allData = JSON.parse(jsonString);
+                    for (var i = 0; i < allData.length; i++) {
+                        if (allData[i].slug === slug) {
+                            lech = allData[i].lech || "";
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Định dạng lại số tập. VD: tập 6 -> "06"
+            var ep2 = ep < 10 ? '0' + ep : ep;
+            
+            // Xây dựng Link Phụ Đề Chuẩn của Phimgod (Trang gốc chứa file .srt chưa bị mã hóa AES)
+            var viUrl = "https://phimgod.com/api/subtitle/-" + lech + "/v" + ep2 + ".srt/vtt.css";
+            var enUrl = "https://phimgod.com/api/subtitle/-" + lech + "/e" + ep2 + ".srt/vtt.css";
+
+            subs.push({ url: viUrl, lang: "Vietsub", label: "Vietsub" });
+            subs.push({ url: enUrl, lang: "English", label: "English" });
+            
+        } catch (ex) {
+            log("Lỗi tạo link phụ đề phimgod: " + ex);
+        }
+
+        // --- TIÊM JS VÀO WEBVIEW ĐỂ TẮT GIAO DIỆN & AUTO PLAY ---
         var customJS = `
             try {
-                // 1. Tắt chặn Devtools để không bị kẹt player
+                // Tắt cảnh báo Devtools để không bị kẹt màn hình
                 if (window.devtoolsDetector) {
                     window.devtoolsDetector.isOpen = false;
                     window.devtoolsDetector.launch = function(){};
                     window.devtoolsDetector.addListener = function(){};
                 }
                 
-                // 2. CSS tối ưu giao diện, giấu khung web rác, chừa lại bảng Cài đặt Thuyết Minh của Web
                 var s = document.createElement('style');
                 s.innerHTML = 'header, footer, nav, .container-fluid { display:none!important; pointer-events:none!important; } ' +
                               'html, body { background: #000 !important; margin: 0!important; padding: 0!important; } ' +
-                              '#ssPlay { position:fixed!important; top:0!important; left:0!important; width:100vw!important; height:100vh!important; z-index:1!important; }';
+                              '#ssPlay { position:fixed!important; top:0!important; left:0!important; width:100vw!important; height:100vh!important; z-index:1!important; } ' +
+                              '#sub-vi-overlay, #sub-en-overlay { display: none !important; }'; // Ẩn chữ ảo của Web để tránh trùng lặp với chữ Native
                 document.head.appendChild(s);
-
-                // 3. HOOK KINH ĐIỂN: Tóm File Phụ đề VTT ngay khi Web giải mã xong
-                // Sau đó nhét nó vào thẻ <video> dưới dạng <track> để Native App của bạn đọc được
-                var origDecode = TextDecoder.prototype.decode;
-                var trackAdded = {};
-                TextDecoder.prototype.decode = function() {
-                    var text = origDecode.apply(this, arguments);
-                    if (text && text.indexOf('WEBVTT') !== -1) {
-                        
-                        var isVi = text.indexOf('Ngôn ngữ: Tiếng Việt') !== -1 || text.indexOf('Vietsub') !== -1 || !trackAdded['vi'];
-                        var langCode = isVi ? 'vi' : 'en';
-                        var langLabel = isVi ? 'Vietsub' : 'English';
-                        
-                        if (!trackAdded[langCode]) {
-                            trackAdded[langCode] = true;
-                            
-                            // Bọc Text sạch thành Data URI
-                            var dataUri = 'data:text/vtt;charset=utf-8,' + encodeURIComponent(text);
-                            
-                            var attachTimer = setInterval(function() {
-                                var video = document.querySelector('video');
-                                if (video) {
-                                    clearInterval(attachTimer);
-                                    
-                                    // Bơm <track> vào video, App sẽ tự bắt được nút Subtitle
-                                    var track = document.createElement('track');
-                                    track.src = dataUri;
-                                    track.kind = 'captions';
-                                    track.srclang = langCode;
-                                    track.label = langLabel;
-                                    if (langCode === 'vi') track.default = true;
-                                    video.appendChild(track);
-                                    
-                                    // Ẩn phụ đề bằng thẻ DIV của Web đi để nhường sân cho Native Sub
-                                    var overlayVi = document.getElementById('sub-vi-overlay');
-                                    if (overlayVi) overlayVi.style.display = 'none';
-                                    var overlayEn = document.getElementById('sub-en-overlay');
-                                    if (overlayEn) overlayEn.style.display = 'none';
-                                }
-                            }, 500);
-                        }
-                    }
-                    return text;
-                };
-
-                // 4. Auto Play & Auto Skip
+                
+                // Auto Play & Auto Skip Intro
                 setInterval(function() {
                     if (typeof jwplayer === 'function') {
                         var player = jwplayer();
@@ -287,19 +305,18 @@ function parseDetailResponse(html, url) {
                     var skip = document.querySelector('.jw-skip, #jw-custom-skip-intro');
                     if (skip && skip.style.display !== 'none') skip.click();
                 }, 1000);
-                
             } catch(e) {}
         `;
 
         return JSON.stringify({
-            url: url,
+            url: streamLink,
             isEmbed: true,
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                 "Referer": "https://vicdn.cc/",
                 "Custom-Js": customJS.replace(/\s+/g, ' ').trim()
             },
-            subtitles: [] // Để mảng rỗng. App sẽ TỰ ĐỘNG CÓ PHỤ ĐỀ nhờ Kỹ thuật Hook bơm track ở trên!
+            subtitles: subs // -> Bây giờ App đã nhận được link phụ đề "sạch" để tự do tắt/bật!
         });
     } catch (e) {
         log("Lỗi parseDetailResponse: " + e);
