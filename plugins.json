@@ -93,6 +93,13 @@
       "iconUrl": "https://m.media-amazon.com/images/I/61fJ78I23IL.png",
       "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
     },
+     {
+      "id": "phimnganhdc",
+      "name": "HDCShort",
+      "version": "1.6.4",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HDCShort_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimnganhdc.png",
+    },
     {
       "id": "Shortdrama",
       "name": "Shortdrama",
