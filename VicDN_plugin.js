@@ -9,7 +9,7 @@ function getManifest() {
         id: "vicdn",
         name: "ViCDN Pro",
         description: "Bản Master: Fix dứt điểm Search, lấy dữ liệu thẳng từ server. Anti-Detector mạnh mẽ.",
-        version: "7.3.0",
+        version: "1.5.0",
         baseUrl: BASEURL,
         iconUrl: BASEURL + "/vicdn.png",
         isEnabled: true,
