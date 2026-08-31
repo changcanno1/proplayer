@@ -1,0 +1,1316 @@
+var iddomain = "phimhayok"
+BASEURL = "https://vkey.vn/" + iddomain;
+//BASEURL = "https://phimhayok5.site";
+BASEAPI = "https://api-client.phimhayok.net"
+
+function getManifest() {
+  try{
+    return JSON.stringify({
+      "id": "phimnganok",
+      "name": "Nguồn Phimnganok",
+      "version": "1.1",
+      "author": "Alokillgtv",
+      "info": "",
+      "baseUrl": BASEURL,
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimnganok.png",
+      "isEnabled": true,
+      "isAdult": false,
+      "adblock": false,
+      "type": "shortfilm",
+      "subtitleCat": false,
+      "playerType": "exoplayer"
+    });
+  }
+  catch(e){
+    return JSON.stringify({
+      "id": "loiapp",
+      "name": "Plugin bị lỗi cài đặt",
+      "version": "1.1.1",
+      "info": "Plugin đang bị lỗi: \n" + e,
+      "baseUrl": "http://vkey.vn/",
+      "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
+      "isEnabled": true,
+      "type": "MOVIE",
+      "playerType": "exoplayer"
+     });
+  }
+}
+
+if (typeof httpRequest === "function") {
+  var res = httpRequest("https://vaxplugin.alokillgtv.workers.dev/jsonStore/domain.json?debug=9780752&time=2323", {method: "POST"});
+  if (res && res.isSuccessful) {
+    var resobj = JSON.parse(res.body);
+    BASEURL = resobj[iddomain].new;   
+  } else {
+    BASEURL = "https://phimhayok5.site";
+    BASEURL = "https://vkey.vn/" + iddomain;
+  }
+} else {
+  BASEURL = "https://phimhayok5.site";
+  BASEURL = "https://vkey.vn/" + iddomain;
+}
+
+BASELINK = BASEURL;
+console.log("BASEURL " + BASEURL);
+
+// ===== HÀM MENU LIST BEGIN ======
+{
+  function getHomeSections() {
+      return JSON.stringify([
+          {"slug": BASEAPI + "/api/movies?type=4&pageSize=21&sort.sortBy=0&sort.isAsc=false","title": "Phim Mới","type": "Grid"}
+      ]);
+  }
+  
+  function getLISTmenu() {
+    try{
+      var menuarr = [
+        {"link": BASEAPI + "/api/movies?type=4&pageSize=21&sort.sortBy=0&sort.isAsc=false", "name": "Phim Ngắn"}
+      ];
+      return JSON.stringify(menuarr);
+    } catch(e){
+      log("getLISTmenu[err]:\n " + e);
+      return JSON.stringify([
+        {"link":"/","name":"Đang lỗi getLISTmenu()"}
+      ]);
+    }
+  }
+}
+// ===== HÀM MENU LIST END ======
+
+// ===== HÀM TẠO URL BEGIN ======
+{
+function getUrlList(slug, filtersJson) {
+    try {
+        var page = 1;
+        var path = slug || "";
+        
+        if (filtersJson) {
+            var fixedJson2 = filtersJson
+                .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":').replace(/:,/g, ':');
+            try {
+                var filters = JSON.parse(fixedJson2);
+                page = parseInt(filters.page) || 1;
+
+                if (filters.category) {
+                    if (Array.isArray(filters.category) && filters.category.length > 0) {
+                        path = filters.category[0].slug;
+                    } else if (typeof filters.category === 'string') {
+                        path = filters.category;
+                    }
+                }
+            } catch (e) { log("getUrlList():\n" + e) }
+        }
+
+        var resultUrl = path;
+        if (!resultUrl || resultUrl.indexOf("http") === -1) {
+            resultUrl = BASELINK + (path.indexOf("/") === 0 ? "" : "/") + path;
+        }
+
+        if (resultUrl.indexOf("pageIndex=") > -1) {
+            resultUrl = resultUrl.replace(/pageIndex=\d+/, "pageIndex=" + page);
+        } else {
+            var prefix = resultUrl.indexOf("?") > -1 ? "&" : "?";
+            resultUrl += prefix + "pageIndex=" + page;
+        }
+
+        var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
+        return finalUrl;
+    } catch (e) {
+        log("getUrlList[err]:\n " + e);
+        return BASEURL;
+    }
+}
+
+function getUrlSearch(keyword, filtersJson) {
+      try {
+          var page = 1;
+          if (filtersJson) {
+              var fixedJson = filtersJson
+                  .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":').replace(/:,/g, ':');
+              try {
+                  var filters = JSON.parse(fixedJson);
+                  page = parseInt(filters.page) || 1;
+              } catch (e) {log("getUrlSearch():\n" + e)}
+          }
+          var encodedKeyword = encodeURIComponent(keyword || "");
+          
+          var finalUrl = BASEAPI + "/api/movies?search=" + encodedKeyword + "&pageIndex=" + page + "&pageSize=21&sort.sortBy=3&sort.isAsc=false";
+  
+          log("getUrlSearch[url]: \n" + finalUrl);
+          return finalUrl;  
+      } catch (e) {
+          log("getUrlSearch[err]:\n " + e);
+          return BASEURL;
+      }
+  }
+}
+// ===== HÀM TẠO URL END ======
+
+// ===== HÀM TẠO KHỐI LIST PHIM BEGIN ======
+function parseListResponse(html, url) {
+    console.log("List\n" + url);
+    try {
+        var $data = JSON.parse(html);
+        var items = [];
+        var rawitems = [];
+
+        if ($data && $data.data && Array.isArray($data.data.items)) {
+            rawitems = $data.data.items;
+        } else if ($data && Array.isArray($data.data)) {
+            rawitems = $data.data;
+        } else if ($data && Array.isArray($data.items)) {
+            rawitems = $data.items;
+        }
+
+        var totalPages = ($data && $data.data && $data.data.totalPages) ? $data.data.totalPages : 9999;
+        var currentPage = ($data && $data.data && $data.data.pageIndex) ? $data.data.pageIndex : 1;
+
+        rawitems.forEach(function(item) {
+            var slug = item.slug;
+            var id = BASEURL + "/phim/" + slug;
+            var title = item.title || "";
+            var poster = item.poster || "";
+            var background = item.backdrop || "";
+            var quality = item.language || "";
+            var episode_current = (item.currentEpisode && item.totalEpisodes) ? ("Tập " + item.currentEpisode + "/" + item.totalEpisodes) : "";
+            var year = item.releaseYear || "";
+            var lang = item.originalTitle || "";
+
+            if (title.length > 0) {
+                items.push({
+                    "id": id,
+                    "title": title,
+                    "quality": quality,
+                    "episode_current": episode_current,
+                    "posterUrl": poster,
+                    "backdropUrl": background,
+                    "year": year,
+                    "lang": lang
+                });
+            }
+        });
+
+        var $return = JSON.stringify({
+            "items": items,
+            "pagination": {
+                "currentPage": currentPage,
+                "totalPages": totalPages
+            }
+        });
+        return $return;
+    } catch (e) {
+        log("parseListResponse[err]:\n " + e);
+        return JSON.stringify({
+            "items": [{
+                "id": url || "error_url",
+                "title": "Lỗi parseListResponse: " + e,
+                "posterUrl": "",
+                "backdropUrl": ""
+            }],
+            "pagination": {
+                "currentPage": 1,
+                "totalPages": 1
+            }
+        });
+    }
+}
+// ===== HÀM TẠO KHỐI LIST PHIM END ======
+
+// ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
+function extractjsondata(rawstring) {
+    try {
+        if (!rawstring) return null;
+        
+        const match = rawstring.match(/self\.__next_f\.push\(\[\d+,\s*"(.*)"\]\)\s*$/s);
+        if (!match || !match[1]) {
+            throw new Error("Không tìm thấy định dạng self.__next_f.push hợp lệ");
+        }
+
+        const rawpayload = match[1];
+        let parsedflightdata = JSON.parse(`"${rawpayload}"`);
+        parsedflightdata = parsedflightdata.replace(/^\d+:/, "");
+
+        const parsedarray = JSON.parse(parsedflightdata);
+
+        let moviedetaildata = null;
+        let breadcrumbdata = null;
+
+        for (const item of parsedarray) {
+            if (Array.isArray(item) && item.length >= 4) {
+                const props = item[3];
+
+                if (props && props.movieDetail) {
+                    moviedetaildata = props.movieDetail;
+                }
+
+                if (props && props.dangerouslySetInnerHTML && props.dangerouslySetInnerHTML.__html) {
+                    const htmlcontent = props.dangerouslySetInnerHTML.__html;
+                    if (htmlcontent.includes("BreadcrumbList")) {
+                        breadcrumbdata = JSON.parse(htmlcontent);
+                    }
+                }
+            }
+        }
+
+        return {
+            movieDetail: moviedetaildata,
+            breadcrumb: breadcrumbdata,
+            fullParsedArray: parsedarray
+        };
+    } catch (error) {
+        console.error("Lỗi khi chuyển đổi dữ liệu:", error);
+        return null;
+    }
+}
+
+// Hàm bổ sung: Tự động trích xuất số để sắp xếp danh sách tập
+function sortepisodesasc(episodes) {
+    if (!episodes || !Array.isArray(episodes)) return [];
+    return episodes.sort(function(a, b) {
+        var matchA = (a.name || "").match(/\d+/);
+        var matchB = (b.name || "").match(/\d+/);
+        var numA = matchA ? parseInt(matchA[0], 10) : 0;
+        var numB = matchB ? parseInt(matchB[0], 10) : 0;
+        return numA - numB;
+    });
+}
+
+function parseMovieDetail(html, url) {
+    log("parseMovieDetail[url]: \n" + url);
+    try {
+        var $doc = _$(html);
+        var scriptraw = $doc.find("script:content('videoSources')").html();
+        var result = extractjsondata(scriptraw);
+
+        if (!result || !result.movieDetail) {
+            throw new Error("Không thể bóc tách dữ liệu movieDetail từ HTML");
+        }
+
+        var movie = result.movieDetail;
+        var list = movie.episodes || [];
+
+        var id = url;
+        var posterUrl = movie.poster || "";
+        var backdropUrl = movie.backdrop || "";
+        var title = movie.title || "";
+        var originName = movie.originalTitle || "";
+        var description = movie.description.replace(/<[^>]*>|\&nbsp\;/g, '') || "";
+        var director = (movie.directors && Array.isArray(movie.directors)) ? movie.directors.join(" - ") : "";
+        var casts = (movie.actors && Array.isArray(movie.actors)) ? movie.actors.join(" - ") : "";
+        var category = (movie.genres && Array.isArray(movie.genres)) ? movie.genres.join(" - ") : "";
+        var duration = movie.duration ? (movie.duration + " phút") : "";
+        var status = movie.status || "";
+        var episode_current = "Tập " + (movie.currentEpisode || 0) + "/" + (movie.totalEpisodes || 0);
+        var year = movie.releaseYear || "";
+        var quality = "";
+        var rating = "";
+        var country = (movie.countries && Array.isArray(movie.countries)) ? movie.countries.join(" - ") : "";
+        var lang = movie.language || "";
+        var extra = "";
+        var servers = [];
+        var episodes = [];
+        var m3u8file = [];
+        servers.push({
+          name: "Gộp 1 Tập Full",
+          episodes: [{
+            id: url + "?join=true&maxepi=" + list.length + "&slug=" + encodeURI(movie.slug),
+            name: "Gộp 1 Tập",
+            slug: "tap-full"
+          }]
+        })
+        list.forEach(function(item, index) {
+            var name = item.title || ("Tập " + (index + 1));
+            var slug = "tap-" + (index + 1);
+            var source = item.videoSources || [];
+            var ids = [];
+            var epid = "";
+
+            if (source.length > 0) {
+                epid = url + "?stream=" + encodeURI(source[0].url.replace("m3u8","html"))
+                source.forEach(function(box) {
+                    m3u8file.push(box.url);
+                    ids.push({
+                        url: url + "?stream=" + encodeURI(box.url.replace("m3u8","html")),
+                        name: box.quality
+                    });
+                });
+            }
+
+            episodes.push({
+                id: epid,
+                name: name,
+                ids: ids,
+                slug: slug
+            });
+        });
+
+        // Gọi hàm sắp xếp tập từ nhỏ đến lớn
+        episodes = sortepisodesasc(episodes);
+
+        servers.push({
+            name: "Server",
+            episodes: episodes
+        });
+        
+        var $return = JSON.stringify({
+            id: url || "",
+            title: title || "",
+            originName: originName || "",
+            posterUrl: posterUrl || "",
+            backdropUrl: backdropUrl || "",
+            description: description || "",
+            quality: quality || "",
+            year: year || "",
+            rating: rating || "",
+            status: status || "",
+            category: category || "",
+            episode_current: episode_current || "",
+            servers: servers || "",
+            duration: duration || "",
+            casts: casts || "",
+            director: director || "",
+            country: country || "",
+            lang: lang || "",
+            extra: extra || "",
+            datasend: BASE64.encode(JSON.stringify(m3u8file))
+        });
+        //console.log("Return Movie:\n" + $return);
+        return $return;
+    } catch (e) {
+        log("parseMovieDetail[err]:\n " + e);
+        return JSON.stringify({
+            id: "error",
+            title: "error",
+            description: url + "\n" + e,
+            servers: []
+        });
+    }
+}
+// ===== HÀM TẠO KHỐI CHI TIẾT PHIM END ======
+
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM BEGIN ======
+{
+  
+  function parseDetailResponse(html, url, datasend) {
+    // console.log("parseDetailResponse dang xu ly: " + url);
+    try {
+      if(url.indexOf("join=true") > -1){
+        var url = url.split("|")[0];
+        var maxepi = getparam(url, "maxepi");
+        var slug = getparam(url, "slug");
+        var stream = "https://phimhayok.alokillgtv.workers.dev/?join=true&maxepi=" + maxepi + "&slug=" + slug;
+        
+        //console.log("link gộp full\n" + stream);
+        var $return = JSON.stringify({
+          url: stream,
+          isEmbed: true,
+          postBody: datasend,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": BASEURL,
+            "Origin": BASEURL,
+            "X-Requested-With": "XMLHttpRequest"
+          }
+        });
+        
+      }
+      else{
+        var stream = url.match(/stream=(.*)$/i)[1].replace("html","m3u8");
+        console.log("parseDetailResponse fetch\n" + stream);
+        var $return = JSON.stringify({
+          url: "https://phimhayok.alokillgtv.workers.dev/?url=" + stream,
+          mimeType: "application/x-mpegURL",
+          isEmbed: false,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": BASEURL,
+            "Origin": BASEURL
+          }
+        });
+      }
+     // console.log("Return Parse:\n" + $return);
+      return $return;
+    } catch (e) {
+      console.log("parseDetailResponse[err]:\n " + e);
+      return JSON.stringify({ 
+        url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+        mimeType: "video/mp4", 
+        isEmbed: false, headers: {}, subtitles: [] 
+      });
+    }
+  }
+
+  function parseEmbedResponse(html, url) {
+  try {
+    var stream = url;
+    
+    // Nếu kết quả trả về là JSON (Request tạo cache lần đầu)
+    if (html && html.trim().startsWith("{")) {
+      var $data = JSON.parse(html);
+      if ($data && $data.url) {
+        stream = $data.url;
+      }
+    }
+    
+    console.log("Embed stream:\n" + stream);
+    
+    var $return = JSON.stringify({
+      url: stream,
+      mimeType: "application/x-mpegURL",
+      isEmbed: false,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": BASEURL,
+        "Origin": BASEURL
+      }
+    });
+    return $return;
+  } catch (e) {
+    console.log("[Lỗi parseEmbedResponse]", e);
+    return JSON.stringify({ 
+      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+      mimeType: "video/mp4", 
+      isEmbed: false, 
+      headers: {}, 
+      subtitles: [] 
+    });
+  }
+}
+
+
+
+  
+}
+
+
+
+
+function getparam(url, param) {
+  var escapedparam = param.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  var regex = new RegExp('[?&]' + escapedparam + '=([^&#]*)');
+  var match = url.match(regex);
+  
+  if (match) {
+    return decodeURIComponent(match[1]);
+  }
+  
+  return null;
+}
+
+
+// ==== HÀM TẠO CUSTOMpo SCRIPT BEGIN ====
+function rawJS(){
+ function LOG(msg, check) {
+    var logMsg = msg;
+    if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
+      window.SnifferBridge.log(logMsg);
+      if (check === true) {
+        window.SnifferBridge.toast(logMsg, 1000);
+      }
+    } else if (typeof console !== 'undefined' && console.log) {
+      console.log(logMsg);
+    }
+  }
+  try{
+    LOG("Test");
+  } catch(e){
+    LOG("Lỗi CUSTOMJS: \n" + e);
+  }
+}
+// ==== HÀM TẠO CUSTOM SCRIPT END ====
+
+
+// ==== HIDEMENU ====
+{
+// ## Hàm Hỗ Trợ. Hide function
+function iframe64(url){
+  var html = `
+  <html><style>body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }iframe { width: 100%; height: 100%; object-fit: contain; }</style><body style='margin:0;padding:0;background:#000;'><iframe id='player' src='${url}' scrolling='no' frameborder='0' class='openloadvideo lab-pinned-child' allowfullscreen='true' webkitallowfullscreen='true' mozallowfullscreen='true' name='watch'></iframe></body></html>
+  `;
+  return "data:text/html;base64," + BASE64.encode(html);
+  
+}
+  
+  function getUrlDetail(slug) {
+      try {
+          if (!slug) return "";
+          if (slug.indexOf('http') === 0) return slug;
+          var detailUrl = BASEURL + "/" + slug;
+          log("getUrlDetail[url]: \n" + detailUrl);
+          return detailUrl;
+      } catch (e) {
+          log("getUrlDetail[err]:\n " + e);
+          return "";
+      }
+  }
+  function getUrlCategories() { 
+      try {
+          log("getUrlCategories[url]: \n" + BASEURL);
+          return BASEURL; 
+      } catch (e) {
+          log("getUrlCategories[err]:\n " + e);
+          return "";
+      }
+  }
+  function getUrlCountries() { 
+      try {
+          return ""; 
+      } catch (e) {
+          log("getUrlCountries[err]:\n " + e);
+          return "";
+      }
+  }
+  function getUrlYears() { 
+      try {
+          return ""; 
+      } catch (e) {
+          log("getUrlYears[err]:\n " + e);
+          return "";
+      }
+  }
+  function parseCategoriesResponse(apiResponseJson) {
+      try {
+          var listurl = getLISTmenu();
+          var menulist = buildMenu(listurl);
+          return JSON.stringify(menulist);
+      } catch (e) {
+          log("parseCategoriesResponse[err]:\n " + e);
+          return JSON.stringify([]);
+      }
+  }
+  function parseCountriesResponse(html) {
+      try {
+          return "[]";
+      } catch (e) {
+          log("parseCountriesResponse[err]:\n " + e);
+          return "[]";
+      }
+  }
+  function parseYearsResponse(html) {
+      try {
+          return "[]";
+      } catch (e) {
+          log("parseYearsResponse[err]:\n " + e);
+          return "[]";
+      }
+  }
+  function parseSearchResponse(html, url) {
+      try {
+          log("parseSearchResponse[url]: \n" + url);
+          return parseListResponse(html, url);
+      } catch (e) {
+          log("parseSearchResponse[err]:\n " + e);
+          return JSON.stringify({
+              "items": [],
+              "pagination": {
+                  "currentPage": 1,
+                  "totalPages": 1
+              }
+          });
+      }
+  }
+  // Tạo thẻ chủ đè ở menu home lấy dữ liệu ben dưới
+  function getPrimaryCategories() {
+      try {
+          var listurl = getLISTmenu();
+          var menulist = buildMenu(listurl);
+          return JSON.stringify(menulist);
+      } catch (e) {
+          log("getPrimaryCategories[err]:\n " + e);
+          return JSON.stringify([]);
+      }
+  }
+  // Tạo thẻ chủ đề filter..
+  function getFilterConfig() {
+      try {
+          var listurl = getLISTmenu();
+          var menulist = buildMenu(listurl);
+          return JSON.stringify({
+              category: menulist
+          });
+      } catch (e) {
+          log("getFilterConfig[err]:\n " + e);
+          return JSON.stringify({ category: [] });
+      }
+  }
+  // Hàm chuyển đổi text html %20 sang text thuần
+  function buildMenu(menuStr, type) { 
+      var menuArray = JSON.parse(menuStr); 
+      let menulist = []; 
+      if (!menuArray || !Array.isArray(menuArray)) return menulist; 
+      var typeStr = type !== undefined ? String(type).trim() : undefined; 
+      for (var i = 0; i < menuArray.length; i++) { 
+          var item = menuArray[i]; 
+          if (!item) continue; 
+          var link = item.link ? String(item.link).trim() : ""; 
+          var name = item.name ? String(item.name).trim() : ""; 
+          if (!link || !name) continue; 
+          var menuItem = {}; 
+          if (typeStr === "false") { 
+              menuItem = { "slug": link, "title": name, "type": "Horizontal" }; 
+          } else if (typeStr === "true") { 
+              menuItem = { "slug": link, "title": name, "type": "Grid" }; 
+          } else { 
+              menuItem = { "slug": link, "name": name }; 
+          } 
+          menulist.push(menuItem); 
+      } 
+      return menulist; 
+  }
+  function _$(param) {
+      // -------------------------------------------------------------
+      // 1. HELPER PARSER & UTILS
+      // -------------------------------------------------------------
+      function parseHTML(htmlString) {
+          let nodes = [];
+          let root = { id: 0, tag: "ROOT", attrs: {}, childrenIds: [], parentId: null };
+          nodes.push(root);
+  
+          try {
+              let html = (htmlString || "").trim();
+              if (!html) return { root, nodes };
+  
+              const VOID_TAGS = new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
+              let stack = [0];
+              let tagRegex = /<(?:\/([a-zA-Z0-9_-]+)|([a-zA-Z0-9_-]+)([^>]*?)(\/)?)\s*>/g;
+              
+              let lastIndex = 0;
+              let match;
+              let maxIter = 50000;
+              let iter = 0;
+  
+              while ((match = tagRegex.exec(html)) !== null && iter++ < maxIter) {
+                  let textBefore = html.slice(lastIndex, match.index).trim();
+                  let parentId = stack[stack.length - 1];
+  
+                  if (textBefore) {
+                      let textId = nodes.length;
+                      nodes.push({ id: textId, tag: "#text", text: textBefore, attrs: {}, childrenIds: [], parentId: parentId });
+                      nodes[parentId].childrenIds.push(textId);
+                  }
+  
+                  lastIndex = tagRegex.lastIndex;
+                  let isCloseTag = !!match[1];
+                  let tagName = (match[1] || match[2] || "").toLowerCase();
+                  let attrStr = match[3] || "";
+                  let isSelfClosing = !!match[4] || VOID_TAGS.has(tagName);
+  
+                  if (isCloseTag) {
+                      for (let i = stack.length - 1; i > 0; i--) {
+                          if (nodes[stack[i]].tag === tagName) {
+                              stack.splice(i);
+                              break;
+                          }
+                      }
+                  } else {
+                      let attrs = {};
+                      let attrRegex = /([a-zA-Z0-9_-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
+                      let attrMatch;
+                      while ((attrMatch = attrRegex.exec(attrStr)) !== null) {
+                          attrs[attrMatch[1].toLowerCase()] = attrMatch[2] || attrMatch[3] || attrMatch[4] || "";
+                      }
+  
+                      let nodeId = nodes.length;
+                      let node = { id: nodeId, tag: tagName, attrs: attrs, childrenIds: [], parentId: parentId };
+                      nodes.push(node);
+                      nodes[parentId].childrenIds.push(nodeId);
+  
+                      if (!isSelfClosing) {
+                          stack.push(nodeId);
+                      }
+                  }
+              }
+  
+              let remainingText = html.slice(lastIndex).trim();
+              if (remainingText && stack.length > 0) {
+                  let parentId = stack[stack.length - 1];
+                  let textId = nodes.length;
+                  nodes.push({ id: textId, tag: "#text", text: remainingText, attrs: {}, childrenIds: [], parentId: parentId });
+                  nodes[parentId].childrenIds.push(textId);
+              }
+          } catch (err) {
+              if (typeof window !== "undefined" && window.log) window.log("parseHTML error: " + err.message);
+          }
+          return { root, nodes };
+      }
+  
+      function getNodeText(node, nodes, depth) {
+          if (!node || (depth || 0) > 20) return "";
+          if (node.tag === "#text") return node.text || "";
+          let text = "";
+          if (node.childrenIds) {
+              for (let cid of node.childrenIds) {
+                  text += getNodeText(nodes[cid], nodes, (depth || 0) + 1) + " ";
+              }
+          }
+          return text.trim();
+      }
+  
+      // -------------------------------------------------------------
+      // 2. QUERY ENGINE & SELECTOR MATCHING
+      // -------------------------------------------------------------
+      function matchSingleSelector(node, sel, nodes) {
+          if (!node || node.tag === "#text" || node.tag === "ROOT") return false;
+  
+          let cleanSel = sel;
+          
+          // 1. Tách pseudo positional (:first, :last, :eq)
+          cleanSel = cleanSel.replace(/:first|:last|:eq\([0-9]+\)/gi, "").trim();
+  
+          // 2. Tách pseudo :content(...)
+          let pseudoContentArg = null;
+          let contentMatch = cleanSel.match(/:content\((['"]?)(.*?)\1\)/i);
+          if (contentMatch) {
+              pseudoContentArg = contentMatch[2];
+              cleanSel = cleanSel.replace(contentMatch[0], "").trim();
+          }
+  
+          // 3. Khớp Selector gốc
+          if (cleanSel && cleanSel !== "*") {
+              let tagMatch = cleanSel.match(/^[a-zA-Z0-9_-]+/);
+              if (tagMatch && node.tag !== tagMatch[0].toLowerCase()) return false;
+  
+              let idMatch = cleanSel.match(/#([a-zA-Z0-9_-]+)/);
+              if (idMatch && (!node.attrs || node.attrs.id !== idMatch[1])) return false;
+  
+              // Class matching (hỗ trợ Tailwind)
+              let classMatches = cleanSel.match(/\.([a-zA-Z0-9_\-\/\\:]+)/g);
+              if (classMatches) {
+                  if (!node.attrs || !node.attrs.class) return false;
+                  let elClasses = node.attrs.class.split(/\s+/);
+                  for (let c of classMatches) {
+                      let targetClass = c.substring(1);
+                      if (!elClasses.includes(targetClass)) return false;
+                  }
+              }
+  
+              let attrMatch = cleanSel.match(/\[([a-zA-Z0-9_-]+)(?:=['"]?(.*?)['"]?)?\]/);
+              if (attrMatch) {
+                  let attrName = attrMatch[1].toLowerCase();
+                  let attrVal = attrMatch[2];
+                  if (!node.attrs || !(attrName in node.attrs)) return false;
+                  if (attrVal !== undefined && node.attrs[attrName] !== attrVal) return false;
+              }
+          }
+  
+          if (pseudoContentArg !== null) {
+              let fullText = getNodeText(node, nodes, 0);
+              let keywords = pseudoContentArg.split("|").map(k => k.trim().toLowerCase());
+              let found = keywords.some(kw => fullText.toLowerCase().includes(kw));
+              if (!found) return false;
+          }
+  
+          return true;
+      }
+  
+      function querySelectorAllSingleLevel(startNode, selector, nodes) {
+          let results = [];
+          function search(currentId, depth) {
+              if (depth > 50) return;
+              let current = nodes[currentId];
+              if (!current) return;
+  
+              if (current.tag !== "ROOT" && current.tag !== "#text" && current.id !== startNode.id) {
+                  if (matchSingleSelector(current, selector, nodes)) {
+                      results.push(current);
+                  }
+              }
+              if (current.childrenIds) {
+                  for (let cid of current.childrenIds) {
+                      search(cid, depth + 1);
+                  }
+              }
+          }
+          search(startNode.id, 0);
+  
+          if (selector.indexOf(":first") !== -1) return results.slice(0, 1);
+          if (selector.indexOf(":last") !== -1) return results.slice(-1);
+          
+          let eqMatch = selector.match(/:eq\(([0-9]+)\)/i);
+          if (eqMatch) {
+              let idx = parseInt(eqMatch[1], 10);
+              return results[idx] ? [results[idx]] : [];
+          }
+  
+          return results;
+      }
+  
+      function querySelectorAll(startNode, selector, nodes) {
+          try {
+              if (!startNode || !selector) return [];
+  
+              if (selector.indexOf(',') !== -1) {
+                  let groupSelectors = selector.split(',').map(s => s.trim());
+                  let resMap = new Map();
+                  for (let gSel of groupSelectors) {
+                      let subRes = querySelectorAll(startNode, gSel, nodes);
+                      for (let r of subRes) resMap.set(r.id, r);
+                  }
+                  return Array.from(resMap.values());
+              }
+  
+              let spaceParts = selector.trim().split(/\s+/);
+              if (spaceParts.length > 1) {
+                  let currentNodes = [startNode];
+                  for (let part of spaceParts) {
+                      let nextLevelNodes = [];
+                      let addedIds = new Set();
+                      for (let cNode of currentNodes) {
+                          let subResults = querySelectorAllSingleLevel(cNode, part, nodes);
+                          for (let r of subResults) {
+                              if (!addedIds.has(r.id)) {
+                                  addedIds.add(r.id);
+                                  nextLevelNodes.push(r);
+                              }
+                          }
+                      }
+                      currentNodes = nextLevelNodes;
+                      if (currentNodes.length === 0) break;
+                  }
+                  return currentNodes;
+              }
+  
+              return querySelectorAllSingleLevel(startNode, selector, nodes);
+          } catch (err) {
+              return [];
+          }
+      }
+  
+      // -------------------------------------------------------------
+      // 3. MINIJQ CLASS CONSTRUCTOR & PROTOTYPE
+      // -------------------------------------------------------------
+      function MiniJQ(elements, nodesStore) {
+          this.elements = Array.isArray(elements) ? elements : (elements ? [elements] : []);
+          this.nodes = nodesStore || [];
+          this.length = this.elements.length;
+      }
+  
+      MiniJQ.prototype = {
+          find: function(selector) {
+              if (this.elements.length === 0) return new MiniJQ([], this.nodes);
+              let matched = [];
+              let addedIds = new Set();
+              for (let el of this.elements) {
+                  let res = querySelectorAll(el, selector, this.nodes);
+                  for (let r of res) {
+                      if (!addedIds.has(r.id)) {
+                          addedIds.add(r.id);
+                          matched.push(r);
+                      }
+                  }
+              }
+              return new MiniJQ(matched, this.nodes);
+          },
+  
+          text: function() {
+              if (this.elements.length === 0) return "";
+              return getNodeText(this.elements[0], this.nodes, 0);
+          },
+  
+          html: function() {
+              if (this.elements.length === 0) return "";
+              let self = this;
+              let serialize = function(nodeId, depth) {
+                  if (depth > 20) return "";
+                  let node = self.nodes[nodeId];
+                  if (!node) return "";
+                  if (node.tag === "#text") return node.text || "";
+                  let attrs = Object.entries(node.attrs || {}).map(([k, v]) => ` ${k}="${v}"`).join("");
+                  let childrenHTML = (node.childrenIds || []).map(cid => serialize(cid, depth + 1)).join("");
+                  return `<${node.tag}${attrs}>${childrenHTML}</${node.tag}>`;
+              };
+              return (this.elements[0].childrenIds || []).map(cid => serialize(cid, 0)).join("");
+          },
+  
+          attr: function(name, value) {
+              if (value !== undefined) {
+                  for (let el of this.elements) {
+                      if (el && el.tag !== "#text") {
+                          if (!el.attrs) el.attrs = {};
+                          el.attrs[name] = value;
+                      }
+                  }
+                  return this;
+              }
+              if (this.elements.length === 0 || !this.elements[0].attrs) return "";
+              return this.elements[0].attrs[name] || "";
+          },
+  
+          each: function(callback) {
+              if (typeof callback !== 'function') return this;
+              this.elements.forEach((el, index) => {
+                  let jqEl = new MiniJQ([el], this.nodes);
+                  callback.call(jqEl, index, jqEl);
+              });
+              return this;
+          },
+  
+          textAll: function(delimiter) {
+              if (delimiter === undefined) delimiter = " ";
+              let texts = [];
+              for (let el of this.elements) {
+                  texts.push(getNodeText(el, this.nodes, 0));
+              }
+              return texts.join(delimiter);
+          },
+  
+          first: function() {
+              return new MiniJQ(this.elements.length > 0 ? [this.elements[0]] : [], this.nodes);
+          },
+  
+          last: function() {
+              return new MiniJQ(this.elements.length > 0 ? [this.elements[this.elements.length - 1]] : [], this.nodes);
+          },
+  
+          eq: function(index) {
+              return new MiniJQ(this.elements[index] ? [this.elements[index]] : [], this.nodes);
+          },
+  
+          parent: function() {
+              let parents = [];
+              let addedIds = new Set();
+              for (let el of this.elements) {
+                  if (el && el.parentId !== null && el.parentId !== 0) {
+                      let pNode = this.nodes[el.parentId];
+                      if (pNode && !addedIds.has(pNode.id)) {
+                          addedIds.add(pNode.id);
+                          parents.push(pNode);
+                      }
+                  }
+              }
+              return new MiniJQ(parents, this.nodes);
+          },
+  
+          next: function() {
+              let nexts = [];
+              for (let el of this.elements) {
+                  if (!el || el.parentId === null) continue;
+                  let pNode = this.nodes[el.parentId];
+                  if (!pNode) continue;
+  
+                  let siblings = pNode.childrenIds.map(cid => this.nodes[cid]).filter(c => c && c.tag !== "#text");
+                  let idx = siblings.findIndex(s => s.id === el.id);
+                  if (idx !== -1 && idx + 1 < siblings.length) {
+                      nexts.push(siblings[idx + 1]);
+                  }
+              }
+              return new MiniJQ(nexts, this.nodes);
+          },
+  
+          before: function() {
+              let befores = [];
+              for (let el of this.elements) {
+                  if (!el || el.parentId === null) continue;
+                  let pNode = this.nodes[el.parentId];
+                  if (!pNode) continue;
+  
+                  let siblings = pNode.childrenIds.map(cid => this.nodes[cid]).filter(c => c && c.tag !== "#text");
+                  let idx = siblings.findIndex(s => s.id === el.id);
+                  if (idx > 0) {
+                      befores.push(siblings[idx - 1]);
+                  }
+              }
+              return new MiniJQ(befores, this.nodes);
+          },
+  
+          after: function() {
+              return this.next();
+          },
+  
+          closest: function(selector) {
+              let matched = [];
+              let addedIds = new Set();
+              for (let el of this.elements) {
+                  let currParentId = el.parentId;
+                  let depth = 0;
+                  while (currParentId !== null && currParentId !== 0 && depth++ < 30) {
+                      let curr = this.nodes[currParentId];
+                      if (!curr) break;
+                      if (matchSingleSelector(curr, selector, this.nodes)) {
+                          if (!addedIds.has(curr.id)) {
+                              addedIds.add(curr.id);
+                              matched.push(curr);
+                          }
+                          break;
+                      }
+                      currParentId = curr.parentId;
+                  }
+              }
+              return new MiniJQ(matched, this.nodes);
+          }
+      };
+  
+      // -------------------------------------------------------------
+      // 4. MAIN ENTRY POINT LOGIC FOR _$
+      // -------------------------------------------------------------
+      try {
+          if (!param) return new MiniJQ([], []);
+          if (param instanceof MiniJQ) return param;
+          if (typeof param === "string") {
+              let parsed = parseHTML(param);
+              return new MiniJQ(parsed.root, parsed.nodes);
+          }
+          return new MiniJQ(param, []);
+      } catch (err) {
+          return new MiniJQ([], []);
+      }
+  }
+  function log(msg) {console.log(msg);}
+  
+BASE64 = {
+  encode: function (str) {
+    try {
+      if (!str) return "";
+
+      // 1. Encode String ra mảng UTF-8 Bytes trước
+      var utf8Bytes = [];
+      for (var i = 0; i < str.length; i++) {
+        var code = str.charCodeAt(i);
+        if (code < 128) {
+          utf8Bytes.push(code);
+        } else if (code < 2048) {
+          utf8Bytes.push((code >> 6) | 192, (code & 63) | 128);
+        } else if (
+          (code & 0xfc00) === 0xd800 &&
+          i + 1 < str.length &&
+          (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00
+        ) {
+          // Ký tự Surrogate Pair
+          code =
+            0x10000 + ((code & 0x03ff) << 10) + (str.charCodeAt(++i) & 0x03ff);
+          utf8Bytes.push(
+            (code >> 18) | 240,
+            ((code >> 12) & 63) | 128,
+            ((code >> 6) & 63) | 128,
+            (code & 63) | 128
+          );
+        } else {
+          utf8Bytes.push(
+            (code >> 12) | 224,
+            ((code >> 6) & 63) | 128,
+            (code & 63) | 128
+          );
+        }
+      }
+
+      // 2. Chuyển mảng UTF-8 Bytes thành chuỗi Base64
+      var chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+      var encoded = "";
+      var byte1, byte2, byte3;
+      var b1, b2, b3, b4;
+
+      for (var j = 0; j < utf8Bytes.length; j += 3) {
+        byte1 = utf8Bytes[j];
+        byte2 = j + 1 < utf8Bytes.length ? utf8Bytes[j + 1] : NaN;
+        byte3 = j + 2 < utf8Bytes.length ? utf8Bytes[j + 2] : NaN;
+
+        b1 = byte1 >> 2;
+        b2 = ((byte1 & 3) << 4) | (isNaN(byte2) ? 0 : byte2 >> 4);
+        b3 = isNaN(byte2)
+          ? 64
+          : ((byte2 & 15) << 2) | (isNaN(byte3) ? 0 : byte3 >> 6);
+        b4 = isNaN(byte3) ? 64 : byte3 & 63;
+
+        encoded +=
+          chars.charAt(b1) +
+          chars.charAt(b2) +
+          chars.charAt(b3) +
+          chars.charAt(b4);
+      }
+
+      return encoded;
+    } catch (e) {
+      console.log("[BASE64.encode Error]:", e.message || e);
+      return "";
+    }
+  },
+
+  decode: function (base64String) {
+    try {
+      if (!base64String) return "";
+
+      // 1. Dọn dẹp chuỗi & xử lý nếu URL-encoded (ví dụ: %2B, %2F)
+      var str = decodeURIComponent(base64String.trim());
+
+      // Chuyển URL-safe base64 về base64 chuẩn
+      str = str.replace(/-/g, "+").replace(/_/g, "/");
+
+      // Bảng ký tự Base64
+      var chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+      var output = [];
+      var buffer = 0,
+        bits = 0;
+
+      // 2. Decode Base64 thành Mảng Byte
+      for (var i = 0; i < str.length; i++) {
+        var char = str.charAt(i);
+        if (char === "=") break; // Bỏ qua padding
+        var index = chars.indexOf(char);
+        if (index === -1) continue; // Bỏ qua ký tự không hợp lệ
+
+        buffer = (buffer << 6) | index;
+        bits += 6;
+
+        if (bits >= 8) {
+          bits -= 8;
+          output.push((buffer >> bits) & 0xff);
+        }
+      }
+
+      // 3. Decode UTF-8 từ mảng Byte ra String
+      var result = "";
+      var j = 0;
+      while (j < output.length) {
+        var c = output[j++];
+        if (c < 128) {
+          result += String.fromCharCode(c);
+        } else if (c > 191 && c < 224) {
+          var c2 = output[j++];
+          result += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
+        } else if (c > 223 && c < 240) {
+          var c2 = output[j++];
+          var c3 = output[j++];
+          result += String.fromCharCode(
+            ((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63)
+          );
+        } else if (c >= 240) {
+          var c2 = output[j++];
+          var c3 = output[j++];
+          var c4 = output[j++];
+          var u =
+            (((c & 7) << 18) | ((c2 & 63) << 12) | ((c3 & 63) << 6) | (c4 & 63)) -
+            0x10000;
+          result += String.fromCharCode(0xd800 + (u >> 10), 0xdc00 + (u & 0x3ff));
+        }
+      }
+
+      return result;
+    } catch (e) {
+      console.log("[BASE64.decode Error]:", e.message || e);
+      return "";
+    }
+  }
+};
+
+  function checkRaw(scriptStr, returnFixed) {
+    try {
+      if (!scriptStr || typeof scriptStr !== "string") {
+        console.log(
+          "[Lỗi escape runJS]\r\n\t Dữ liệu đầu vào không phải là chuỗi hợp lệ!",
+        );
+        return scriptStr || "";
+      }
+  
+      var lines = scriptStr.split("\n");
+      var fixedLines = [];
+      var hasError = false;
+  
+      for (var i = 0; i < lines.length; i++) {
+        var currentLine = lines[i];
+        var lineNum = i + 1;
+        var lineErrorFound = false; // 1. Kiểm tra lỗi escape newline/tab nguy hiểm nằm trần trong chuỗi quote
+        // Trường hợp chưa được escape dạng '\\n' hoặc '\\t' trong chuỗi ghép
+  
+        if (/([^\\]|^)(\r\n|\r|\n)/.test(currentLine)) {
+          console.log(
+            "[Lỗi escape runJS]\r\n\t Phát hiện xuống dòng chưa escape ở Dòng " +
+              lineNum +
+              ": " +
+              currentLine.trim(),
+          );
+          lineErrorFound = true;
+        } // 2. Kiểm tra lỗi quên escape ký tự Tab trần không hợp lệ
+  
+        if (/\t/.test(currentLine) && !/\\t/.test(currentLine)) {
+          console.log(
+            "[Lỗi escape runJS]\r\n\t Phát hiện ký tự Tab trần ở Dòng " +
+              lineNum +
+              ": " +
+              currentLine.trim(),
+          );
+          lineErrorFound = true;
+        } // 3. Kiểm tra dấu xược ngược single trailing backlash ở cuối dòng (dễ làm gãy chuỗi)
+  
+        if (/([^\\])\\$/.test(currentLine)) {
+          console.log(
+            "[Lỗi escape runJS]\r\n\t Dấu Backslash (\\) cô đơn ở cuối Dòng " +
+              lineNum +
+              ": " +
+              currentLine.trim(),
+          );
+          lineErrorFound = true;
+        }
+  
+        if (lineErrorFound) {
+          hasError = true;
+        } // Tiến hành SỬA LỖI tự động nếu tham số returnFixed = true
+  
+        var fixedLine = currentLine;
+        if (returnFixed) {
+          // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
+          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
+        }
+  
+        fixedLines.push(fixedLine);
+      } // 4. Kiểm tra cú pháp nhanh xem toàn bộ chuỗi có parse được JS không
+  
+      try {
+        new Function(scriptStr);
+      } catch (syntaxErr) {
+        hasError = true;
+        console.log(
+          "[Lỗi escape runJS]\r\n\t 💥 LỖI CÚ PHÁP (SyntaxError) toàn cục: " +
+            syntaxErr.message,
+        );
+      }
+  
+      if (!hasError) {
+        console.log("[checkRaw] 🟢 Chuỗi Raw JS hoàn toàn sạch lỗi!");
+      } // Trả về bản đã fix hoặc bản gốc theo tham số returnFixed
+  
+      return returnFixed ? fixedLines.join("\n") : scriptStr;
+    } catch (e) {
+      console.log(
+        "[Lỗi escape runJS]\r\n\t Lỗi ngoại lệ trong hàm checkRaw: " + e.message,
+      );
+      return scriptStr; // Luôn an toàn: Fallback trả về chuỗi gốc chứ không làm sập script
+    }
+  }
+  function decodeHTMLtext(str) {
+      try {
+          if (!str) return "";
+          return str.replace(/&#(\d+);|&#x([0-9a-fA-F]+);/g, (match, dec, hex) => {
+              if (dec) {
+                  return String.fromCharCode(parseInt(dec, 10));
+              }
+              if (hex) {
+                  return String.fromCharCode(parseInt(hex, 16));
+              }
+              return match;
+          });
+      } catch (e) {
+          log("decodeHTMLEntities[err]:\n " + e);
+      }
+  }
+  function clearJS(func) {
+      if (typeof func !== "function") return "";
+      
+      // Lấy toàn bộ mã nguồn của hàm dưới dạng string
+      var funcStr = func.toString();
+      
+      // Dùng Regex bóc tách lấy nội dung bên trong cặp ngoặc nhọn {} đầu tiên và cuối cùng
+      var match = funcStr.match(/\{([\s\S]*)\}/);
+      if (!match) return "";
+      
+      var innerCode = match[1].trim();
+      
+      // (Tùy chọn) Bạn có thể tận dụng luôn hàm checkRaw sẵn có trong template của bạn 
+      // để nó tự động rà soát và fix các ký tự xuống dòng/tab nguy hiểm cho an toàn tuyệt đối:
+      var safeCode = checkRaw(innerCode, true);
+      
+      return safeCode;
+  }
+}
+// ==== HIDEMENU ====
