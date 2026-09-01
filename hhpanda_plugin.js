@@ -131,7 +131,6 @@ function getUrlYears() { return ""; }
 function parseListResponse(html, $url) {
     try {
         var items = [];
-        // Cấu trúc danh sách phim chuẩn WordPress / HalimThemes
         var itemRegex = /<article[^>]*>([\s\S]*?)<\/article>/gi;
         var match;
 
@@ -171,20 +170,14 @@ function parseListResponse(html, $url) {
     }
 }
 
-function parseSearchResponse(html) {
-    return parseListResponse(html);
-}
-
 function parseMovieDetail(htmlContent, url) {
     try {
-        var idMatch = /<link\s+rel="canonical"\s+href="([^"]+)"/i.exec(htmlContent) ||
-            /<meta\s+property="og:url"\s+content="([^"]+)"/i.exec(htmlContent);
-        var id = idMatch ? idMatch[1] : (url || "");
-
+        var id = url;
         var lname = "Đang cập nhật...";
         var limg = "";
         var ldes = "";
 
+        // Lấy thông tin cơ bản
         var rmatch = htmlContent.match(/meta\s+property="og:image"\s+content="([^"]+)"/i);
         if (rmatch && rmatch[1]) limg = rmatch[1];
         rmatch = htmlContent.match(/meta\s+property="og:title"\s+content="([^"]+)"/i);
@@ -192,96 +185,16 @@ function parseMovieDetail(htmlContent, url) {
         rmatch = htmlContent.match(/meta\s+property="og:description"\s+content="([^"]+)"/i);
         if (rmatch && rmatch[1]) ldes = rmatch[1];
 
-        var servers = [];
-        
-        // Quét danh sách các Server (Ví dụ: #Vietsub, #Thuyết Minh)
-        var serverRegex = /<div class="halim-server[^"]*">([\s\S]*?)<\/div>\s*<\/div>/gi;
-        var sMatch;
-        var serverBlocks = [];
-
-        // Nếu trang có cấu trúc chia server dạng HalimThemes
-        var serverNameRegex = /<span class="halim-server-name">([\s\S]*?)<\/span>/i;
-        var listEpsRegex = /<ul[^>]*class="halim-list-eps"[^>]*>([\s\S]*?)<\/ul>/i;
-
-        // Tách các khối server dựa trên cấu trúc hhpanda
-        var serverParts = htmlContent.split('class="halim-server');
-        
-        for (var i = 1; i < serverParts.length; i++) {
-            var block = serverParts[i];
-            var sNameM = />#([^<]+)<\/span>/i.exec(block);
-            var sName = sNameM ? sNameM[1].trim() : ("Server " + i);
-
-            var episodes = [];
-            var added = {};
-
-            // Quét tất cả các tập trong server này, đảm bảo bắt trọn vẹn không sót tập cuối
-            var epRegex = /<li[^>]*>[\s\S]*?<a[^>]+href=["']([^"']+)["'][^>]+title=["']([^"']+)["'][^>]*>[\s\S]*?<span>([\s\S]*?)<\/span>/gi;
-            // Fallback đơn giản hơn nếu cấu trúc thay đổi
-            var simpleEpRegex = /<a[^>]+data-ep=["']([^"']+)["'][^>]+href=["']([^"']+)["'][^>]+title=["']([^"']+)["']/gi;
-            
-            var match;
-            // Thử quét theo chuẩn thẻ li chứa a
-            var liRegex = /<li\s+class="halim-episode[^"]*">([\s\S]*?)<\/li>/gi;
-            var liMatch;
-
-            while ((liMatch = liRegex.exec(block)) !== null) {
-                var liHtml = liMatch[1];
-                var aHrefM = /href=["']([^"']+)["']/i.exec(liHtml);
-                var aTitleM = /title=["']([^"']+)["']/i.exec(liHtml);
-                var epNameM = /<span>([\s\S]*?)<\/span>/i.exec(liHtml);
-
-                if (aHrefM && aTitleM) {
-                    var epUrl = aHrefM[1];
-                    var epName = epNameM ? epNameM[1].trim() : aTitleM[1].trim();
-
-                    if (!added[epUrl]) {
-                        added[epUrl] = true;
-                        var displayName = epName;
-                        if (/^\d+(-?\d+)?$/.test(epName)) displayName = "Tập " + epName;
-                        var slug = "tap-" + epName.replace(/\s+/g, "-");
-
-                        episodes.push({
-                            id: epUrl,
-                            name: displayName,
-                            slug: slug
-                        });
-                    }
-                }
-            }
-
-            // Nếu quét theo li không ra, quét vét bằng toàn bộ thẻ a trong khối server
-            if (episodes.length === 0) {
-                var fallbackA = /<a[^>]+href=["']([^"']+)["'][^>]+title=["']([^"']+)["']/gi;
-                var fMatch;
-                while ((fMatch = fallbackA.exec(block)) !== null) {
-                    var fUrl = fMatch[1];
-                    var fName = fMatch[2].trim();
-                    if (!added[fUrl] && fUrl.indexOf('javascript') === -1) {
-                        added[fUrl] = true;
-                        episodes.push({
-                            id: fUrl,
-                            name: fName.indexOf('Tập') === -1 ? ("Tập " + fName) : fName,
-                            slug: "tap-" + fName.replace(/\s+/g, "-")
-                        });
-                    }
-                }
-            }
-
-            if (episodes.length > 0) {
-                servers.push({
-                    name: sName,
-                    episodes: episodes
-                });
-            }
-        }
-
-        // Nếu vẫn không tìm thấy server nào, tạo server mặc định lấy từ trang hiện tại
-        if (servers.length === 0) {
-            servers.push({
-                name: "Xem Phim",
-                episodes: [{ id: url, name: "Xem Ngay", slug: "full" }]
-            });
-        }
+        // Rút gọn toàn bộ quá trình bắt link: Chỉ tạo 1 nút duy nhất mang URL của phim. 
+        // Khi chọn, app sẽ đẩy thẳng link vào WebView
+        var servers = [{
+            name: "HHPanda Web",
+            episodes: [{ 
+                id: url, 
+                name: "Mở trên Web (Chọn tập & Chất lượng)", 
+                slug: "full" 
+            }]
+        }];
 
         return JSON.stringify({
             id: id,
