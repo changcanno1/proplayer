@@ -150,6 +150,13 @@
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNZWj2x3KVRTGvKRc6jyinavcjgQxZVTFhzpwtdWyvbB_SfUir-WEHgDc&s=10"
     },
     {
+      "id": "animehay",
+      "name": "Animehay",
+      "version": "1.8.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Animehay09New_plugin.js",
+      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZUJFommwTmhA50YpBZs8H9bADnyol72lPnTjsBrhHM_zGkmE32Z1JCZrB&s=10"
+    },
+    {
       "id": "animevv",
       "name": "animevv",
       "version": "1.3.0",
