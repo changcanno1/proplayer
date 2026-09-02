@@ -129,14 +129,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortmax.png"
     },
     {
-      "id": "Netshort",
-      "name": "Netshort",
-      "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Netshort_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/netshort.png",
-      "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
-    },
-    {
       "id": "Mê Phim Ngắn",
       "name": "Mê Phim Ngắn",
       "version": "1.1.0",
