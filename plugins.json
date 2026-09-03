@@ -9,6 +9,13 @@
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
+      "id": "Rổ Phim",
+      "name": "Rổ Phim",
+      "version": "1.2.6",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+    },
+    {
       "id": "PhimBom",
       "name": "PhimBom",
       "version": "1.2.0",
@@ -42,13 +49,6 @@
       "version": "1.5.4",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncHT_plugin.js",
       "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/nguonC.png"
-    },
-    {
-      "id": "Rổ Phim",
-      "name": "Rổ Phim",
-      "version": "1.2.6",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
     {
       "id": "PhimHayOK",
