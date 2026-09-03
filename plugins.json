@@ -58,7 +58,7 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimhayok.png"
     },
     {
-      "id": "Phim Lồng Tiếng",
+      "id": "phimlongtieng",
       "name": "Phim Lồng Tiếng",
       "version": "1.1.4",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/1phim23_plugin.js",
