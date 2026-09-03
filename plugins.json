@@ -9,18 +9,25 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hdvietnam.png"
     }, 
     {
-      "id": "Rổ Phim",
-      "name": "Rổ Phim",
-      "version": "1.2.6",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
-    },
-    {
       "id": "Vsmov",
       "name": "PhimVsmov",
       "version": "1.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
       "iconUrl": "https://vsmov.com/VSmov.png"
+    },
+    {
+      "id": "vicdn",
+      "name": "Nguồn Vicdn",
+      "version": "1.7.4",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png"
+    },
+    {
+      "id": "Rổ Phim",
+      "name": "Rổ Phim",
+      "version": "1.2.6",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
     {
       "id": "PhimBom",
