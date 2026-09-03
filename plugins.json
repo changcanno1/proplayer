@@ -1,6 +1,13 @@
 {
   "version": 1,
   "plugins": [
+     {
+      "id": "hdvietnam",
+      "name": "Nguồn Hdvietnam",
+      "version": "1.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HDVietnam_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hdvietnam.png"
+    }, 
     {
       "id": "Rổ Phim",
       "name": "Rổ Phim",
@@ -8,7 +15,7 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
-     {
+    {
       "id": "Vsmov",
       "name": "PhimVsmov",
       "version": "1.1.0",
