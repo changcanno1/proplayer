@@ -1,5 +1,7 @@
+var iddomain = "1phim";
 BASEURL = "https://vkey.vn/" + iddomain;
 var BASELINK = BASEURL;
+
 // https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
   try{
