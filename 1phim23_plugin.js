@@ -1,4 +1,3 @@
-var iddomain = "1phim"
 BASEURL = "https://vkey.vn/" + iddomain;
 var BASELINK = BASEURL;
 // https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
@@ -7,7 +6,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "phimlongtieng",
       "name": "Nguồn Phim Lồng Tiếng",
-      "version": "1.1.4",
+      "version": "1.1.6",
       "author": "Alokillgtv",
       "info": "",
       "baseUrl": "https://www.1phim23.com",
@@ -393,23 +392,24 @@ function parseMovieDetail(html, url) {
                 var name = "Tập " + this.find("a").text();
                 var slug = "tap-" + (index + 1);
             }
-            var link = "https://phimlongtieng.alokillgtv.workers.dev/?url=" + this.find("a").attr("href");
+            var href = this.find("a").attr("href") || "";
+            var fullUrl = href.indexOf("http") === 0 ? href : (BASELINK + (href.indexOf("/") === 0 ? "" : "/") + href);
             episodes.push({
                 name: name,
                 slug: slug,
-                id: link + "?server=1",
+                id: fullUrl + "?server=1",
                 ids: [{
                     name: "Server 1",
-                    url: link + "?server=1"
+                    url: fullUrl + "?server=1"
                 }, {
                     name: "Server 2",
-                    url: link + "?server=2"
+                    url: fullUrl + "?server=2"
                 }, {
                     name: "Server 3",
-                    url: link + "?server=3"
+                    url: fullUrl + "?server=3"
                 }, {
                     name: "Server 4",
-                    url: link + "?server=4"
+                    url: fullUrl + "?server=4"
                 }]
             })
 
@@ -466,78 +466,100 @@ function parseMovieDetail(html, url) {
     var sourceHTML = html;
     var $doc = _$(sourceHTML);
     var stream = "";
-    
-    // Tách giá trị server từ URL (mặc định bằng 1 nếu không truyền)
-    var serverMatch = url.match(/server=(\d+)/i);
-    var server = serverMatch ? parseInt(serverMatch[1], 10) : 1;
+    var mimeType = "video/mp4";
+    var isEmbed = true;
 
-    // 1. Thu thập tất cả các link player từ thuộc tính onclick
-    var links = [];
-    $doc.find("#vb_server_list span").each(function() {
-      var string = this.attr("onclick") || "";
-      var match = string.match(/["'](https?:\/\/[^"']+)["']/i);
-      if (match && match[1]) {
-        links.push(match[1]);
+    // 1. Thử giải mã trực tiếp nếu trang chứa mã hóa CryptoJSAesDecrypt
+    var decryptedUrl = extractAndDecryptM3u8(sourceHTML);
+    if (decryptedUrl && decryptedUrl.indexOf("http") === 0) {
+      if (decryptedUrl.indexOf(".m3u8") > -1) {
+        stream = decryptedUrl;
+        isEmbed = false;
+        mimeType = "application/x-mpegURL";
+      } else if (decryptedUrl.indexOf("hash=") > -1) {
+        var hashParam = getparam(decryptedUrl, "hash");
+        var m3u8Url = hashParam ? BASE64.decode(hashParam) : "";
+        if (m3u8Url && m3u8Url.indexOf("http") === 0) {
+          stream = m3u8Url;
+          isEmbed = false;
+          mimeType = "application/x-mpegURL";
+        } else {
+          stream = decryptedUrl;
+          isEmbed = true;
+        }
+      } else {
+        // Trang embed trung gian (vd: vpm.php)
+        stream = decryptedUrl;
+        isEmbed = true;
       }
-    });
+    }
 
-    // Hàm xử lý link player (Chuyển đổi nếu là player-cdn.com)
-    function processLink(linkUrl) {
-      if (!linkUrl) return "";
-      if (linkUrl.indexOf("player-cdn.com") !== -1) {
-        var vMatch = linkUrl.match(/[?&]v=([^&]+)/i);
-        if (vMatch && vMatch[1]) {
-          return "https://sc.k-20.xyz/stream/series/clbpx:lo2b09rr074-2q1390mfi:" + vMatch[1] + ".json";
+    // 2. Nếu không có CryptoJSAesDecrypt, tìm trong #vb_server_list (cho các nguồn player khác)
+    if (!stream) {
+      var serverMatch = url.match(/server=(\d+)/i);
+      var server = serverMatch ? parseInt(serverMatch[1], 10) : 1;
+
+      var links = [];
+      $doc.find("#vb_server_list span").each(function() {
+        var string = this.attr("onclick") || "";
+        var match = string.match(/["'](https?:\/\/[^"']+)["']/i);
+        if (match && match[1]) {
+          links.push(match[1]);
+        }
+      });
+
+      function processLink(linkUrl) {
+        if (!linkUrl) return "";
+        if (linkUrl.indexOf("player-cdn.com") !== -1) {
+          var vMatch = linkUrl.match(/[?&]v=([^&]+)/i);
+          if (vMatch && vMatch[1]) {
+            return "https://sc.k-20.xyz/stream/series/clbpx:lo2b09rr074-2q1390mfi:" + vMatch[1] + ".json";
+          }
+        }
+        return linkUrl;
+      }
+
+      function getPriorityLink(linkArray) {
+        if (!linkArray || linkArray.length === 0) return "";
+        var p1 = linkArray.find(function(l) { return l.indexOf("1phim23.com") !== -1 || l.indexOf("1phim25.com") !== -1; });
+        var p2 = linkArray.find(function(l) { return l.indexOf("cdn.loadvid.com") !== -1; });
+        var p3 = linkArray.find(function(l) { return l.indexOf("player-cdn.com") !== -1; });
+        if (p1) return p1;
+        if (p2) return p2;
+        if (p3) return p3;
+        return linkArray[0];
+      }
+
+      if (server === 1) {
+        var primelink = $doc.find("#vb_server_list .activelive").attr("data-url");
+        if (primelink) {
+          stream = processLink(primelink.replace(/&amp;/g, "&"));
+        } else {
+          stream = processLink(getPriorityLink(links));
+        }
+      } else {
+        var targetIndex = server - 1;
+        if (links.length > targetIndex && links[targetIndex]) {
+          stream = processLink(links[targetIndex]);
+        } else {
+          stream = processLink(getPriorityLink(links));
         }
       }
-      return linkUrl;
     }
 
-    // Hàm sắp xếp/lọc theo đúng thứ tự ưu tiên chuẩn
-    function getPriorityLink(linkArray) {
-      if (!linkArray || linkArray.length === 0) return "";
-      
-      var p1 = linkArray.find(function(l) { return l.indexOf("1phim23.com") !== -1; });
-      var p2 = linkArray.find(function(l) { return l.indexOf("cdn.loadvid.com") !== -1; }); // Ưu tiên 2
-      var p3 = linkArray.find(function(l) { return l.indexOf("player-cdn.com") !== -1; });  // Ưu tiên 3
-
-      if (p1) return p1;
-      if (p2) return p2;
-      if (p3) return p3;
-      return linkArray[0]; // Trả về link đầu tiên nếu không khớp danh sách trên
-    }
-
-    // 2. Logic xử lý lấy stream
-    if (server === 1) {
-      // Ưu tiên 1: Lấy từ thẻ .activelive
-      var primelink = $doc.find("#vb_server_list .activelive").attr("data-url");
-      if (primelink) {
-        stream = processLink(primelink.replace(/&amp;/g, "&"));
-      } else {
-        stream = processLink(getPriorityLink(links));
-      }
-    } else {
-      // Khi server >= 2 (server=2, server=3, server=4...)
-      var targetIndex = server - 1;
-      
-      // Nếu có tồn tại link ở vị trí server yêu cầu
-      if (links.length > targetIndex && links[targetIndex]) {
-        stream = processLink(links[targetIndex]);
-      } else {
-        // Dự phòng: Nếu không đủ nguồn/không tìm thấy server yêu cầu -> Quay về lấy nguồn 1 (ưu tiên cao nhất)
-        console.log("Server " + server + " không tồn tại, tự động quay về nguồn 1.");
-        stream = processLink(getPriorityLink(links));
-      }
+    if (!stream) {
+      stream = url;
     }
 
     console.log("parseDetailResponse fetch\n" + stream);
 
     var $return = JSON.stringify({
       url: stream,
-      isEmbed: true,
+      mimeType: mimeType,
+      isEmbed: isEmbed,
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": BASEURL,
+        "Referer": BASEURL + "/",
         "Origin": BASEURL
       }
     });
@@ -547,73 +569,62 @@ function parseMovieDetail(html, url) {
 
   } catch (e) {
     console.log("parseDetailResponse[err]:\n " + e);
-return JSON.stringify({ 
-  url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-  mimeType: "video/mp4", 
-  isEmbed: false, headers: {}, subtitles: [] 
-});
+    return JSON.stringify({ 
+      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+      mimeType: "video/mp4", 
+      isEmbed: false, 
+      headers: {}, 
+      subtitles: [] 
+    });
   }
 }
 
-  
-function extractAndBuildWorkerUrl(htmlString) {
-  const workerBaseUrl = "https://phimlongtieng.alokillgtv.workers.dev/";
-
-  // RegEx bóc tách linh hoạt Passphrase và JSON
-  const regex = /CryptoJSAesDecrypt\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*[`'"]?\s*(\{[\s\S]*?"ciphertext"[\s\S]*?\})\s*[`'"]?\s*\)/i;
-  const match = htmlString.match(regex);
-
-  if (!match) {
-    console.error("❌ Không tìm thấy đoạn mã CryptoJSAesDecrypt trong HTML.");
-    return null;
-  }
-
-  const passphrase = match[1]; // Vd: 'Encrypt'
-  let encryptedJsonStr = match[2];
-
-  // Làm sạch chuỗi JSON nếu có xuyệt ngược escape dư thừa
-  encryptedJsonStr = encryptedJsonStr.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-
+function extractAndDecryptM3u8(htmlString) {
   try {
-    // Kiểm tra tính hợp lệ của JSON
-    JSON.parse(encryptedJsonStr);
+    if (!htmlString || typeof htmlString !== "string") return "";
+    var regex = /CryptoJSAesDecrypt\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*[`'"]?\s*(\{[\s\S]*?"ciphertext"[\s\S]*?\})\s*[`'"]?\s*\)/i;
+    var match = htmlString.match(regex);
+    if (!match) return "";
+
+    var passphrase = match[1];
+    var encryptedJsonStr = match[2].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    return CryptoJSAesDecrypt(passphrase, encryptedJsonStr);
   } catch (e) {
-    console.error("❌ Chuỗi bóc tách không phải JSON hợp lệ:", e.message);
-    return null;
+    console.error("Lỗi extractAndDecryptM3u8:", e);
+    return "";
   }
-
-  // Mã hóa URL Safe cho tham số
-  const encodedPass = encodeURIComponent(passphrase);
-  const encodedKey = encodeURIComponent(encryptedJsonStr);
-
-  // Ghép nối tạo URL hoàn chỉnh gửi đến Worker
-  const finalWorkerUrl = `${workerBaseUrl}?pass=${encodedPass}&key=${encodedKey}`;
-
-  return finalWorkerUrl;
 }
-
-
-
-
   
 function parseEmbedResponse(html, url) {
   console.log("parseEmbedResponse [url]: " + url);
   try {
     var stream = "";
     var mimeType = "application/x-mpegURL";
-    var m3u8regexp = "https?:\\/\\/[^\"'\\s]+\\/hls\\/[^\"'\\s]+\\.m3u8";
     var referer = BASEURL;
-    // 1. Xử lý nguồn 1phim23.com
-    if (url.indexOf(BASEURL) > -1) {
-      stream = url;
-      //stream = "https://www.1phim23.com/pmm2/ff65116ecc6f7c2a47ea2f944cf5eef3.m3u8";
-      stream = extractAndBuildWorkerUrl(html);
-      console.log("👉 URL Worker tạo ra:\n", stream); 
-      mimeType = "application/x-mpegURL";
-    } 
+
+    // 1. Thử giải mã trực tiếp nếu trang chứa mã hóa CryptoJSAesDecrypt
+    var decryptedUrl = extractAndDecryptM3u8(html);
+    if (decryptedUrl && decryptedUrl.indexOf("http") === 0) {
+      if (decryptedUrl.indexOf(".m3u8") > -1) {
+        stream = decryptedUrl;
+        mimeType = "application/x-mpegURL";
+      } else if (decryptedUrl.indexOf("hash=") > -1) {
+        var hashParam = getparam(decryptedUrl, "hash");
+        var m3u8Url = hashParam ? BASE64.decode(hashParam) : "";
+        if (m3u8Url && m3u8Url.indexOf("http") === 0) {
+          stream = m3u8Url;
+          mimeType = "application/x-mpegURL";
+        } else {
+          stream = decryptedUrl;
+        }
+      } else {
+        stream = decryptedUrl;
+      }
+      console.log("👉 Đã giải mã link M3U8 trực tiếp:\n", stream);
+    }
     // 2. Xử lý nguồn cdn.loadvid.com
     else if (url.indexOf("cdn.loadvid.com") > -1) {
-      stream = "https://phimlongtieng.alokillgtv.workers.dev/?url=" + url + "#.m3u8";
+      stream = url;
       mimeType = "application/x-mpegURL";
       referer = "https://cdn.loadvid.com";
     } 
@@ -657,7 +668,7 @@ function parseEmbedResponse(html, url) {
     });
   }
 }
-} // parseDetailResnse, parseEmbedResponse
+} // parseDetailResponse, parseEmbedResponse
 // ===== HÀM TẠO XỬ LÝ STREAM PHIM END ======
 
 
@@ -799,660 +810,6 @@ function iframe64(url){
       } 
       return menulist; 
   }
-  function _$(param) {
-      // -------------------------------------------------------------
-      // 1. HELPER PARSER & UTILS
-      // -------------------------------------------------------------
-      function parseHTML(htmlString) {
-          let nodes = [];
-          let root = { id: 0, tag: "ROOT", attrs: {}, childrenIds: [], parentId: null };
-          nodes.push(root);
-  
-          try {
-              let html = (htmlString || "").trim();
-              if (!html) return { root, nodes };
-  
-              const VOID_TAGS = new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
-              let stack = [0];
-              let tagRegex = /<(?:\/([a-zA-Z0-9_-]+)|([a-zA-Z0-9_-]+)([^>]*?)(\/)?)\s*>/g;
-              
-              let lastIndex = 0;
-              let match;
-              let maxIter = 50000;
-              let iter = 0;
-  
-              while ((match = tagRegex.exec(html)) !== null && iter++ < maxIter) {
-                  let textBefore = html.slice(lastIndex, match.index).trim();
-                  let parentId = stack[stack.length - 1];
-  
-                  if (textBefore) {
-                      let textId = nodes.length;
-                      nodes.push({ id: textId, tag: "#text", text: textBefore, attrs: {}, childrenIds: [], parentId: parentId });
-                      nodes[parentId].childrenIds.push(textId);
-                  }
-  
-                  lastIndex = tagRegex.lastIndex;
-                  let isCloseTag = !!match[1];
-                  let tagName = (match[1] || match[2] || "").toLowerCase();
-                  let attrStr = match[3] || "";
-                  let isSelfClosing = !!match[4] || VOID_TAGS.has(tagName);
-  
-                  if (isCloseTag) {
-                      for (let i = stack.length - 1; i > 0; i--) {
-                          if (nodes[stack[i]].tag === tagName) {
-                              stack.splice(i);
-                              break;
-                          }
-                      }
-                  } else {
-                      let attrs = {};
-                      let attrRegex = /([a-zA-Z0-9_-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
-                      let attrMatch;
-                      while ((attrMatch = attrRegex.exec(attrStr)) !== null) {
-                          attrs[attrMatch[1].toLowerCase()] = attrMatch[2] || attrMatch[3] || attrMatch[4] || "";
-                      }
-  
-                      let nodeId = nodes.length;
-                      let node = { id: nodeId, tag: tagName, attrs: attrs, childrenIds: [], parentId: parentId };
-                      nodes.push(node);
-                      nodes[parentId].childrenIds.push(nodeId);
-  
-                      if (!isSelfClosing) {
-                          stack.push(nodeId);
-                      }
-                  }
-              }
-  
-              let remainingText = html.slice(lastIndex).trim();
-              if (remainingText && stack.length > 0) {
-                  let parentId = stack[stack.length - 1];
-                  let textId = nodes.length;
-                  nodes.push({ id: textId, tag: "#text", text: remainingText, attrs: {}, childrenIds: [], parentId: parentId });
-                  nodes[parentId].childrenIds.push(textId);
-              }
-          } catch (err) {
-              if (typeof window !== "undefined" && window.log) window.log("parseHTML error: " + err.message);
-          }
-          return { root, nodes };
-      }
-  
-      function getNodeText(node, nodes, depth) {
-          if (!node || (depth || 0) > 20) return "";
-          if (node.tag === "#text") return node.text || "";
-          let text = "";
-          if (node.childrenIds) {
-              for (let cid of node.childrenIds) {
-                  text += getNodeText(nodes[cid], nodes, (depth || 0) + 1) + " ";
-              }
-          }
-          return text.trim();
-      }
-  
-      // -------------------------------------------------------------
-      // 2. QUERY ENGINE & SELECTOR MATCHING
-      // -------------------------------------------------------------
-      function matchSingleSelector(node, sel, nodes) {
-          if (!node || node.tag === "#text" || node.tag === "ROOT") return false;
-  
-          let cleanSel = sel;
-          
-          // 1. Tách pseudo positional (:first, :last, :eq)
-          cleanSel = cleanSel.replace(/:first|:last|:eq\([0-9]+\)/gi, "").trim();
-  
-          // 2. Tách pseudo :content(...)
-          let pseudoContentArg = null;
-          let contentMatch = cleanSel.match(/:content\((['"]?)(.*?)\1\)/i);
-          if (contentMatch) {
-              pseudoContentArg = contentMatch[2];
-              cleanSel = cleanSel.replace(contentMatch[0], "").trim();
-          }
-  
-          // 3. Khớp Selector gốc
-          if (cleanSel && cleanSel !== "*") {
-              let tagMatch = cleanSel.match(/^[a-zA-Z0-9_-]+/);
-              if (tagMatch && node.tag !== tagMatch[0].toLowerCase()) return false;
-  
-              let idMatch = cleanSel.match(/#([a-zA-Z0-9_-]+)/);
-              if (idMatch && (!node.attrs || node.attrs.id !== idMatch[1])) return false;
-  
-              // Class matching (hỗ trợ Tailwind)
-              let classMatches = cleanSel.match(/\.([a-zA-Z0-9_\-\/\\:]+)/g);
-              if (classMatches) {
-                  if (!node.attrs || !node.attrs.class) return false;
-                  let elClasses = node.attrs.class.split(/\s+/);
-                  for (let c of classMatches) {
-                      let targetClass = c.substring(1);
-                      if (!elClasses.includes(targetClass)) return false;
-                  }
-              }
-  
-              let attrMatch = cleanSel.match(/\[([a-zA-Z0-9_-]+)(?:=['"]?(.*?)['"]?)?\]/);
-              if (attrMatch) {
-                  let attrName = attrMatch[1].toLowerCase();
-                  let attrVal = attrMatch[2];
-                  if (!node.attrs || !(attrName in node.attrs)) return false;
-                  if (attrVal !== undefined && node.attrs[attrName] !== attrVal) return false;
-              }
-          }
-  
-          if (pseudoContentArg !== null) {
-              let fullText = getNodeText(node, nodes, 0);
-              let keywords = pseudoContentArg.split("|").map(k => k.trim().toLowerCase());
-              let found = keywords.some(kw => fullText.toLowerCase().includes(kw));
-              if (!found) return false;
-          }
-  
-          return true;
-      }
-  
-      function querySelectorAllSingleLevel(startNode, selector, nodes) {
-          let results = [];
-          function search(currentId, depth) {
-              if (depth > 50) return;
-              let current = nodes[currentId];
-              if (!current) return;
-  
-              if (current.tag !== "ROOT" && current.tag !== "#text" && current.id !== startNode.id) {
-                  if (matchSingleSelector(current, selector, nodes)) {
-                      results.push(current);
-                  }
-              }
-              if (current.childrenIds) {
-                  for (let cid of current.childrenIds) {
-                      search(cid, depth + 1);
-                  }
-              }
-          }
-          search(startNode.id, 0);
-  
-          if (selector.indexOf(":first") !== -1) return results.slice(0, 1);
-          if (selector.indexOf(":last") !== -1) return results.slice(-1);
-          
-          let eqMatch = selector.match(/:eq\(([0-9]+)\)/i);
-          if (eqMatch) {
-              let idx = parseInt(eqMatch[1], 10);
-              return results[idx] ? [results[idx]] : [];
-          }
-  
-          return results;
-      }
-  
-      function querySelectorAll(startNode, selector, nodes) {
-          try {
-              if (!startNode || !selector) return [];
-  
-              if (selector.indexOf(',') !== -1) {
-                  let groupSelectors = selector.split(',').map(s => s.trim());
-                  let resMap = new Map();
-                  for (let gSel of groupSelectors) {
-                      let subRes = querySelectorAll(startNode, gSel, nodes);
-                      for (let r of subRes) resMap.set(r.id, r);
-                  }
-                  return Array.from(resMap.values());
-              }
-  
-              let spaceParts = selector.trim().split(/\s+/);
-              if (spaceParts.length > 1) {
-                  let currentNodes = [startNode];
-                  for (let part of spaceParts) {
-                      let nextLevelNodes = [];
-                      let addedIds = new Set();
-                      for (let cNode of currentNodes) {
-                          let subResults = querySelectorAllSingleLevel(cNode, part, nodes);
-                          for (let r of subResults) {
-                              if (!addedIds.has(r.id)) {
-                                  addedIds.add(r.id);
-                                  nextLevelNodes.push(r);
-                              }
-                          }
-                      }
-                      currentNodes = nextLevelNodes;
-                      if (currentNodes.length === 0) break;
-                  }
-                  return currentNodes;
-              }
-  
-              return querySelectorAllSingleLevel(startNode, selector, nodes);
-          } catch (err) {
-              return [];
-          }
-      }
-  
-      // -------------------------------------------------------------
-      // 3. MINIJQ CLASS CONSTRUCTOR & PROTOTYPE
-      // -------------------------------------------------------------
-      function MiniJQ(elements, nodesStore) {
-          this.elements = Array.isArray(elements) ? elements : (elements ? [elements] : []);
-          this.nodes = nodesStore || [];
-          this.length = this.elements.length;
-      }
-  
-      MiniJQ.prototype = {
-          find: function(selector) {
-              if (this.elements.length === 0) return new MiniJQ([], this.nodes);
-              let matched = [];
-              let addedIds = new Set();
-              for (let el of this.elements) {
-                  let res = querySelectorAll(el, selector, this.nodes);
-                  for (let r of res) {
-                      if (!addedIds.has(r.id)) {
-                          addedIds.add(r.id);
-                          matched.push(r);
-                      }
-                  }
-              }
-              return new MiniJQ(matched, this.nodes);
-          },
-  
-          text: function() {
-              if (this.elements.length === 0) return "";
-              return getNodeText(this.elements[0], this.nodes, 0);
-          },
-  
-          html: function() {
-              if (this.elements.length === 0) return "";
-              let self = this;
-              let serialize = function(nodeId, depth) {
-                  if (depth > 20) return "";
-                  let node = self.nodes[nodeId];
-                  if (!node) return "";
-                  if (node.tag === "#text") return node.text || "";
-                  let attrs = Object.entries(node.attrs || {}).map(([k, v]) => ` ${k}="${v}"`).join("");
-                  let childrenHTML = (node.childrenIds || []).map(cid => serialize(cid, depth + 1)).join("");
-                  return `<${node.tag}${attrs}>${childrenHTML}</${node.tag}>`;
-              };
-              return (this.elements[0].childrenIds || []).map(cid => serialize(cid, 0)).join("");
-          },
-  
-          attr: function(name, value) {
-              if (value !== undefined) {
-                  for (let el of this.elements) {
-                      if (el && el.tag !== "#text") {
-                          if (!el.attrs) el.attrs = {};
-                          el.attrs[name] = value;
-                      }
-                  }
-                  return this;
-              }
-              if (this.elements.length === 0 || !this.elements[0].attrs) return "";
-              return this.elements[0].attrs[name] || "";
-          },
-  
-          each: function(callback) {
-              if (typeof callback !== 'function') return this;
-              this.elements.forEach((el, index) => {
-                  let jqEl = new MiniJQ([el], this.nodes);
-                  callback.call(jqEl, index, jqEl);
-              });
-              return this;
-          },
-  
-          textAll: function(delimiter) {
-              if (delimiter === undefined) delimiter = " ";
-              let texts = [];
-              for (let el of this.elements) {
-                  texts.push(getNodeText(el, this.nodes, 0));
-              }
-              return texts.join(delimiter);
-          },
-  
-          first: function() {
-              return new MiniJQ(this.elements.length > 0 ? [this.elements[0]] : [], this.nodes);
-          },
-  
-          last: function() {
-              return new MiniJQ(this.elements.length > 0 ? [this.elements[this.elements.length - 1]] : [], this.nodes);
-          },
-  
-          eq: function(index) {
-              return new MiniJQ(this.elements[index] ? [this.elements[index]] : [], this.nodes);
-          },
-  
-          parent: function() {
-              let parents = [];
-              let addedIds = new Set();
-              for (let el of this.elements) {
-                  if (el && el.parentId !== null && el.parentId !== 0) {
-                      let pNode = this.nodes[el.parentId];
-                      if (pNode && !addedIds.has(pNode.id)) {
-                          addedIds.add(pNode.id);
-                          parents.push(pNode);
-                      }
-                  }
-              }
-              return new MiniJQ(parents, this.nodes);
-          },
-  
-          next: function() {
-              let nexts = [];
-              for (let el of this.elements) {
-                  if (!el || el.parentId === null) continue;
-                  let pNode = this.nodes[el.parentId];
-                  if (!pNode) continue;
-  
-                  let siblings = pNode.childrenIds.map(cid => this.nodes[cid]).filter(c => c && c.tag !== "#text");
-                  let idx = siblings.findIndex(s => s.id === el.id);
-                  if (idx !== -1 && idx + 1 < siblings.length) {
-                      nexts.push(siblings[idx + 1]);
-                  }
-              }
-              return new MiniJQ(nexts, this.nodes);
-          },
-  
-          before: function() {
-              let befores = [];
-              for (let el of this.elements) {
-                  if (!el || el.parentId === null) continue;
-                  let pNode = this.nodes[el.parentId];
-                  if (!pNode) continue;
-  
-                  let siblings = pNode.childrenIds.map(cid => this.nodes[cid]).filter(c => c && c.tag !== "#text");
-                  let idx = siblings.findIndex(s => s.id === el.id);
-                  if (idx > 0) {
-                      befores.push(siblings[idx - 1]);
-                  }
-              }
-              return new MiniJQ(befores, this.nodes);
-          },
-  
-          after: function() {
-              return this.next();
-          },
-  
-          closest: function(selector) {
-              let matched = [];
-              let addedIds = new Set();
-              for (let el of this.elements) {
-                  let currParentId = el.parentId;
-                  let depth = 0;
-                  while (currParentId !== null && currParentId !== 0 && depth++ < 30) {
-                      let curr = this.nodes[currParentId];
-                      if (!curr) break;
-                      if (matchSingleSelector(curr, selector, this.nodes)) {
-                          if (!addedIds.has(curr.id)) {
-                              addedIds.add(curr.id);
-                              matched.push(curr);
-                          }
-                          break;
-                      }
-                      currParentId = curr.parentId;
-                  }
-              }
-              return new MiniJQ(matched, this.nodes);
-          }
-      };
-  
-      // -------------------------------------------------------------
-      // 4. MAIN ENTRY POINT LOGIC FOR _$
-      // -------------------------------------------------------------
-      try {
-          if (!param) return new MiniJQ([], []);
-          if (param instanceof MiniJQ) return param;
-          if (typeof param === "string") {
-              let parsed = parseHTML(param);
-              return new MiniJQ(parsed.root, parsed.nodes);
-          }
-          return new MiniJQ(param, []);
-      } catch (err) {
-          return new MiniJQ([], []);
-      }
-  }
   function log(msg) {console.log(msg);}
-  
-BASE64 = {
-  encode: function (str) {
-    try {
-      if (!str) return "";
-
-      // 1. Encode String ra mảng UTF-8 Bytes trước
-      var utf8Bytes = [];
-      for (var i = 0; i < str.length; i++) {
-        var code = str.charCodeAt(i);
-        if (code < 128) {
-          utf8Bytes.push(code);
-        } else if (code < 2048) {
-          utf8Bytes.push((code >> 6) | 192, (code & 63) | 128);
-        } else if (
-          (code & 0xfc00) === 0xd800 &&
-          i + 1 < str.length &&
-          (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00
-        ) {
-          // Ký tự Surrogate Pair
-          code =
-            0x10000 + ((code & 0x03ff) << 10) + (str.charCodeAt(++i) & 0x03ff);
-          utf8Bytes.push(
-            (code >> 18) | 240,
-            ((code >> 12) & 63) | 128,
-            ((code >> 6) & 63) | 128,
-            (code & 63) | 128
-          );
-        } else {
-          utf8Bytes.push(
-            (code >> 12) | 224,
-            ((code >> 6) & 63) | 128,
-            (code & 63) | 128
-          );
-        }
-      }
-
-      // 2. Chuyển mảng UTF-8 Bytes thành chuỗi Base64
-      var chars =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-      var encoded = "";
-      var byte1, byte2, byte3;
-      var b1, b2, b3, b4;
-
-      for (var j = 0; j < utf8Bytes.length; j += 3) {
-        byte1 = utf8Bytes[j];
-        byte2 = j + 1 < utf8Bytes.length ? utf8Bytes[j + 1] : NaN;
-        byte3 = j + 2 < utf8Bytes.length ? utf8Bytes[j + 2] : NaN;
-
-        b1 = byte1 >> 2;
-        b2 = ((byte1 & 3) << 4) | (isNaN(byte2) ? 0 : byte2 >> 4);
-        b3 = isNaN(byte2)
-          ? 64
-          : ((byte2 & 15) << 2) | (isNaN(byte3) ? 0 : byte3 >> 6);
-        b4 = isNaN(byte3) ? 64 : byte3 & 63;
-
-        encoded +=
-          chars.charAt(b1) +
-          chars.charAt(b2) +
-          chars.charAt(b3) +
-          chars.charAt(b4);
-      }
-
-      return encoded;
-    } catch (e) {
-      console.log("[BASE64.encode Error]:", e.message || e);
-      return "";
-    }
-  },
-
-  decode: function (base64String) {
-    try {
-      if (!base64String) return "";
-
-      // 1. Dọn dẹp chuỗi & xử lý nếu URL-encoded (ví dụ: %2B, %2F)
-      var str = decodeURIComponent(base64String.trim());
-
-      // Chuyển URL-safe base64 về base64 chuẩn
-      str = str.replace(/-/g, "+").replace(/_/g, "/");
-
-      // Bảng ký tự Base64
-      var chars =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-      var output = [];
-      var buffer = 0,
-        bits = 0;
-
-      // 2. Decode Base64 thành Mảng Byte
-      for (var i = 0; i < str.length; i++) {
-        var char = str.charAt(i);
-        if (char === "=") break; // Bỏ qua padding
-        var index = chars.indexOf(char);
-        if (index === -1) continue; // Bỏ qua ký tự không hợp lệ
-
-        buffer = (buffer << 6) | index;
-        bits += 6;
-
-        if (bits >= 8) {
-          bits -= 8;
-          output.push((buffer >> bits) & 0xff);
-        }
-      }
-
-      // 3. Decode UTF-8 từ mảng Byte ra String
-      var result = "";
-      var j = 0;
-      while (j < output.length) {
-        var c = output[j++];
-        if (c < 128) {
-          result += String.fromCharCode(c);
-        } else if (c > 191 && c < 224) {
-          var c2 = output[j++];
-          result += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
-        } else if (c > 223 && c < 240) {
-          var c2 = output[j++];
-          var c3 = output[j++];
-          result += String.fromCharCode(
-            ((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63)
-          );
-        } else if (c >= 240) {
-          var c2 = output[j++];
-          var c3 = output[j++];
-          var c4 = output[j++];
-          var u =
-            (((c & 7) << 18) | ((c2 & 63) << 12) | ((c3 & 63) << 6) | (c4 & 63)) -
-            0x10000;
-          result += String.fromCharCode(0xd800 + (u >> 10), 0xdc00 + (u & 0x3ff));
-        }
-      }
-
-      return result;
-    } catch (e) {
-      console.log("[BASE64.decode Error]:", e.message || e);
-      return "";
-    }
-  }
-};
-
-  function checkRaw(scriptStr, returnFixed) {
-    try {
-      if (!scriptStr || typeof scriptStr !== "string") {
-        console.log(
-          "[Lỗi escape runJS]\r\n\t Dữ liệu đầu vào không phải là chuỗi hợp lệ!",
-        );
-        return scriptStr || "";
-      }
-  
-      var lines = scriptStr.split("\n");
-      var fixedLines = [];
-      var hasError = false;
-  
-      for (var i = 0; i < lines.length; i++) {
-        var currentLine = lines[i];
-        var lineNum = i + 1;
-        var lineErrorFound = false; // 1. Kiểm tra lỗi escape newline/tab nguy hiểm nằm trần trong chuỗi quote
-        // Trường hợp chưa được escape dạng '\\n' hoặc '\\t' trong chuỗi ghép
-  
-        if (/([^\\]|^)(\r\n|\r|\n)/.test(currentLine)) {
-          console.log(
-            "[Lỗi escape runJS]\r\n\t Phát hiện xuống dòng chưa escape ở Dòng " +
-              lineNum +
-              ": " +
-              currentLine.trim(),
-          );
-          lineErrorFound = true;
-        } // 2. Kiểm tra lỗi quên escape ký tự Tab trần không hợp lệ
-  
-        if (/\t/.test(currentLine) && !/\\t/.test(currentLine)) {
-          console.log(
-            "[Lỗi escape runJS]\r\n\t Phát hiện ký tự Tab trần ở Dòng " +
-              lineNum +
-              ": " +
-              currentLine.trim(),
-          );
-          lineErrorFound = true;
-        } // 3. Kiểm tra dấu xược ngược single trailing backlash ở cuối dòng (dễ làm gãy chuỗi)
-  
-        if (/([^\\])\\$/.test(currentLine)) {
-          console.log(
-            "[Lỗi escape runJS]\r\n\t Dấu Backslash (\\) cô đơn ở cuối Dòng " +
-              lineNum +
-              ": " +
-              currentLine.trim(),
-          );
-          lineErrorFound = true;
-        }
-  
-        if (lineErrorFound) {
-          hasError = true;
-        } // Tiến hành SỬA LỖI tự động nếu tham số returnFixed = true
-  
-        var fixedLine = currentLine;
-        if (returnFixed) {
-          // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
-          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
-        }
-  
-        fixedLines.push(fixedLine);
-      } // 4. Kiểm tra cú pháp nhanh xem toàn bộ chuỗi có parse được JS không
-  
-      try {
-        new Function(scriptStr);
-      } catch (syntaxErr) {
-        hasError = true;
-        console.log(
-          "[Lỗi escape runJS]\r\n\t 💥 LỖI CÚ PHÁP (SyntaxError) toàn cục: " +
-            syntaxErr.message,
-        );
-      }
-  
-      if (!hasError) {
-        console.log("[checkRaw] 🟢 Chuỗi Raw JS hoàn toàn sạch lỗi!");
-      } // Trả về bản đã fix hoặc bản gốc theo tham số returnFixed
-  
-      return returnFixed ? fixedLines.join("\n") : scriptStr;
-    } catch (e) {
-      console.log(
-        "[Lỗi escape runJS]\r\n\t Lỗi ngoại lệ trong hàm checkRaw: " + e.message,
-      );
-      return scriptStr; // Luôn an toàn: Fallback trả về chuỗi gốc chứ không làm sập script
-    }
-  }
-  function decodeHTMLtext(str) {
-      try {
-          if (!str) return "";
-          return str.replace(/&#(\d+);|&#x([0-9a-fA-F]+);/g, (match, dec, hex) => {
-              if (dec) {
-                  return String.fromCharCode(parseInt(dec, 10));
-              }
-              if (hex) {
-                  return String.fromCharCode(parseInt(hex, 16));
-              }
-              return match;
-          });
-      } catch (e) {
-          log("decodeHTMLEntities[err]:\n " + e);
-      }
-  }
-  function clearJS(func) {
-      if (typeof func !== "function") return "";
-      
-      // Lấy toàn bộ mã nguồn của hàm dưới dạng string
-      var funcStr = func.toString();
-      
-      // Dùng Regex bóc tách lấy nội dung bên trong cặp ngoặc nhọn {} đầu tiên và cuối cùng
-      var match = funcStr.match(/\{([\s\S]*)\}/);
-      if (!match) return "";
-      
-      var innerCode = match[1].trim();
-      
-      // (Tùy chọn) Bạn có thể tận dụng luôn hàm checkRaw sẵn có trong template của bạn 
-      // để nó tự động rà soát và fix các ký tự xuống dòng/tab nguy hiểm cho an toàn tuyệt đối:
-      var safeCode = checkRaw(innerCode, true);
-      
-      return safeCode;
-  }
 }
 // ==== HIDEMENU ====
