@@ -15,6 +15,13 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png"
     },
+      {
+      "id": "nguoncnew",
+      "name": "Phim NguồnC",
+      "version": "1.6.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
+    },
     {
       "id": "Rổ Phim",
       "name": "Rổ Phim",
