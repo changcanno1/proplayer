@@ -43,13 +43,6 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HDVietnam_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hdvietnam.png"
     }, 
-     {
-      "id": "PhimFUN",
-      "name": "PhimFUN",
-      "version": "1.1.7",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
-      "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
-    },
     {
       "id": "NOVAHD",
       "name": "NOVAHD",
@@ -86,14 +79,21 @@
       "iconUrl": "https://m.media-amazon.com/images/I/61fJ78I23IL.png",
       "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
     },
-    {
-      "id": "phimnganhdc",
-      "name": "HDCShort",
-      "version": "1.6.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HDCShort_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimnganhdc.png",
+     {
+      "id": "Mê Phim Ngắn",
+      "name": "Mê Phim Ngắn",
+      "version": "1.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/mephimngan_plugin.js",
+      "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
     },
-    {
+      {
+      "id": "ShortFilm",
+      "name": "ShortFilm",
+      "version": "1.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortmax_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortmax.png"
+    },
+   {
       "id": "phimnganok",
       "name": "HayOKShort",
       "version": "1.1.0",
@@ -113,20 +113,6 @@
       "version": "1.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Dramabox_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/dramabox.png"
-    },
-    {
-      "id": "ShortFilm",
-      "name": "ShortFilm",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortmax_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortmax.png"
-    },
-    {
-      "id": "Mê Phim Ngắn",
-      "name": "Mê Phim Ngắn",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/mephimngan_plugin.js",
-      "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
     },
     {
       "id": "Hh3D",
