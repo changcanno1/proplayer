@@ -2,6 +2,7 @@ var iddomain = "phimhayok"
 BASEURL = "https://vkey.vn/" + iddomain;
 //BASEURL = "https://phimhayok5.site";
 BASEAPI = "https://api-client.phimhayok.net"
+
 function getManifest() {
   try{
     return JSON.stringify({
@@ -17,7 +18,6 @@ function getManifest() {
       "adblock": false,
       "type": "shortfilm",
       "subtitleCat": false,
-      popup_html: popup_html,
       "playerType": "exoplayer"
     });
   }
@@ -1286,7 +1286,7 @@ BASE64 = {
         var fixedLine = currentLine;
         if (returnFixed) {
           // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
-          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
+          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
         }
   
         fixedLines.push(fixedLine);
