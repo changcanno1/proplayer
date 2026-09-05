@@ -2,13 +2,13 @@ var iddomain = "phimhayok"
 BASEURL = "https://vkey.vn/" + iddomain;
 //BASEURL = "https://phimhayok5.site";
 BASEAPI = "https://api-client.phimhayok.net"
-
 function getManifest() {
   try{
     return JSON.stringify({
       "id": "phimnganok",
-      "name": "Nguồn Phimnganok",
-      "version": "1.1",
+      "name": "[SHORT] Phimnganok",
+      "version": "1.2",
+      "author": "Alokillgtv",
       "info": "",
       "baseUrl": BASEURL,
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimnganok.png",
@@ -17,6 +17,7 @@ function getManifest() {
       "adblock": false,
       "type": "shortfilm",
       "subtitleCat": false,
+      popup_html: popup_html,
       "playerType": "exoplayer"
     });
   }
@@ -390,30 +391,64 @@ function parseMovieDetail(html, url) {
 // ===== HÀM TẠO XỬ LÝ STREAM PHIM BEGIN ======
 {
   
-  function parseDetailResponse(html, url, datasend) {
+ function parseDetailResponse(html, url, datasend) {
     // console.log("parseDetailResponse dang xu ly: " + url);
     try {
       if(url.indexOf("join=true") > -1){
-        var url = url.split("|")[0];
-        var maxepi = getparam(url, "maxepi");
-        var slug = getparam(url, "slug");
-        var stream = "https://phimhayok.alokillgtv.workers.dev/?join=true&maxepi=" + maxepi + "&slug=" + slug;
+        var cleanUrl = url.split("|")[0];
+        var maxepi = getparam(cleanUrl, "maxepi");
+        var slug = getparam(cleanUrl, "slug");
+        var workerUrl = "https://phimhayok.alokillgtv.workers.dev/?join=true&maxepi=" + maxepi + "&slug=" + slug;
         
-        //console.log("link gộp full\n" + stream);
+        // 1. Thực hiện POST dữ liệu datasend lên Worker trước
+        var res = httpRequest(workerUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "text/plain",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Referer": BASEURL,
+                "Origin": BASEURL,
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: datasend
+        });
+
+        var finalStreamUrl = "";
+
+        // 2. Kiểm tra kết quả trả về từ Worker
+        if (res && res.isSuccessful && res.body) {
+            try {
+                var jsonRes = JSON.parse(res.body);
+                console.log(res.body)
+                if (jsonRes.status === "success" && jsonRes.url) {
+                    // Lấy link m3u8 gộp hoàn chỉnh từ phản hồi của Worker              
+                    finalStreamUrl = jsonRes.url;
+                }
+            } catch (e) {
+                console.log("Lỗi Parse JSON từ Worker: " + e);
+            }
+        }
+
+        // Fallback: Nếu POST lỗi thì dùng link m3u8 trực tiếp theo slug
+        if (!finalStreamUrl) {
+            finalStreamUrl = "https://phimhayok.alokillgtv.workers.dev/?m3u8=true&slug=" + slug;
+        }
+
+        // 3. Trả về cho Player phát trực tiếp (không dùng isEmbed nữa)
         var $return = JSON.stringify({
-          url: stream,
-          isEmbed: true,
-          postBody: datasend,
+          url: finalStreamUrl,
+          mimeType: "application/x-mpegURL",
+          isEmbed: false,
           headers: {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Referer": BASEURL,
-            "Origin": BASEURL,
-            "X-Requested-With": "XMLHttpRequest"
+            "Origin": BASEURL
           }
         });
         
       }
       else{
+        // https://phimhayok.alokillgtv.workers.dev/?url=https://cdn.phimhayok.net/filmhayok/hls/6a7de100706f9718d3da5ccc/20260813152149/playlist.m3u8&referer=https://phimhayok6.sit
         var stream = url.match(/stream=(.*)$/i)[1].replace("html","m3u8");
         console.log("parseDetailResponse fetch\n" + stream);
         var $return = JSON.stringify({
@@ -427,7 +462,7 @@ function parseMovieDetail(html, url) {
           }
         });
       }
-     // console.log("Return Parse:\n" + $return);
+      console.log("Return:\n" + $return);
       return $return;
     } catch (e) {
       console.log("parseDetailResponse[err]:\n " + e);
@@ -437,7 +472,9 @@ function parseMovieDetail(html, url) {
         isEmbed: false, headers: {}, subtitles: [] 
       });
     }
-  }
+}
+
+
 
   function parseEmbedResponse(html, url) {
   try {
@@ -1249,7 +1286,7 @@ BASE64 = {
         var fixedLine = currentLine;
         if (returnFixed) {
           // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
-          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
+          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
         }
   
         fixedLines.push(fixedLine);
