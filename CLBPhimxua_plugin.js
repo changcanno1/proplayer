@@ -1,12 +1,12 @@
 var BASEURL = "https://sc.k-20.xyz";
-var BASESOURCE = "";
+BASESOURCE = "";
 
 function getManifest() {
     return JSON.stringify({
         "id": "clbpxVIP",
         "name": "CLB Phim Xưa VIP",
-        "version": "1.2.3",
-        "info": "Fix lỗi load link trên iOS",
+        "version": "1.2.2",
+        "info": "",
         "BASEURL": "https://clbpx.alokillgtv.workers.dev",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/clbpxVIP.png",
         "isEnabled": true,
@@ -14,11 +14,11 @@ function getManifest() {
         "adblock": false,
         "type": "MOVIE",
         "author":"alokillgtv",
-        "playerType": "exoplayer", 
-        "layoutType": "HORIZONTAL",
-        popup_html: popup_html
+        "playerType": "exoplayer"
     });
 }
+
+
 
 function getHomeSections() {
     return JSON.stringify([
@@ -104,6 +104,7 @@ function getUrlDetail(slug) {
     if (!slug) return "";
     if (slug.indexOf("http") === 0) return slug;
 
+    // slug hỗ trợ dạng "series/clbpx:123" hoặc "movie/clbpx:123" hoặc chỉ "clbpx:123"
     if (slug.indexOf("/") !== -1) {
         return BASEURL + "/meta/" + slug + ".json";
     }
@@ -255,33 +256,13 @@ function parseDetailResponse(jsonResponse, fallbackUrl, datasend) {
         if (streams.length > 0) {
             var streamObj = streams[0];
             var streamUrl = streamObj.url || "";
-            
-            // 1. Giả lập User-Agent của Mac/iOS Safari để tránh bị server chặn (403)
             var headers = streamObj.headers || {
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             };
-
-            // 2. Tự động nhận diện định dạng file/link
-            var isEmbed = false;
-            var mimeType = "video/mp4"; // Mặc định
-            
-            if (streamUrl.indexOf(".m3u8") !== -1) {
-                mimeType = "application/x-mpegURL"; 
-            } else if (streamUrl.indexOf(".mp4") === -1 && streamUrl.indexOf(".mkv") === -1 && streamUrl.indexOf("http") === 0) {
-                // Nếu link trả về là một webpage nhúng iframe thay vì file mp4/m3u8 trực tiếp
-                isEmbed = true;
-                mimeType = "text/html";
-            }
-
-            // Ghi đè isEmbed nếu có config rõ ràng từ API trả về
-            if (typeof streamObj.isEmbed !== 'undefined') {
-                isEmbed = streamObj.isEmbed;
-            }
 
             return JSON.stringify({
                 url: streamUrl,
-                mimeType: mimeType,
-                isEmbed: isEmbed,
+                mimeType: streamUrl.indexOf(".m3u8") !== -1 ? "application/x-mpegURL" : "video/mp4",
                 headers: headers
             });
         }
