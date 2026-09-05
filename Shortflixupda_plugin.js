@@ -483,16 +483,18 @@ function parseMovieDetail(html, url) {
             };
             $items.push($item);
         }
+        
+        // ĐÃ ĐẢO NGƯỢC VỊ TRÍ CHIA TẬP LÊN TRƯỚC VÀ FULL TẬP RA SAU
         servers.push({
+            name: "Chia tập",
+            episodes: $items
+        },{
             name: "Full tập",
             episodes: [{
               id: url + "?tap=1&full1tap=true",
               name: "Full 1 Tập",
               slug: "tap-full"
             }]
-        },{
-            name: "Chia tập",
-            episodes: $items
         });
         
         return JSON.stringify({
@@ -616,7 +618,7 @@ function parseDetailResponse(html, url) {
           lang: "Vietsub",
           url: decode + "&subtitle=true",
           mimeType: "text/vtt"
-        }]     
+        }]      
       });
       console.log("Return Embed:\n" + $return)
       return $return
