@@ -1,13 +1,6 @@
 {
   "version": 1,
   "plugins": [
-      {
-      "id": "Vsmov",
-      "name": "PhimVsmov",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
-      "iconUrl": "https://vsmov.com/VSmov.png"
-    },
     {
       "id": "vicdn",
       "name": "Nguồn Vicdn",
@@ -28,6 +21,13 @@
       "version": "1.1.4",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
       "iconUrl": "https://phimhdcss.com/favicon.ico"
+    },
+    {
+      "id": "Vsmov",
+      "name": "PhimVsmov",
+      "version": "1.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
+      "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
       "id": "PhimBom",
