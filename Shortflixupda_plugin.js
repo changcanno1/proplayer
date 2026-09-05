@@ -17,8 +17,6 @@ function getManifest() {
         "baseUrl": "https://www.shortflix.net",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix.png",
         "author": "Alokillgtv",
-        popup_html: popup_html,
-      
         "type": "shortfilm",
         "playerType": "exoplayer"
     });
@@ -535,7 +533,6 @@ function parseDetailResponse(html, url) {
         var $subtitle = "";
         var $dataVD = parseScript(script);
         var $episodes = $dataVD.data.episodes || [];
-        //console.log("episode\n" + JSON.stringify($episodes))
         var tapcurrent = $episodes.findIndex(function(ep) {
             return ep.name == tapVal || ep.slug == tapVal || ep.episode == tapVal;
         });
@@ -560,10 +557,7 @@ function parseDetailResponse(html, url) {
         }
         
         if(url.indexOf("full1tap=true") > -1){
-          //.log("ListMV\n" + JSON.stringify($episodes))
-          //log("parseDetailResponse[url]: \n" + $linkstream);
           var postbody = BASE64.encode(JSON.stringify($episodes))
-          //var link = "https://script.google.com/macros/s/AKfycbwOr1SrXDDAEFpcNJGolpcReeDe5u5A7v7BWMqoKw6y1UA-LGjLtVwIgxc-u1d_J1Tb/exec?film_url=" + encodeURIComponent(url)
           var link = "https://shortlink.alokillgtv.workers.dev//?film_url=" + encodeURIComponent(url)
           console.log("link Post:\n" + link)
           var $return = JSON.stringify({
@@ -577,7 +571,6 @@ function parseDetailResponse(html, url) {
               datasend: encodeURIComponent(link)
             
           });
-          //console.log($return);
           return $return
       }
       else{
@@ -608,7 +601,7 @@ function parseDetailResponse(html, url) {
 
  function parseEmbedResponse(html, url, datasend) {
      console.log("Kết quả:\n" + html)
-    log("parseEmbedResponse [url]: " + url); //console.log("parseEmbedResponse [Raw]: " + html);
+    log("parseEmbedResponse [url]: " + url); 
     try {
       var decode = decodeURIComponent(datasend)
       console.log("embed:\n" + decode)
@@ -664,8 +657,6 @@ BASE64 = {
   encode: function (str) {
     try {
       if (!str) return "";
-
-      // 1. Encode String ra mảng UTF-8 Bytes trước
       var utf8Bytes = [];
       for (var i = 0; i < str.length; i++) {
         var code = str.charCodeAt(i);
@@ -678,7 +669,6 @@ BASE64 = {
           i + 1 < str.length &&
           (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00
         ) {
-          // Ký tự Surrogate Pair
           code =
             0x10000 + ((code & 0x03ff) << 10) + (str.charCodeAt(++i) & 0x03ff);
           utf8Bytes.push(
@@ -696,7 +686,6 @@ BASE64 = {
         }
       }
 
-      // 2. Chuyển mảng UTF-8 Bytes thành chuỗi Base64
       var chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       var encoded = "";
@@ -732,26 +721,19 @@ BASE64 = {
   decode: function (base64String) {
     try {
       if (!base64String) return "";
-
-      // 1. Dọn dẹp chuỗi & xử lý nếu URL-encoded (ví dụ: %2B, %2F)
       var str = decodeURIComponent(base64String.trim());
-
-      // Chuyển URL-safe base64 về base64 chuẩn
       str = str.replace(/-/g, "+").replace(/_/g, "/");
-
-      // Bảng ký tự Base64
       var chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       var output = [];
       var buffer = 0,
         bits = 0;
 
-      // 2. Decode Base64 thành Mảng Byte
       for (var i = 0; i < str.length; i++) {
         var char = str.charAt(i);
-        if (char === "=") break; // Bỏ qua padding
+        if (char === "=") break; 
         var index = chars.indexOf(char);
-        if (index === -1) continue; // Bỏ qua ký tự không hợp lệ
+        if (index === -1) continue; 
 
         buffer = (buffer << 6) | index;
         bits += 6;
@@ -762,7 +744,6 @@ BASE64 = {
         }
       }
 
-      // 3. Decode UTF-8 từ mảng Byte ra String
       var result = "";
       var j = 0;
       while (j < output.length) {
