@@ -1,15 +1,17 @@
 // =============================================================================
 // CONFIGURATION & METADATA
 // =============================================================================
-
+var popup_html = "<div class='donate-container'><h2 class='donate-heading'>DONATE</h2><p class='donate-description'>Anh em yêu quý có thể mời bọn mình 2 ly cà phê nhé. Để có động lực duy trì App, cập nhật plugin và tìm thêm nhiều nguồn mới và hay cho anh em. Một chút lòng thành cũng làm bọn mình tiếp tục hoạt động tốt hơn, cám ơn anh em.</p><div class='donate-grid'><div class='donate-card'><div class='donate-title'>Donate Tác giả Plugin</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qrht.png' alt='Donate Tác giả Plugin' /></div></div><div class='donate-card'><div class='donate-title'>Donate Tác giả App</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qryb.png' alt='Donate Tác giả App' /></div></div></div></div><style>.donate-container{max-width:800px;margin:0 auto;padding:10px;box-sizing:border-box;font-family:Arial,sans-serif;text-align:center;color:#eee}.donate-heading{font-size:22px;font-weight:bold;margin:0 0 12px 0;color:#fff;text-transform:uppercase;letter-spacing:1px}.donate-description{font-size:14px;line-height:1.5;margin-bottom:18px;color:#ccc}.donate-grid{display:flex;flex-direction:row;justify-content:center;align-items:stretch;gap:16px}.donate-card{flex:1;min-width:0;background:#22252a;border-radius:12px;padding:14px;border:1px solid #33373e;display:flex;flex-direction:column;align-items:center}.donate-title{font-weight:bold;font-size:15px;margin-bottom:12px;color:#fff}.qr-wrapper{width:100%;max-width:240px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:#181a1d;border-radius:8px;padding:8px;box-sizing:border-box}.qr-wrapper img{width:100%;height:100%;object-fit:contain;border-radius:4px}@media(max-width:600px){.donate-grid{flex-direction:column}.donate-heading{font-size:18px;margin-bottom:8px}.donate-description{font-size:13px;margin-bottom:12px}.qr-wrapper{max-width:180px}}</style>"
 function getManifest() {
     return JSON.stringify({
         "id": "kkphim",
         "name": "KKPhim",
-        "version": "1.0.2",
+        "version": "1.0.9",
         "baseUrl": "https://phimapi.com",
-        "iconUrl": "https://raw.githubusercontent.com/youngbi/repo/main/plugins/kkphim.png",
+        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png",
         "isEnabled": true,
+        "author": "Youngbi",
+        popup_html: popup_html,
         "type": "MOVIE"
     });
 }
@@ -178,7 +180,7 @@ function parseSearchResponse(apiResponseJson) {
     return parseListResponse(apiResponseJson);
 }
 
-function parseMovieDetail(apiResponseJson) {
+function parseMovieDetail(apiResponseJson,url) {
     try {
         var response = JSON.parse(apiResponseJson);
         var movie = response.movie || {};
@@ -190,7 +192,7 @@ function parseMovieDetail(apiResponseJson) {
             if (server.server_data) {
                 server.server_data.forEach(function (ep) {
                     serverEpisodes.push({
-                        id: ep.link_m3u8 || ep.link_embed, // Use m3u8 as ID
+                        id: url + "?stream=" + encodeURI(ep.link_m3u8.replace(".m3u8",".html")) ||  url + "?stream=" + encodeURI(ep.link_embed), // Use m3u8 as ID
                         name: ep.name,
                         slug: ep.slug
                     });
@@ -219,7 +221,7 @@ function parseMovieDetail(apiResponseJson) {
             if (movie.tmdb.type) tmdbType = movie.tmdb.type;
         }
 
-        return JSON.stringify({
+        var $return = JSON.stringify({
             id: movie.slug,
             title: movie.name,
             originName: movie.origin_name || "",
@@ -242,24 +244,35 @@ function parseMovieDetail(apiResponseJson) {
             tmdbSeason: tmdbSeason || 0,
             tmdbType: tmdbType || ""
         });
+      console.log("Return\n" + $return)
+      return $return
     } catch (error) { return "null"; }
 }
 
-function parseDetailResponse(apiResponseJson) {
-
+function parseDetailResponse(apiResponseJson, url) {
+  try{
+    var stream = url.match(/stream=(.*)/i)[1].replace(".html",  ".m3u8");
+    console.log("Stream\n" + stream)
     // However, conforming to the interface:
     return JSON.stringify({
-        url: "", // In this architecture, the episode ID *is* the URL, so this might be redundant or used for resolving.
-        // But since I don't see `episodeId` passed to `getStreamLink` in `MovieRepository` signature...
-        // Wait, `MovieRepository` signature IS `getStreamLink(movieSlug: String)`?
-        // That's weird. How does it know WHICH episode?
-
-        // Checking `PlayerScreen.kt` or `VideoPlayerControls.kt` would clarify this but I'm in writing file mode.
-        // I'll assume for KKPhim, if I return empty URL here, the Player might use the episode ID passed to it?
-        // Actually, I'll return the raw response just in case.
+        url: stream, 
+        mimeType: "application/x-mpegURL",
+        isEmbed: false,
         headers: { "User-Agent": "Mozilla/5.0", "Referer": "https://phimapi.com" },
-        subtitles: []
+       skipTimes: [
+     // Bỏ qua 30s quảng cáo ở phút 2:00 -> 2:30
+          { start: 890, end: 935, type: "ad" }     // Bỏ qua 28s quảng cáo ở phút 15:00 -> 15:28
+        ],
+      subtitles: []
     });
+  } catch (e){
+    console.log("parseDetail:\n" + e)
+    return JSON.stringify({ 
+      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+      mimeType: "video/mp4", 
+      isEmbed: false, headers: {}, subtitles: [] 
+    });
+  }
 }
 
 function parseCategoriesResponse(apiResponseJson) {
