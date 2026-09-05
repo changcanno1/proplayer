@@ -65,6 +65,20 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hdvnn.png"
     },
     {
+      "id": "phimfun",
+      "name": "Nguồn Phim Fun",
+      "version": "1.1.8",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
+      "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
+    },
+    {
+      "id": "kkphim",
+      "name": "KKPhim",
+      "version": "1.0.9",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
+    },
+    {
       "id": "NOVAHD",
       "name": "NOVAHD",
       "version": "1.2.4",
