@@ -4,11 +4,11 @@
 
 function getManifest() {
   return JSON.stringify({
-    id: "SportEngTV",
-    name: "SportEngTV",
-    version: "1.2.8",
+    id: "ppv",
+    name: "PPV",
+    version: "1.2.2",
     baseUrl: BASE_DOMAIN,
-    iconUrl: "https://i.ibb.co/WN9gstLN/logo.png",
+    iconUrl: "https://i.ibb.co/BHQSwhLX/ppv-logo.png",
     isEnabled: true,
     isAdult: false,
     type: "MOVIE",
@@ -20,17 +20,40 @@ function getManifest() {
 
 function getHomeSections() {
   return JSON.stringify([
-    { slug: "live-upcoming", title: "🔴 LIVE EVENTS", type: "Horizontal", path: "" },
-    { slug: "replays", title: "Latest Replays 🎞️", type: "Horizontal", path: "" },
-    { slug: "channels", title: "Television 24/7 📺", type: "Grid", path: "" }
+    { slug: "live", title: "🔴 LIVE", type: "Horizontal", path: "" },
+    { slug: "football", title: "Football ⚽", type: "Horizontal", path: "" },
+    { slug: "volleyball", title: "Volleyball 🏐", type: "Horizontal", path: "" },
+    { slug: "motorsports", title: "Motorsports 🏁", type: "Horizontal", path: "" },
+    { slug: "badminton", title: "Badminton 🏸", type: "Horizontal", path: "" },
+    { slug: "golf", title: "Golf 🚩", type: "Horizontal", path: "" },
+    { slug: "tennis", title: "Tennis 🎾", type: "Horizontal", path: "" },
+    { slug: "basketball", title: "Basketball 🏀", type: "Horizontal", path: "" },
+    { slug: "baseball", title: "Baseball ⚾", type: "Horizontal", path: "" },
+    { slug: "cricket", title: "Cricket 🏏", type: "Horizontal", path: "" },
+    { slug: "american-football", title: "American Football 🏈", type: "Horizontal", path: "" },
+    { slug: "australian-football", title: "Australian Football 🏈", type: "Horizontal", path: "" },
+    { slug: "rugby", title: "Rugby 🏉", type: "Horizontal", path: "" },
+    { slug: "darts", title: "Darts 🎯", type: "Horizontal", path: "" }
+      // ,{ slug: "", title: "", type: "Horizontal", path: "" },
   ]);
 }
 
 function getPrimaryCategories() {
   return JSON.stringify([
-    { name: "LIVE EVENTS", slug: "live-upcoming" },
-    { name: "Latest Replays", slug: "replays" },
-    { name: "Television 24/7", slug: "channels" }
+    { name: "Football", slug: "football" },
+    { name: "Volleyball", slug: "volleyball" },
+    { name: "Motorsports", slug: "motorsports" },
+    { name: "Badminton", slug: "badminton" },
+    { name: "Golf", slug: "golf" },
+    { name: "Tennis", slug: "tennis" },
+    { name: "Basketball", slug: "basketball" },
+    { name: "Baseball", slug: "baseball" },
+    { name: "Cricket", slug: "cricket" },
+    { name: "American Football", slug: "american-football" },
+    { name: "Australian Football", slug: "australian-football" },
+    { name: "Rugby", slug: "rugby" },
+    { name: "Darts", slug: "darts" }
+    // ,{ name: "", slug: "" },
   ]);
 }
 
@@ -43,11 +66,12 @@ function getFilterConfig() {
 // =============================================================================
 
 function getUrlList(slug, filtersJson) {
-  return `${BASE_API_URL}/${slug}`;
+  return `${BASE_API_URL}?category=${encodeURIComponent(slug)}`;
 }
 
 function getUrlSearch(keyword = "", filtersJson) {
-  return `${BASE_API_URL}/channels?search=${encodeURIComponent(keyword.trim())}`;
+  keyword = keyword?.trim() || "";
+  return `${BASE_API_URL}?search=${encodeURIComponent(keyword.trim())}`;
 }
 
 function getUrlDetail(path) {
@@ -73,44 +97,47 @@ function getUrlYears() {
 function parseListResponse(html, apiUrl) {
   try {
     const data = JSON.parse(html);
-    let streams = data?.events || data?.channels || data?.replays;
-    // API return events|channels|replays = null instead of []
-    if(!streams) return EMPTY_LIST_RESPONSE;
-
-    // LỌC CHỈ GIỮ LẠI CÁC KÊNH THỂ THAO CHO MỤC TELEVISION
-    if (data.channels) {
-      const sportsKeywords = ["sport", "football", "soccer", "espn", "bein", "nba", "nfl", "nhl", "mlb", "wwe", "ufc", "golf", "tennis", "racing", "f1", "tnt", "arena", "thể thao"];
-      streams = streams.filter(stream => {
-        const genreName = (data.genres?.[stream.genre]?.name || "").toLowerCase();
-        const channelName = (stream.name || "").toLowerCase();
-        return sportsKeywords.some(kw => genreName.includes(kw) || channelName.includes(kw));
-      });
-    }
-
+    let streams = data?.streams || [];
     const items = [];
-    // Filter search keyword form query string ?search= 
+    const category = extractParamFromUrl(apiUrl, "category");
     const keyword = extractParamFromUrl(apiUrl, "search");
 
-    streams = filterStreams(streams, keyword);
+    if (category) streams = filterStreams(streams, ["category", category]);
+    if (keyword) streams = filterStreams(streams, ["search", keyword]);
+
     streams.forEach((stream) => {
       items.push({
-        id: (data.events ? "/live-upcoming" : data.channels ? "/channels" : "/replays") + `?slug=${stream.url}`,
+        id: "?id=" +
+          encodeURIComponent(stream.id) +
+          "&category=" +
+          encodeURIComponent(
+             category === "live" ? "live" : Object.keys(CATEGORY_MAP).find(
+              (key) => CATEGORY_MAP[key] === stream.category_name
+            )
+          ),
+        quality: stream.always_live
+          ? "LIVE 24/7"
+          : Number(stream.starts_at) <= Math.floor(Date.now() / 1000)
+            ? "LIVE"
+            : formatDateTime(stream.starts_at),
         title: stream.name,
-        posterUrl: stream.logo || FALLBACK_POSTER_URL,
-        backdropUrl: stream.logo || FALLBACK_POSTER_URL,
-        quality: data.channels ? "LIVE 24/7" : data.replays ? "📀" : isLive(stream.time) ? "LIVE" : formatDateTimeGMT7(stream.time),
-        episode_current: data.genres?.[stream.genre]?.name ? `Viewers: ${stream.viewers}` : "REPLAY",
-        lang: data.genres?.[stream.genre]?.name?.toUpperCase() || ""
+        posterUrl: stream.poster || FALLBACK_POSTER_URL,
+        backdropUrl: stream.poster || FALLBACK_POSTER_URL,
+        episode_current: "Viewers: " + stream.viewers,
+        lang: `${stream.category_name.toUpperCase()} - ${stream.tag} - ${stream.locale.toUpperCase()}`
       });
     });
-    
+
     return JSON.stringify({
       items: items,
       pagination: { currentPage: 1, totalPages: 1 }
     });
   } catch (error) {
-    console.error("⛔ [parseListResponse in timstreams_plugin.js] ERROR MESSAGE: ", error);
-    return EMPTY_LIST_RESPONSE;
+    console.error("⛔ [parseListResponse] ERROR MESSAGE: ", error);
+    return JSON.stringify({
+      items: [],
+      pagination: { currentPage: 1, totalPages: 1 }
+    });
   }
 }
 
@@ -121,35 +148,47 @@ function parseSearchResponse(html, apiUrl) {
 function parseMovieDetail(html, apiUrl) {
   try {
     const data = JSON.parse(html);
-    const streams = data?.events || data?.replays || data?.channels;
-
-    if(!streams) return EMPTY_MOVIE_DETAIL;
-    const slug = extractParamFromUrl(apiUrl, "slug");
-    const stream = getStream(streams, slug);
-
-    if(!stream) return EMPTY_MOVIE_DETAIL;
+    let streams = data.streams || [];
+    // filter streams by category
     const episodes = [];
+    const category = extractParamFromUrl(apiUrl, "category");
+    streams = filterStreams(streams, ["category", category]);
+    // get stream by param id
+    const streamId = extractParamFromUrl(apiUrl, "id");
+    const stream = getStream(streams, streamId);
+    const substreams = stream.substreams;
 
-    stream.streams?.forEach((item, index) => {
+    if (!stream.iframe && (!Array.isArray(substreams) || substreams.length === 0)) return EMPTY_MOVIE_DETAIL;
+    episodes.push({
+      id: stream.iframe,
+      name: `${stream.source_tag} - ${stream.locale.toUpperCase()}`,
+      slug: `${stream.uri_name}-1`
+    });
+    substreams.forEach((item, index) => {
       episodes.push({
-        id: item.url,
-        name: data.events || data.replays ? item.name : `${stream.name} - ${item.name}`,
-        slug: `${stream.url}-${index + 1}`
+        id: item.iframe,
+        name: `${item.source_tag} - ${item.locale.toUpperCase()}`,
+        slug: `${item.uri_name}-${index + 2}`
       });
     });
 
     return JSON.stringify({
-      id: getPath(apiUrl, `/live-upcoming`) || getPath(apiUrl, `/channels`) || getPath(apiUrl, `/replays`),
+      id: getQueryString(apiUrl, `?id=`),
       title: stream.name,
-      posterUrl: stream.logo || FALLBACK_POSTER_URL,
-      backdropUrl: stream.logo || FALLBACK_POSTER_URL,
-      quality: (stream.genre && data.genres && data.genres?.[stream.genre]?.name) || `REPLAY - ${stream.date}`,
-      episode_current: (data.events && isLive(stream.time) ? "LIVE" : formatDateTimeGMT7(stream.time)) || `Viewers: ${stream.viewers}`,
-      description: `Event "${stream.name}" is hosted on server TimStreams`,
-      servers: [{ name: "ADMIN", episodes: episodes }]
+      posterUrl: stream.poster || FALLBACK_POSTER_URL,
+      backdropUrl: stream.poster || FALLBACK_POSTER_URL,
+      episode_current: "Viewers: " + stream.viewers,
+      description: `Event "${stream.name}" is hosted on server PPV`,
+      lang: stream.locale,
+      servers: [{ name: "ADMIN", episodes: episodes }],
+      quality: stream.always_live
+        ? "LIVE 24/7"
+        : Number(stream.starts_at) <= Math.floor(Date.now() / 1000)
+          ? "LIVE"
+          : formatDateTime(stream.starts_at),
     });
   } catch (error) {
-    console.error("⛔ [parseMovieDetail in timstreams_plugin.js] ERROR MESSAGE: ", error);
+    console.error("⛔ [parseMovieDetail] ERROR MESSAGE: ", error);
     return EMPTY_MOVIE_DETAIL;
   }
 }
@@ -174,7 +213,7 @@ function parseDetailResponse(html, embedUrl) {
       isEmbed: true
     });
   } catch (error) {
-    console.error("⛔ [parseDetailResponse in timstreams_plugin.js] ERROR MESSAGE: ", error);
+    console.error("⛔ [parseDetailResponse] ERROR MESSAGE: ", error);
     return "{}";
   }
 }
@@ -197,8 +236,9 @@ function parseYearsResponse(html) {
 // VARIABLES
 // ======================================
 
-const BASE_DOMAIN = "https://timstreams.st";
-const BASE_API_URL = "https://timstreams.st/api";
+const BACKUP_DOMAINS = "https://ppv.domains/";
+const BASE_DOMAIN = "https://ppv.st";
+const BASE_API_URL = "https://api.ppv.st/api/streams";
 const FALLBACK_POSTER_URL = "https://i.ibb.co/rKHf363x/fallback-thumbnail.webp";
 const EMPTY_MOVIE_DETAIL = JSON.stringify({
   id: "",
@@ -207,33 +247,28 @@ const EMPTY_MOVIE_DETAIL = JSON.stringify({
   backdropUrl: FALLBACK_POSTER_URL,
   servers: []
 });
-const EMPTY_LIST_RESPONSE = JSON.stringify({
-  items: [],
-  pagination: { currentPage: 1, totalPages: 1 },
-});
 
+// Use CATEGORY_MAP switching back and forth between slug and category
+const CATEGORY_MAP = {
+  football: "Football",
+  volleyball: "Volleyball",
+  motorsports: "Motorsports",
+  badminton: "Badminton",
+  golf: "Golf",
+  tennis: "Tennis",
+  basketball: "Basketball",
+  baseball: "Baseball",
+  "american-football": "American Football",
+  "australian-football": "Australian Football",
+  rugby: "Rugby",
+  darts: "Darts",
+  "cricket": "Cricket"
+  // ,: ""
+};
 
 // ======================================
 // FUNCTIONS
 // ======================================
-
-// GMT-4
-const isLive = (time) => Date.now() >= new Date(time + ":00-04:00").getTime();
-
-function formatDateTimeGMT7(timestamp) {
-  if (!timestamp) return "";
-  if (!timestamp.includes(":")) return timestamp;
-
-  const [datePart, timePart] = timestamp.split("T");
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hour, minute] = timePart.split(":").map(Number);
-  const d = new Date(Date.UTC(year, month - 1, day, hour + 11, minute));
-
-  return (
-    `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}-` +
-    `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}`
-  );
-}
 
 function extractParamFromUrl(url, param) {
   if (!url) return "";
@@ -241,22 +276,73 @@ function extractParamFromUrl(url, param) {
   return match ? decodeURIComponent(match[1]) : "";
 }
 
-function getStream(streams, slug) {
-  return streams.find((stream) => stream?.url === slug);
-}
-
-function filterStreams(streams, keyword) {
-  // search
-  if (keyword) {
-    streams = streams.filter(function (stream) {
-      return stream.name?.toLowerCase()?.indexOf(keyword.toLowerCase()) >= 0;
-    });
+function formatDateTime(timestamp) {
+  if (timestamp == null) return "";
+  if (timestamp < 1e12) {
+    timestamp *= 1000;
   }
 
+  const date = new Date(timestamp);
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const MM = String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${hh}:${mm}-${dd}/${MM}`;
+}
+
+function getStream(streams, id) {
+  if (id)
+    return streams?.find((stream) => {
+      return "" + stream.id === id;
+    });
+  return {};
+}
+
+function filterStreams(streams, [filterKey, filterValue]) {
+  const result = [];
+
+  // filter streams by category
+  if (filterValue && filterKey === "category") {
+    if (filterValue === "live") {
+      // live
+      streams.forEach((item) => {
+        item.streams.forEach((stream) => {
+          const isLive =
+            Number(stream.starts_at) <= Math.floor(Date.now() / 1000) &&
+            !stream.always_live;
+          if (isLive) result.push(stream);
+        });
+      });
+
+      result.sort((a, b) => parseInt(b.viewers) - parseInt(a.viewers));
+      return result;
+    }
+
+    // normal
+    return (
+      streams.find((item) => {
+        return item.category === CATEGORY_MAP[filterValue];
+      })?.streams || []
+    );
+  }
+  // filter streams by search
+  if (filterValue && filterKey === "search") {
+    streams.forEach((item) => {
+      item.streams.forEach((stream) => {
+        filterValue = filterValue.toLowerCase();
+        const streamName = stream.name.toLowerCase();
+        const isTrue = streamName.indexOf(filterValue) >= 0;
+        if (isTrue) result.push(stream);
+      });
+    });
+
+    return result;
+  }
   return streams;
 }
 
-function getPath(apiUrl, keyword) {
+function getQueryString(apiUrl, keyword) {
   const index = apiUrl.indexOf(keyword);
   if (!keyword || index === -1) return "";
   return apiUrl.substring(index);
