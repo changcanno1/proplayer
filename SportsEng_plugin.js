@@ -4,8 +4,8 @@
 
 function getManifest() {
   return JSON.stringify({
-    id: "ppv",
-    name: "PPV",
+    id: "Sports Eng",
+    name: "Sports Eng",
     version: "1.2.2",
     baseUrl: BASE_DOMAIN,
     iconUrl: "https://i.ibb.co/BHQSwhLX/ppv-logo.png",
