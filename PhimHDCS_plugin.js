@@ -365,6 +365,13 @@ function parseMovieDetail(htmlContent) {
                 .replace(/\s*#\d+$/, '')
                 .trim();
 
+            // ==========================================
+            // BỎ QUA NGUONC TẠI ĐÂY
+            // ==========================================
+            if (cleanServerName.toLowerCase().indexOf('nguonc') !== -1) {
+                continue; 
+            }
+
             var episodesHtml = match[2];
             var episodes = [];
             var epPattern = /<a\s+href="([^"]+)"\s+id=['"]no-link['"][\s\S]*?title="([^"]+)"/gi;
@@ -397,6 +404,20 @@ function parseMovieDetail(htmlContent) {
                 servers.push({ name: cleanServerName, episodes: episodes });
             }
         }
+
+        // ==========================================
+        // SẮP XẾP ƯU TIÊN FHDC > HDC > HD 
+        // ==========================================
+        servers.sort(function(a, b) {
+            function getPriority(name) {
+                var n = name.toUpperCase();
+                if (n.indexOf('FHDC') !== -1) return 3;
+                if (n.indexOf('HDC') !== -1) return 2;
+                if (n.indexOf('HD') !== -1) return 1;
+                return 0; // Các server khác
+            }
+            return getPriority(b.name) - getPriority(a.name);
+        });
 
         var slug = "";
         var slugMatch = /<link\s+rel="canonical"\s+href="https:\/\/phimhdcss\.com\/([^"\/]+)"/i.exec(htmlContent);
