@@ -1,5 +1,5 @@
 // =============================================================================
-// PLUGIN VAAPP: PHIMNGAN.NET (Tối ưu Bắt Link Động XHR/Fetch & Chia Server)
+// PLUGIN VAAPP: PHIMNGAN.NET (Network Sniffer Style HH3D + Fix Load Trang Chủ)
 // =============================================================================
 
 var BASEURL = "https://phimngan.net";
@@ -8,13 +8,13 @@ function getManifest() {
     return JSON.stringify({
         "id": "phimngan_net",
         "name": "Phim Ngắn Net",
-        "version": "1.2.0",
+        "version": "2.0.0",
         "baseUrl": BASEURL,
         "iconUrl": BASEURL + "/icons/icon-512x512.png",
         "isEnabled": true,
         "type": "shortfilm", // Kích hoạt giao diện Short Drama vuốt dọc
-        "playerType": "embedtoexoplay", // Dùng Sniffer WebView để tóm link XHR
-        "author": "VAAPP Coder"
+        "playerType": "embedtoexoplay", // Ép mở Webview ngầm để chạy CustomJS Sniffer
+        "author": "VAAPP Expert"
     });
 }
 
@@ -84,7 +84,7 @@ function getUrlCategories() { return BASEURL + "/genres"; }
 function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; }
 
-// Helper bóc data từ chuỗi |data:
+// Helper lấy Data từ chuỗi URL
 function getPipeData(raw) {
     if (!raw) return "";
     var i = raw.indexOf("|");
@@ -117,12 +117,12 @@ function parseListResponse(html, apiUrl) {
                 }
             });
         } else {
-            // Tối ưu selector cho _$(html): Tìm thẳng các thẻ a có chứa link phim
+            // FIX LỖI TRANG CHỦ: Dùng hàm duyệt "a" an toàn thay vì CSS selector phức tạp
             $doc.find("a").each(function() {
                 var href = this.attr("href");
                 if (href && (href.indexOf("/watch/") > -1 || href.indexOf("/phim/") > -1)) {
                     var title = this.find("h3").text().trim();
-                    if (!title) return;
+                    if (!title) return; // Lọc bỏ các thẻ a rác không có tiêu đề
 
                     var imgTag = this.find("img");
                     var posterUrl = imgTag.attr("src") || imgTag.attr("data-src") || "";
@@ -142,9 +142,12 @@ function parseListResponse(html, apiUrl) {
                             posterUrl = BASEURL + posterUrl;
                         }
                     }
+                    if (posterUrl && !posterUrl.startsWith("http")) {
+                        posterUrl = BASEURL + posterUrl;
+                    }
 
                     var quality = this.find("span.uppercase").first().text().trim() || "Full"; 
-                    var episode_current = this.find("p.truncate").text().trim() || "Cập nhật"; 
+                    var episode_current = this.find("p.truncate").text().trim(); 
 
                     items.push({
                         "id": href.startsWith("http") ? href : BASEURL + href,
@@ -185,21 +188,18 @@ function parseMovieDetail(html, apiUrl) {
         var posterUrl = $doc.find('meta[property="og:image"]').attr("content") || "";
         var description = $doc.find('meta[property="og:description"]').attr("content") || "";
 
-        // Phim ngắn trên trang này thường play ngay tại URL gốc
-        var epId = realUrl;
-        
-        // Chia 2 Server để App truyền datasend báo cho Sniffer biết nên click nút nào
+        // Phân 2 Server Vietsub / Thuyết Minh, dán cờ nhận diện qua |data:
         var servers = [
             {
-                "name": "Vietsub (Ưu tiên âm thanh gốc)",
+                "name": "Vietsub",
                 "episodes": [
-                    { "id": epId + "|data:vietsub", "name": "Full", "slug": "full-vs" }
+                    { "id": realUrl + "|data:vietsub", "name": "Tập Full", "slug": "full-vs" }
                 ]
             },
             {
                 "name": "Thuyết Minh",
                 "episodes": [
-                    { "id": epId + "|data:thuyetminh", "name": "Full", "slug": "full-tm" }
+                    { "id": realUrl + "|data:thuyetminh", "name": "Tập Full", "slug": "full-tm" }
                 ]
             }
         ];
@@ -218,43 +218,27 @@ function parseMovieDetail(html, apiUrl) {
 }
 
 function parseDetailResponse(html, apiUrl, datasend) {
-    // Ưu tiên đọc datasend, nếu rỗng thì bóc từ apiUrl
+    // Đọc data mode (vietsub / thuyetminh) truyền từ parseMovieDetail
     var mode = datasend || getPipeData(apiUrl) || "vietsub";
     var cleanUrl = apiUrl.split("|")[0];
 
-    // Script Sniffer mạng + DOM Observer cực mạnh (tham khảo HH3D)
-    // Tự động tìm và click nút Vietsub / Thuyết minh để web nạp đúng file âm thanh
+    // =========================================================================
+    // SCRIPT HH3D STYLE: Hook Network (Fetch, XHR, Blob) & Auto-Click Nút
+    // =========================================================================
     var customJsCode = `
         (function() {
             if (window._vaapp_sniffer_v2) return;
             window._vaapp_sniffer_v2 = true;
             
             var hasSent = false;
-            var mode = "${mode}";
+            var targetMode = "${mode}";
 
-            // 1. Hàm tự động chọn Audio (Vietsub hoặc Thuyết Minh) trên giao diện
-            function autoSelectAudio() {
-                var buttons = document.querySelectorAll('button, a, span');
-                for(var i=0; i<buttons.length; i++) {
-                    var txt = (buttons[i].innerText || "").toLowerCase();
-                    if(mode === "vietsub" && txt.indexOf("vietsub") > -1) {
-                        buttons[i].click(); break;
-                    }
-                    if(mode === "thuyetminh" && (txt.indexOf("thuyết minh") > -1 || txt.indexOf("lồng tiếng") > -1)) {
-                        buttons[i].click(); break;
-                    }
-                }
-            }
-            // Gọi click liên tục vài lần để đối phó với React delay
-            setTimeout(autoSelectAudio, 500);
-            setTimeout(autoSelectAudio, 1500);
-
-            // 2. Hàm gửi link về Native App
-            function checkAndSend(url) {
-                if (hasSent || !url || typeof url !== 'string') return;
-                var lowerUrl = url.toLowerCase();
+            // 1. Gửi link sang App
+            function sendToNativeBridge(playUrl) {
+                if (hasSent || !playUrl || typeof playUrl !== 'string') return;
+                var lowerUrl = playUrl.toLowerCase();
                 
-                // Nếu bắt được luồng m3u8 hoặc mp4 (không phải blob) -> Gửi cho ExoPlayer
+                // Bắt m3u8 hoặc mp4 thực tế (không phải blob)
                 if (lowerUrl.indexOf('.m3u8') > -1 || (lowerUrl.indexOf('.mp4') > -1 && lowerUrl.indexOf('blob:') === -1)) {
                     hasSent = true;
                     var headers = JSON.stringify({
@@ -262,37 +246,58 @@ function parseDetailResponse(html, apiUrl, datasend) {
                         "User-Agent": navigator.userAgent
                     });
                     if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
-                        window.SnifferBridge.play(url, headers);
+                        window.SnifferBridge.log("Sniffed Network URL: " + playUrl);
+                        window.SnifferBridge.play(playUrl, headers);
                     }
                 }
             }
 
-            // 3. Hook Network Fetch & XHR (Trọng tâm)
-            var rawFetch = window.fetch;
-            var rawXHROpen = XMLHttpRequest.prototype.open;
+            // 2. Tự động tìm và bấm chọn Vietsub hoặc Thuyết Minh
+            function autoSelectAudio() {
+                var buttons = document.querySelectorAll('button, a, span');
+                for (var i = 0; i < buttons.length; i++) {
+                    var txt = (buttons[i].innerText || "").toLowerCase();
+                    if (targetMode === "vietsub" && txt.indexOf("vietsub") > -1) {
+                        buttons[i].click(); 
+                        break;
+                    }
+                    if (targetMode === "thuyetminh" && (txt.indexOf("thuyết minh") > -1 || txt.indexOf("lồng tiếng") > -1)) {
+                        buttons[i].click(); 
+                        break;
+                    }
+                }
+            }
+            
+            // Web dùng React nên gọi delay vài lần đợi nút xuất hiện
+            setTimeout(autoSelectAudio, 500);
+            setTimeout(autoSelectAudio, 1500);
 
+            // 3. Hook Fetch
+            var rawFetch = window.fetch;
             window.fetch = async function (...args) {
                 var url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url ? args[0].url : '');
-                checkAndSend(url);
+                sendToNativeBridge(url);
                 return rawFetch.apply(this, args);
             };
 
+            // 4. Hook XHR
+            var rawXHROpen = XMLHttpRequest.prototype.open;
             XMLHttpRequest.prototype.open = function (method, url) {
-                checkAndSend(url);
+                sendToNativeBridge(url);
                 return rawXHROpen.apply(this, arguments);
             };
 
-            // 4. Hook DOM Video Tag (Phòng hờ web chèn trực tiếp mp4)
+            // 5. Hook DOM (Phòng hờ trường hợp web chèn thẻ <source> trực tiếp)
             var observer = new MutationObserver(function(mutations) {
                 if(hasSent) return;
                 var v = document.querySelector('video');
                 if (v && v.src && v.src.indexOf('blob:') === -1) {
-                    checkAndSend(v.src);
+                    sendToNativeBridge(v.src);
                 }
             });
             observer.observe(document.documentElement, { childList: true, subtree: true });
 
-            // 5. Hook URL.createObjectURL để bắt M3U8 thô nếu web dùng hls.js ẩn link
+            // 6. Hook URL.createObjectURL để bắt M3U8 thô nếu web ẩn link bằng Blob
             if (typeof URL !== 'undefined' && URL.createObjectURL) {
                 var origCreateObjectURL = URL.createObjectURL;
                 URL.createObjectURL = function(blob) {
@@ -302,6 +307,7 @@ function parseDetailResponse(html, apiUrl, datasend) {
                                 if (content && content.indexOf('#EXTM3U') === 0) {
                                     hasSent = true;
                                     if (window.SnifferBridge && typeof window.SnifferBridge.playM3u8Content === 'function') {
+                                        window.SnifferBridge.log("Sniffed Blob M3U8 Content");
                                         window.SnifferBridge.playM3u8Content(content, window.location.href);
                                     }
                                 }
@@ -318,10 +324,10 @@ function parseDetailResponse(html, apiUrl, datasend) {
         "url": cleanUrl,
         "isEmbed": true,
         "headers": {
-            "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Referer": BASEURL,
-            "Custom-Js": customJsCode.replace(/\n/g, " ").trim(),
-            "Block-Ads": "true" 
+            "Block-Ads": "true", // Giúp sniffer sạch hơn
+            "Custom-Js": customJsCode.replace(/\n/g, " ").trim()
         }
     });
 }
