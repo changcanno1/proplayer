@@ -103,7 +103,7 @@
     {
       "id": "phimngan_net",
       "name": "Phim Ngắn Net",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
       "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75",
      },
