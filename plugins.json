@@ -100,6 +100,13 @@
       "iconUrl": "https://m.media-amazon.com/images/I/61fJ78I23IL.png",
       "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
     },
+    {
+      "id": "phimngan_net",
+      "name": "Phim Ngắn Net",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
+      "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75",
+     },
      {
       "id": "Mê Phim Ngắn",
       "name": "Mê Phim Ngắn",
@@ -107,7 +114,7 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/mephimngan_plugin.js",
       "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
     },
-      {
+    {
       "id": "ShortFilm",
       "name": "ShortFilm",
       "version": "1.1.0",
@@ -122,25 +129,11 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nartodrama.png"
     },
     {
-      "id": "phimngan_net",
-      "name": "Phim Ngắn Net",
-      "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
-      "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75",
-     },
-     {
       "id": "phimnganok",
       "name": "HayOKShort",
       "version": "1.2.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/ShortHayOK_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimnganok.png",
-    },
-    {
-      "id": "Dramabox",
-      "name": "Dramabox",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Dramabox_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/dramabox.png"
     },
     {
       "id": "Hh3D",
