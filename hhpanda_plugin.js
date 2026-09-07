@@ -1,5 +1,5 @@
 // =============================================================================
-// VAAPP Plugin: HHPanda (Fix Ad-Loop & Direct Iframe Sniffer)
+// VAAPP Plugin: HHPanda (Advanced Direct API & Server Split)
 // Author: Gemini
 // =============================================================================
 
@@ -9,7 +9,7 @@ function getManifest() {
     return JSON.stringify({
         "id": "hhpanda",
         "name": "HHPanda 4K",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "baseUrl": BASE_URL,
         "iconUrl": BASE_URL + "/wp-content/uploads/2024/10/apple-touch-icon.png",
         "isEnabled": true,
@@ -17,7 +17,7 @@ function getManifest() {
         "type": "MOVIE",
         "layoutType": "VERTICAL",
         "playerType": "embedtoexoplay",
-        "adblock": true // Kích hoạt bộ lọc quảng cáo hệ thống
+        "adblock": true
     });
 }
 
@@ -56,9 +56,7 @@ function fixHref(href) {
         if(cleanHref.indexOf("//") === 0) return "https:" + cleanHref;
         return cleanHref;
     }
-    if (cleanHref.indexOf('/') === 0) {
-        return BASE_URL + cleanHref;
-    }
+    if (cleanHref.indexOf('/') === 0) return BASE_URL + cleanHref;
     return BASE_URL + "/" + cleanHref;
 }
 
@@ -66,22 +64,16 @@ function getUrlList(slug, filtersJson) {
     var filters = JSON.parse(filtersJson || "{}");
     var page = filters.page || 1;
     var path = slug;
-    
-    if (filters.category) {
-        path = filters.category;
-    }
+    if (filters.category) path = filters.category;
     
     var url = BASE_URL + "/" + path;
-    if (page > 1) {
-        url += "/page/" + page;
-    }
+    if (page > 1) url += "/page/" + page;
     return url.replace(/([^:]\/)\/+/g, "$1");
 }
 
 function getUrlSearch(keyword, filtersJson) {
     var page = JSON.parse(filtersJson || "{}").page || 1;
-    var url = BASE_URL + (page > 1 ? "/page/" + page : "") + "?s=" + encodeURIComponent(keyword);
-    return url;
+    return BASE_URL + (page > 1 ? "/page/" + page : "") + "?s=" + encodeURIComponent(keyword);
 }
 
 function getUrlDetail(slug) {
@@ -98,30 +90,34 @@ function getUrlYears() { return ""; }
 // =============================================================================
 
 function parseListResponse(html, url) {
-    var $doc = _$(html);
-    var items = [];
-    
-    $doc.find(".halim-item").each(function() {
-        var a = this.find("a.halim-thumb");
-        var href = a.attr("href");
-        if (href) {
-            var imgTag = this.find("img");
-            var posterUrl = imgTag.attr("data-src") || imgTag.attr("src") || "";
-            
-            items.push({
-                id: fixHref(href),
-                title: this.find(".entry-title").text().trim(),
-                posterUrl: fixHref(posterUrl),
-                quality: this.find(".status").text().trim(),
-                episode_current: this.find(".episode").text().trim()
-            });
-        }
-    });
-    
-    return JSON.stringify({
-        items: items,
-        pagination: { currentPage: 1, totalPages: items.length > 0 ? 99 : 1 }
-    });
+    try {
+        var $doc = _$(html);
+        var items = [];
+        
+        $doc.find(".halim-item").each(function() {
+            var a = this.find("a.halim-thumb");
+            var href = a.attr("href");
+            if (href) {
+                var imgTag = this.find("img");
+                var posterUrl = imgTag.attr("data-src") || imgTag.attr("src") || "";
+                
+                items.push({
+                    id: fixHref(href),
+                    title: this.find(".entry-title").text().trim(),
+                    posterUrl: fixHref(posterUrl),
+                    quality: this.find(".status").text().trim(),
+                    episode_current: this.find(".episode").text().trim()
+                });
+            }
+        });
+        
+        return JSON.stringify({
+            items: items,
+            pagination: { currentPage: 1, totalPages: items.length > 0 ? 99 : 1 }
+        });
+    } catch (e) {
+        return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
+    }
 }
 
 function parseSearchResponse(html, url) {
@@ -142,41 +138,80 @@ function parseMovieDetail(html, url) {
         var category = $doc.find(".list_cate a").textAll(", ");
         var rating = $doc.find(".kksr-legend").text().trim();
         
-        var servers = [];
+        // 1. Tìm Post ID bí mật của phim để gọi Player
+        var postId = $doc.find("#main-contents").attr("data-id");
+        if (!postId) {
+            var matchId = html.match(/data-id="(\d+)"/);
+            postId = matchId ? matchId[1] : "";
+        }
+
+        // 2. Trích xuất mảng Chất lượng (VD: 4K, 1080P...)
+        var qualities = [];
+        $doc.find("#halim-ajax-list-server span.get-eps").each(function() {
+            var qName = this.text().trim();
+            var qType = this.attr("data-type");
+            if (qName && qType) {
+                qualities.push({ name: qName, type: qType });
+            }
+        });
+        if (qualities.length === 0) {
+            qualities.push({ name: "Mặc định", type: "pro" });
+        }
+
+        // 3. Trích xuất Audio (Vietsub, Thuyết Minh...) và danh sách Tập
+        var audioServers = [];
         $doc.find(".halim-server").each(function() {
-            var serverName = this.find(".halim-server-name").text().replace(/#|:|\n/g, "").trim();
-            if(!serverName) serverName = "Server";
+            var audioName = this.find(".halim-server-name").text().replace(/#|:|\n/g, "").trim();
+            if(!audioName) audioName = "Vietsub";
             var episodes = [];
             
             this.find(".halim-list-eps li a").each(function() {
                 var name = this.attr("title") || this.text().trim();
-                var href = this.attr("href");
                 var ep = this.attr("data-ep") || name.replace(/\s+/g, "-");
                 var sv = this.attr("data-sv") || "1";
-                
-                if (href) {
-                    episodes.push({
-                        id: fixHref(href),
-                        name: name,
-                        slug: ep + "-sv" + sv
-                    });
-                }
+                episodes.push({ name: name, ep: ep, sv: sv });
             });
             
-            if(episodes.length > 0) {
-                // Sắp xếp tập
-                episodes.sort(function(a, b) {
+            if(episodes.length > 0) audioServers.push({ name: audioName, eps: episodes });
+        });
+
+        // 4. Kết hợp Chất Lượng x Âm Thanh ra Menu Server hoàn chỉnh
+        var finalServers = [];
+        for (var i = 0; i < audioServers.length; i++) {
+            var audio = audioServers[i];
+            
+            for (var j = 0; j < qualities.length; j++) {
+                var quality = qualities[j];
+                var combinedName = audio.name + " - " + quality.name; // -> "Vietsub - 4K V1"
+                
+                var combinedEpisodes = [];
+                for (var k = 0; k < audio.eps.length; k++) {
+                    var epData = audio.eps[k];
+                    
+                    // Gắn payload vào ID tập phim để parseDetailResponse gọi API lấy phim
+                    var payload = "post_id=" + postId + "&type=" + quality.type + "&sv=" + epData.sv + "&ep=" + epData.ep;
+                    var fakeId = url + (url.indexOf("?") > -1 ? "&" : "?") + payload;
+                    
+                    combinedEpisodes.push({
+                        id: fakeId,
+                        name: epData.name,
+                        slug: epData.ep + "-" + epData.sv + "-" + quality.type
+                    });
+                }
+                
+                // Sort lại số thứ tự từ Nhỏ đến Lớn
+                combinedEpisodes.sort(function(a, b) {
                     var numA = parseInt((a.name.match(/\d+/) || [0])[0]);
                     var numB = parseInt((b.name.match(/\d+/) || [0])[0]);
                     return numA - numB;
                 });
 
-                servers.push({
-                    name: serverName,
-                    episodes: episodes
+                finalServers.push({
+                    name: combinedName,
+                    episodes: combinedEpisodes
                 });
             }
-        });
+        }
 
         return JSON.stringify({
             id: url,
@@ -189,7 +224,7 @@ function parseMovieDetail(html, url) {
             quality: "HD",
             rating: rating || "4.5/5",
             episode_current: episode_current,
-            servers: servers
+            servers: finalServers
         });
     } catch(e) {
         return JSON.stringify({ id: url, title: "Lỗi phim", servers: [] });
@@ -198,34 +233,22 @@ function parseMovieDetail(html, url) {
 
 function parseDetailResponse(html, url) {
     try {
-        var $doc = _$(html);
+        // Tách tham số payload bị mã hóa ngược từ URL giả
+        var postIdMatch = url.match(/post_id=([^&]+)/);
+        var typeMatch = url.match(/type=([^&]+)/);
+        var svMatch = url.match(/sv=([^&]+)/);
+        var epMatch = url.match(/ep=([^&]+)/);
         
-        // 1. Trích xuất tham số gọi API Player
-        var postId = $doc.find("#main-contents").attr("data-id");
-        if (!postId) {
-            var matchId = html.match(/data-id="(\d+)"/);
-            postId = matchId ? matchId[1] : "";
-        }
+        var postId = postIdMatch ? postIdMatch[1] : "";
+        var type = typeMatch ? typeMatch[1] : "pro";
+        var sv = svMatch ? svMatch[1] : "1";
+        var ep = epMatch ? epMatch[1] : "tap-1";
         
-        var chapterSt = "tap-1";
-        var sv = "1";
-        var tapMatch = url.match(/(tap-\d+)/i);
-        if (tapMatch) chapterSt = tapMatch[1];
-        if (url.indexOf("-full") > -1) chapterSt = "tap-full";
-        
-        var svMatch = url.match(/sv(\d+)/i);
-        if (svMatch) sv = svMatch[1];
-        
-        // Cố gắng ưu tiên Server có chất lượng 4K (VIP)
-        var type = "pro"; 
-        if (html.indexOf('data-type="vip4kv2"') > -1) type = "vip4kv2";
-        else if (html.indexOf('data-type="vip4k"') > -1) type = "vip4k";
-        else if (html.indexOf('data-type="tiktik"') > -1) type = "tiktik";
-        
-        var ajaxUrl = BASE_URL + "/player/player.php?action=dox_ajax_player&post_id=" + postId + "&chapter_st=" + chapterSt + "&type=" + type + "&sv=" + sv;
-        var embedUrl = ajaxUrl;
+        // Gọi thẳng vào API backend ẩn của web hhpanda
+        var ajaxUrl = BASE_URL + "/player/player.php?action=dox_ajax_player&post_id=" + postId + "&chapter_st=" + ep + "&type=" + type + "&sv=" + sv;
+        var finalEmbedUrl = ajaxUrl;
 
-        // 2. Dùng httpRequest để gọi API Lấy thẳng src Iframe bên trong
+        // Nếu có hàm httpRequest từ App -> Request chặn luôn src Iframe lồng bên trong
         if (typeof httpRequest === "function") {
             var res = httpRequest(ajaxUrl, { 
                 method: "GET", 
@@ -234,16 +257,16 @@ function parseDetailResponse(html, url) {
             if (res && res.body) {
                 var iframeMatch = res.body.match(/src=["']([^"']+)["']/i);
                 if (iframeMatch && iframeMatch[1]) {
-                    embedUrl = iframeMatch[1];
-                    if (embedUrl.indexOf("http") !== 0) {
-                        if (embedUrl.indexOf("//") === 0) embedUrl = "https:" + embedUrl;
-                        else embedUrl = BASE_URL + embedUrl;
+                    finalEmbedUrl = iframeMatch[1];
+                    if (finalEmbedUrl.indexOf("http") !== 0) {
+                        if (finalEmbedUrl.indexOf("//") === 0) finalEmbedUrl = "https:" + finalEmbedUrl;
+                        else finalEmbedUrl = BASE_URL + finalEmbedUrl;
                     }
                 }
             }
         }
 
-        // 3. CustomJS nhúng thẳng vào Player Context để Sniff 
+        // Custom JS để Sniffer bắt sống m3u8 từ Iframe video (Đã bóc sạch khỏi web mẹ)
         var customJsCode = `
             (function() {
                 if (window._vaapp_sniffer) return;
@@ -260,7 +283,6 @@ function parseDetailResponse(html, url) {
                             "User-Agent": navigator.userAgent
                         });
                         if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
-                            window.SnifferBridge.log("Sniffed M3U8: " + playUrl);
                             window.SnifferBridge.play(playUrl, headers);
                         }
                     }
@@ -288,7 +310,7 @@ function parseDetailResponse(html, url) {
                 });
                 observer.observe(document.documentElement, { childList: true, subtree: true });
 
-                // Tự động bấm Play để server nhả m3u8
+                // Tự động Play Player để nó Request Mạng lấy M3U8
                 var tryPlay = setInterval(function() {
                     if(hasSent) { clearInterval(tryPlay); return; }
                     var playBtn = document.querySelector('.jw-display-icon-display, .play-button, .vjs-big-play-button');
@@ -306,11 +328,11 @@ function parseDetailResponse(html, url) {
         `;
         
         return JSON.stringify({
-            "url": embedUrl,
+            "url": finalEmbedUrl,
             "isEmbed": true,
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Referer": url,
+                "Referer": BASE_URL + "/",
                 "Block-Ads": "true",
                 "Custom-Js": customJsCode.replace(/\n/g, " ").trim()
             }
