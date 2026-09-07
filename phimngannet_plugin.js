@@ -10,7 +10,7 @@ function getManifest() {
         "name": "Phim Ngắn Net",
         "version": "1.0.0",
         "baseUrl": BASEURL,
-        "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75",
+        "iconUrl": BASEURL + "/icons/icon-512x512.png",
         "isEnabled": true,
         "type": "shortfilm", // Kích hoạt giao diện Short Drama vuốt dọc
         "playerType": "embedtoexoplay", // Dùng Sniffer để bắt link video
