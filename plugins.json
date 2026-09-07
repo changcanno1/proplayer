@@ -121,6 +121,13 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Nartodrama_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nartodrama.png"
     },
+    {
+      "id": "phimngan_net",
+      "name": "Phim Ngắn Net",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
+      "iconUrl": "iconUrl": BASEURL + "/icons/icon-512x512.png",
+     },
      {
       "id": "phimnganok",
       "name": "HayOKShort",
