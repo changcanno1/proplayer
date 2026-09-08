@@ -9,7 +9,7 @@ function getManifest() {
         "description": "Trang xem phim siêu hay.",
         "version": "1.5.6",
         "baseUrl": "https://bilutv.asia",
-      	"info":"",
+        "info":"",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png",
         "isEnabled": true,
         "author": "Alokillgtv",
@@ -17,7 +17,6 @@ function getManifest() {
         "playerType": "auto"
     });
 }
-
 
 if (typeof httpRequest === "function") {
   var res = httpRequest("https://vaxplugin.alokillgtv.workers.dev/jsonStore/domain.json?debug=9780752&time=2323", {method: "POST"});
@@ -41,11 +40,11 @@ function log(msg) {
         console.log("[PhimHDCS] " + msg);
     }
 }
+
 // https://bilutv.asia/danh-sach/phim-moi?page=2
 function getHomeSections() {
     try {
         var listurl = `
-/the-loai/phim-18@@Phim 18+@@false
 /danh-sach/phim-bo@@Phim Bộ@@false
 /danh-sach/phim-le@@Phim Lẻ@@false
 /danh-sach/phim-chieu-rap@@Phim Chiếu Rạp@@false
@@ -628,7 +627,6 @@ function sortEpisodesByName(data) {
 
 
 function textJS($links, checkepi, url, stream) {
-    // Sử dụng biến $url từ tham số truyền vào thay vì ghi cứng link
     return `
 LINKVIDEO = ${JSON.stringify($links)};
 CHECKEPI = ${JSON.stringify(checkepi)};
@@ -651,7 +649,7 @@ globalThis.showToast = function(message, duration, check, scroll) {
         if (typeof check === 'undefined') check = true;
         if (typeof scroll === 'undefined') scroll = false;
         if (check === false) return;
-        
+
         if (scroll) {
             globalThis.toastScrollQueue.push({ message, duration });
             function processScrollQueue() {
@@ -694,7 +692,7 @@ globalThis.showToast = function(message, duration, check, scroll) {
             processScrollQueue();
             return;
         }
-        
+
         var container = document.getElementById('global-toast-container');
         if (!container) {
             container = document.createElement('div');
@@ -722,7 +720,7 @@ globalThis.showToast = function(message, duration, check, scroll) {
 function runVideo(){
     'use strict';
     var DEVELOPE = false;
-    
+
     function GetlinkVideo() {
         // 1. Tìm thẻ video gốc ĐANG PHÁT trên trang
         var originalVideo = document.querySelector('video');
@@ -743,7 +741,7 @@ function runVideo(){
         var playlist = scanSources();
         var stream1 = originalVideo.src || '';
         var stream2 = window.location.href;
-        
+
         // 4. Gọi hàm build đè giao diện lên video gốc
         showToast("Đang khởi chạy trình phát tốt hơn.", 5000, true, true);
         buildVideoWithOriginal(originalVideo, stream1, stream2, playlist);
@@ -811,7 +809,7 @@ function runVideo(){
         if (typeof check === 'undefined') check = true;
         if (typeof scroll === 'undefined') scroll = false;
         if (check === false) return;
-        
+
         if (scroll) {
             globalThis.toastScrollQueue.push({ message, duration });
             function processScrollQueue() {
@@ -854,7 +852,7 @@ function runVideo(){
             processScrollQueue();
             return;
         }
-        
+
         var container = document.getElementById('global-toast-container');
         if (!container) {
             container = document.createElement('div');
@@ -884,15 +882,15 @@ function runVideo(){
     // ─── ĐOẠN CODE ĐÃ ĐƯỢC CHỈNH SỬA ───
     function buildVideoWithOriginal(video, stream1, stream2, playlistData) {
         video.id = 'main-video';
-        
+
         // Đã thay object-fit: contain thành cover (hoặc fill tùy bạn) và thêm outline:none
         video.style.cssText = 'width:100%;height:100%;object-fit:contain;cursor:pointer;background:#000;outline:none;border:none;box-shadow:none;';
 
         video.controls = false;
-        
+
         var container = document.createElement('div');
         container.id = 'custom-video-player';
-        
+
         // Thêm outline:none và box-shadow:none cho container để triệt tiêu hoàn toàn viền vàng
         container.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999999;font-family:Segoe UI,Roboto,sans-serif;user-select:none;-webkit-user-select:none;outline:none;border:none;box-shadow:none;';
 
@@ -914,10 +912,10 @@ function runVideo(){
         progressHandle.style.cssText = 'position:absolute;right:-6px;top:-4px;width:14px;height:14px;background:#e74c3c;border-radius:50%;opacity:0;transition:opacity 0.2s;pointer-events:none;';
         progressBar.appendChild(progressHandle);
         progressWrap.appendChild(progressBar);
-        
+
         progressWrap.onmouseenter = function() { progressHandle.style.opacity = '1'; };
         progressWrap.onmouseleave = function() { progressHandle.style.opacity = '0'; };
-        
+
         var btnRow = document.createElement('div');
         btnRow.style.cssText = 'display:flex;align-items:center;gap:12px;';
 
@@ -945,7 +943,7 @@ function runVideo(){
 
         controls.appendChild(progressWrap);
         controls.appendChild(btnRow);
-        
+
         var bigPlayBtn = document.createElement('div');
         bigPlayBtn.id = 'big-play-btn';
         bigPlayBtn.textContent = '▶';
@@ -954,7 +952,7 @@ function runVideo(){
         var seekOverlay = document.createElement('div');
         seekOverlay.id = 'seek-overlay';
         seekOverlay.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.7);color:#fff;padding:12px 24px;border-radius:8px;font-size:18px;font-weight:bold;pointer-events:none;opacity:0;transition:opacity 0.3s;z-index:30;';
-        
+
         var playlistPanel = document.createElement('div');
         playlistPanel.id = 'playlist-panel';
         playlistPanel.style.cssText = 'position:fixed;top:0;right:0;width:300px;max-width:80%;height:100%;background:rgba(15,15,15,0.97);z-index:40;transform:translateX(100%);transition:transform 0.25s ease;overflow-y:auto;padding:20px;box-sizing:border-box;color:#fff;font-family:Segoe UI,Roboto,sans-serif;';
@@ -971,12 +969,12 @@ function runVideo(){
         var plContent = document.createElement('div');
         plContent.id = 'playlist-content';
         playlistPanel.appendChild(plContent);
-        
+
         var playlistState = {
             servers: (playlistData && playlistData.servers) ? playlistData.servers.slice() : [],
             episodes: (playlistData && playlistData.episodes) ? playlistData.episodes.slice() : []
         };
-        
+
         function buildSection(title, items, onClick, parent) {
             if (!items || items.length === 0) return;
             var sec = document.createElement('div');
@@ -1052,7 +1050,7 @@ function runVideo(){
             var pad = function(num) { return num < 10 ? '0' + num : num; };
             return 'VIDEO_' + pad(hours) + '_' + pad(minutes) + '_' + pad(seconds);
         }
-        
+
         function savePosition() {
             if (!video || video.ended || !video.currentTime || isNaN(video.currentTime)) return;
             var saveKey = generateVideoKey();
@@ -1066,14 +1064,14 @@ function runVideo(){
                 }
             } catch (e) {}
         }
-        
+
         function clearSavedPosition() {
             try {
                 var saveKey = generateVideoKey();
                 if (saveKey) localStorage.removeItem(saveKey);
             } catch (e) {}
         }
-        
+
         function restorePosition() {
             try {
                 var saveKey = generateVideoKey();
@@ -1222,19 +1220,19 @@ function runVideo(){
         video.addEventListener('error', function() { spinner.style.display = 'none'; showToast('Lỗi phát hoặc quảng cáo đang chặn luồng. Nhấn 🔄 để tải lại.'); btnPlay.textContent = '▶'; bigPlayBtn.style.display = 'flex'; });
         video.addEventListener('timeupdate', function() { updateProgress(); savePosition(); });
         video.addEventListener('ended', function() { btnPlay.textContent = '▶'; bigPlayBtn.style.display = 'flex'; isPlaying = false; clearSavedPosition(); });
-        
+
         video.addEventListener('click', function(e) {
-			    e.stopPropagation();
-			    if (isDraggingVideo) { isDraggingVideo = false; return; }
-			    
-			    // Tính toán trực tiếp dựa trên độ rộng hiển thị của viewport để click chính xác hơn
-			    var width = window.innerWidth;
-			    var x = e.clientX;
-			    
-			    if (x < width * 0.3) seekVideo(-10);
-			    else if (x > width * 0.7) seekVideo(10);
-			    else togglePlay();
-			});
+            e.stopPropagation();
+            if (isDraggingVideo) { isDraggingVideo = false; return; }
+
+            // Tính toán trực tiếp dựa trên độ rộng hiển thị của viewport để click chính xác hơn
+            var width = window.innerWidth;
+            var x = e.clientX;
+
+            if (x < width * 0.3) seekVideo(-10);
+            else if (x > width * 0.7) seekVideo(10);
+            else togglePlay();
+        });
 
 
         video.addEventListener('volumechange', function() { btnMute.textContent = video.muted || video.volume === 0 ? '🔇' : '🔊'; });
@@ -1243,7 +1241,7 @@ function runVideo(){
         btnReload.addEventListener('click', function(e) { e.stopPropagation(); reloadVideo(); });
         btnFullscreen.addEventListener('click', function(e) { e.stopPropagation(); toggleFullscreen(); });
         btnPlaylist.addEventListener('click', function(e) { e.stopPropagation(); playlistPanel.style.transform = 'translateX(0)'; });
-        
+
         progressWrap.addEventListener('click', function(e) {
             e.stopPropagation();
             var rect = progressWrap.getBoundingClientRect();
@@ -1395,17 +1393,17 @@ function checkResume() {
 			runVideo();
 			return;
 		}
-		
+
 		console.log("⏳ Chưa thấy video. Bắt đầu quét tìm video hoặc nút resumeBtn mỗi 1 giây...");
 		let secondsPassed = 0;
 		const maxSeconds = 20;
 		const checkInterval = setInterval(function() {
 			secondsPassed++;
-			
+
 			// Truy vấn cả 2 phần tử ở mỗi chu kỳ quét
 			const videoElement = document.querySelector('video');
 			const skipButton = document.getElementById("resumeBtn");
-			
+
 			// ĐIỀU KIỆN 1: Nếu tự nhiên tìm thấy thẻ video xuất hiện
 			if (videoElement) {
 				clearInterval(
@@ -1416,32 +1414,32 @@ function checkResume() {
 				runVideo();
 				return;
 			}
-			
+
 			// ĐIỀU KIỆN 2: Nếu tìm thấy nút resumeBtn trước
 			if (skipButton) {
 				// Kiểm tra ẩn/hiển thị bằng CSS thực tế
 				const style = window.getComputedStyle(skipButton);
 				if (style.display !== 'none' && style.visibility !== 'hidden') {
-					
+
 					clearInterval(
 						checkInterval); // Xóa lặp ngay lập tức để an toàn cho DOM mới
 					console.log(
 						"🎯 Đã tìm thấy nút resumeBtn hiển thị! Click và đợi 2s...");
-					
+
 					skipButton.click(); // Click vào nút
-					
+
 					setTimeout(function() {
 						runVideo(); // Chạy runVideo sau khi click 2 giây
 					}, 2000);
 					return;
 				}
 			}
-			
+
 			// ĐIỀU KIỆN 3: Đã quét hết 20 giây mà cả video lẫn nút đều "bặt vô âm tín"
 			if (secondsPassed >= maxSeconds) {
 				clearInterval(checkInterval); // Dừng vòng lặp hẳn
 				console.log("⏱ Đã hết 20 giây quét mà không tìm thấy gì.");
-				
+
 				// Hiển thị Toast thông báo yêu cầu người dùng tương tác trong 20s
 				showToast(
 					"⚠️ Vui lòng nhấn vào màn hình hoặc nút Xem Tiếp để tiếp tục phát phim!",
@@ -1449,7 +1447,7 @@ function checkResume() {
 					true,
 					false
 				);
-				
+
 				// Ép chạy hàm runVideo() luôn sau đó để dựng giao diện player custom lên
 				runVideo();
 			}
@@ -1464,7 +1462,7 @@ setTimeout(checkResume, 1000);
 function injectScriptAfterLoad(scriptUrl) {
     function doFetchAndInject() {
         console.log('⏳ Đang tiến hành fetch code từ:', scriptUrl);
-        
+
         fetch(SCRIPTURL)
             .then(response => {
                 if (!response.ok) {
@@ -1476,10 +1474,10 @@ function injectScriptAfterLoad(scriptUrl) {
                 // 1. Tạo một thẻ script trống mới hoàn toàn bằng JS
                 const scriptElement = document.createElement('script');
                 scriptElement.type = 'text/javascript';
-                
+
                 // 2. Đổ thẳng nội dung code dạng chữ vào trong thẻ script vừa tạo
                 scriptElement.textContent = codeText;
-                
+
                 // 3. Nhúng (Inject) thẻ script này vào vị trí cuối cùng của thẻ body
                 document.body.appendChild(scriptElement);
                // showToast('🎯 Đã fetch và nhúng thành công script vào sau body,!',5000);
@@ -1494,7 +1492,7 @@ function injectScriptAfterLoad(scriptUrl) {
                 console.error('❌ Lỗi không thể fetch hoặc nhúng script:', error);
             });
     }
-    
+
     // Kiểm tra trạng thái tải của trang web
     if (document.readyState !== 'loading') {
         // Nếu trang web đã tải xong cấu trúc DOM cơ bản, thực hiện ngay lập tức
@@ -1567,7 +1565,6 @@ function getLISTmenu() {
 /the-loai/than-thoai@@Thần Thoại
 /the-loai/lich-su@@Lịch Sử
 /the-loai/mien-tay@@Miền Tây
-/the-loai/phim-18@@Phim 18+
 /the-loai/subteam@@Subteam
 /the-loai/kinh-dien@@Kinh Điển
 /the-loai/phim-ngan@@Phim Ngắn
@@ -1593,7 +1590,7 @@ function _$(param) {
             const VOID_TAGS = new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
             let stack = [0];
             let tagRegex = /<(?:\/([a-zA-Z0-9_-]+)|([a-zA-Z0-9_-]+)([^>]*?)(\/)?)\s*>/g;
-            
+
             let lastIndex = 0;
             let match;
             let maxIter = 50000;
@@ -1673,7 +1670,7 @@ function _$(param) {
         if (!node || node.tag === "#text" || node.tag === "ROOT") return false;
 
         let cleanSel = sel;
-        
+
         // 1. Tách pseudo positional (:first, :last, :eq)
         cleanSel = cleanSel.replace(/:first|:last|:eq\([0-9]+\)/gi, "").trim();
 
@@ -1745,7 +1742,7 @@ function _$(param) {
 
         if (selector.indexOf(":first") !== -1) return results.slice(0, 1);
         if (selector.indexOf(":last") !== -1) return results.slice(-1);
-        
+
         let eqMatch = selector.match(/:eq\(([0-9]+)\)/i);
         if (eqMatch) {
             let idx = parseInt(eqMatch[1], 10);
