@@ -11,7 +11,7 @@
     {
       "id": "Vsmov",
       "name": "PhimVsmov",
-      "version": "1.1.0",
+      "version": "1.2.3",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
