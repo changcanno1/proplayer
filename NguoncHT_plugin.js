@@ -1,17 +1,20 @@
 // =============================================================================
 // CONFIGURATION & METADATA
 // =============================================================================
+var popuphtml = "<div class='donate-container'><h2 class='donate-heading'>DONATE</h2><p class='donate-description'>Anh em yêu quý có thể mời bọn mình 2 ly cà phê nhé. Để có động lực duy trì App, cập nhật plugin và tìm thêm nhiều nguồn mới và hay cho anh em. Một chút lòng thành cũng làm bọn mình tiếp tục hoạt động tốt hơn, cám ơn anh em.</p><div class='donate-grid'><div class='donate-card'><div class='donate-title'>Donate Tác giả Plugin</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qrht.png' alt='Donate Tác giả Plugin' /></div></div><div class='donate-card'><div class='donate-title'>Donate Tác giả App</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qryb.png' alt='Donate Tác giả App' /></div></div></div></div><style>.donate-container{max-width:800px;margin:0 auto;padding:10px;box-sizing:border-box;font-family:Arial,sans-serif;text-align:center;color:#eee}.donate-heading{font-size:22px;font-weight:bold;margin:0 0 12px 0;color:#fff;text-transform:uppercase;letter-spacing:1px}.donate-description{font-size:14px;line-height:1.5;margin-bottom:18px;color:#ccc}.donate-grid{display:flex;flex-direction:row;justify-content:center;align-items:stretch;gap:16px}.donate-card{flex:1;min-width:0;background:#22252a;border-radius:12px;padding:14px;border:1px solid #33373e;display:flex;flex-direction:column;align-items:center}.donate-title{font-weight:bold;font-size:15px;margin-bottom:12px;color:#fff}.qr-wrapper{width:100%;max-width:240px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:#181a1d;border-radius:8px;padding:8px;box-sizing:border-box}.qr-wrapper img{width:100%;height:100%;object-fit:contain;border-radius:4px}@media(max-width:600px){.donate-grid{flex-direction:column}.donate-heading{font-size:18px;margin-bottom:8px}.donate-description{font-size:13px;margin-bottom:12px}.qr-wrapper{max-width:180px}}</style>";
 
 function getManifest() {
     return JSON.stringify({
-        "id": "nguoncnew",
+        "id": "nguoncnew_ios",
         "name": "Phim NguonC VIP",
-        "version": "1.5.5", // Cập nhật version
+        "version": "1.7",
         "baseUrl": "https://phim.nguonc.com",
-        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguonC.png",
+        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png",
         "isEnabled": true,
         "type": "MOVIE",
-        "playerType": "embedtoexoplay"
+        "popup_html": popuphtml,
+        "author": "Alokillgtv",
+        "playerType": "auto" // Tối ưu cho iOS: Tự động dùng AVPlayer cho m3u8 và WebView cho embed
     });
 }
 
@@ -98,8 +101,13 @@ function getUrlList(slug, filtersJson) {
 }
 
 function getUrlSearch(keyword, filtersJson) {
-    var filters = JSON.parse(filtersJson || "{}");
-    return "https://phim.nguonc.com/api/films/search?keyword=" + encodeURIComponent(keyword);
+    try {
+        var filters = JSON.parse(filtersJson || "{}");
+        var page = filters.page || 1;
+        return "https://phim.nguonc.com/api/films/search?keyword=" + encodeURIComponent(keyword) + "&page=" + page;
+    } catch (e) {
+        return "https://phim.nguonc.com/api/films/search?keyword=" + encodeURIComponent(keyword) + "&page=1";
+    }
 }
 
 function getUrlDetail(slug) {
@@ -115,7 +123,7 @@ function getUrlYears() { return "https://phim.nguonc.com"; }
 // PARSERS
 // =============================================================================
 
-function parseListResponse(apiResponseJson) {
+function parseListResponse(apiResponseJson, url) {
     try {
         var response = JSON.parse(apiResponseJson);
         var data = response.data || {};
@@ -131,7 +139,7 @@ function parseListResponse(apiResponseJson) {
 
         var paginate = response.paginate || response.pagination || (data.params && data.params.pagination) || {};
 
-        var movies = items.map(function(item) {
+        var movies = items.map(function (item) {
             return {
                 id: item.slug,
                 title: item.name,
@@ -175,8 +183,6 @@ function parseSearchResponse(apiResponseJson) {
 function parseMovieDetail(apiResponseJson) {
     try {
         var response = JSON.parse(apiResponseJson);
-        
-        // ĐÃ SỬA: Loại bỏ toán tử ?. gây lỗi SyntaxError
         var dataItem = (response.data && response.data.item) ? response.data.item : null;
         var movie = response.movie || dataItem || response.data || {};
 
@@ -185,15 +191,17 @@ function parseMovieDetail(apiResponseJson) {
 
         var servers = [];
         if (Array.isArray(rawEpisodes)) {
-            rawEpisodes.forEach(function(server) {
+            rawEpisodes.forEach(function (server) {
                 var episodes = [];
                 var serverItems = server.items || server.server_data || [];
 
                 if (Array.isArray(serverItems)) {
-                    serverItems.forEach(function(ep) {
+                    serverItems.forEach(function (ep) {
                         var embed = ep.embed || ep.link_embed || "";
                         var m3u8 = ep.m3u8 || ep.link_m3u8 || "";
-                        var link = embed || m3u8;
+                        
+                        // Ưu tiên M3U8 để Native Player (iOS AVPlayer) tự xử lý trực tiếp
+                        var link = m3u8 || embed;
 
                         if (link) {
                             episodes.push({
@@ -214,14 +222,12 @@ function parseMovieDetail(apiResponseJson) {
             });
         }
 
-        var extractGroup = function(categoryObj, groupName) {
+        var extractGroup = function (categoryObj, groupName) {
             if (!categoryObj) return "";
             for (var key in categoryObj) {
                 var group = categoryObj[key];
                 if (group && group.group && group.group.name === groupName && group.list && group.list.length > 0) {
-                    return group.list.map(function(item) {
-                        return item.name;
-                    }).join(", ");
+                    return group.list.map(function (item) { return item.name; }).join(", ");
                 }
             }
             return "";
@@ -241,7 +247,7 @@ function parseMovieDetail(apiResponseJson) {
             servers: servers,
             episode_current: movie.current_episode || movie.episode_current || "",
             lang: movie.language || movie.lang || "",
-            casts: movie.casts || movie.actor || "", 
+            casts: movie.casts || movie.actor || "",
             director: movie.director || "",
             category: extractGroup(movie.category, "Thể loại"),
             country: extractGroup(movie.category, "Quốc gia"),
@@ -255,171 +261,28 @@ function parseMovieDetail(apiResponseJson) {
 
 function parseDetailResponse(html, url) {
     try {
-        var customjs = runJS();
+        var isEmbed = url.indexOf(".m3u8") === -1 && url.indexOf("embed") > -1;
+        var mimeType = isEmbed ? "" : "application/x-mpegURL";
+
         return JSON.stringify({
             "url": url,
-            "isEmbed": true, // Bật isEmbed để kích hoạt Sniffer
+            "isEmbed": isEmbed,
+            "mimeType": mimeType,
             "headers": {
-                "Referer": "https://embed.streamc.xyz/",
-                "Origin": "https://embed.streamc.xyz/",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-                "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-                "Sec-Ch-Ua-Mobile": "?1",
-                "Sec-Ch-Ua-Platform": '"Android"',
-                "Accept": "*/*",
-                "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
-                "X-Requested-With": "com.android.chrome",
-                "Block-Ads": "true",
-                "Block-Css": "html,body,*",
-                "Custom-Js": customjs.trim()
+                // Sử dụng User-Agent của iOS cho độ tương thích cao
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+                "Referer": "https://phim.nguonc.com/",
+                "Origin": "https://phim.nguonc.com/"
             },
             "subtitles": []
         });
-
     } catch (e) {
         return JSON.stringify({ "url": "", "headers": {} });
     }
 }
 
-// ĐÃ SỬA: Thêm hàm parseEmbedResponse bắt buộc cho embedtoexoplay
 function parseEmbedResponse(htmlContent, url) {
     return JSON.stringify({ url: "", isEmbed: false });
-}
-
-function runJS() {
-    return `
-function bridgeLog(msg, check) {
-    try {
-      if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
-        window.SnifferBridge.log(msg);
-        if (check === true && typeof window.SnifferBridge.toast === 'function') {
-          window.SnifferBridge.toast(msg, 1000);
-        }
-      } else if (typeof console !== 'undefined' && console.log) {
-        console.log(msg);
-      }
-    } catch(e) {}
-  }
-(function injectCSS() {
-  try {
-    const cssStyle = "body,html,*{display:none!important,backgroud:black!important;opacity:0!important;z-index:-999999}";
-    const styleElement = document.createElement('style');
-    styleElement.type = 'text/css';
-    styleElement.setAttribute('data-injected-by', 'custom-script');
-
-    if (styleElement.styleSheet) {
-      styleElement.styleSheet.cssText = cssStyle;
-    } else {
-      styleElement.appendChild(document.createTextNode(cssStyle));
-    }
-
-    const targetNode = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
-
-    if (targetNode) {
-      targetNode.appendChild(styleElement);
-      bridgeLog("Chèn css ngay lập tức.")
-    } else {
-      document.addEventListener('DOMContentLoaded', function () {
-        (document.head || document.documentElement).appendChild(styleElement);
-        bridgeLog("Chèn Css sau khi load xong")
-      });
-    }
-  } catch (error) {
-    bridgeLog('Không thể chèn CSS tự động, bỏ qua lỗi:', error);
-  }
-})();
-
-(function initLocalBlobSniffer() {
-  if (window.__BLOB_SNIFFER_INITIALIZED__) return;
-  window.__BLOB_SNIFFER_INITIALIZED__ = 1;
-
-  var hasDispatchedAny = 0;
-  var isFinished = 0;
-  var timeoutTimer = null;
-
-  bridgeLog("Đang tiến hành tìm link Video, xin chờ....", true);
-
-  timeoutTimer = setTimeout(function() {
-    if (hasDispatchedAny === 0 && isFinished === 0) {
-      isFinished = 1;
-      bridgeLog("❌ [TIMEOUT] Đã quá 10 giây nhưng không tìm thấy Blob M3U8!", false);
-      bridgeLog("Không tìm thấy link video (Hết thời gian 10s).", true);
-      
-      if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
-        window.SnifferBridge.play("https://google.com", "");
-      }
-    }
-  }, 20000); 
-
-  function stopTimeout() {
-    if (timeoutTimer) {
-      clearTimeout(timeoutTimer);
-      timeoutTimer = null;
-    }
-  }
-
-  function isValidM3U8(content) {
-    if (typeof content !== 'string') return false;
-    var trimmed = content.trim();
-    return trimmed.indexOf('#EXTM3U') === 0 && 
-          (trimmed.indexOf('#EXTINF') !== -1 || trimmed.indexOf('#EXT-X-STREAM-INF') !== -1);
-  }
-
-  function dispatchM3u8ToApp(m3u8Content) {
-    if (!m3u8Content || hasDispatchedAny === 1) return;
-    hasDispatchedAny = 1;
-    isFinished = 1;
-    stopTimeout(); 
-
-    bridgeLog('🎯 [LOCAL-DISPATCH] Đã tìm thấy M3U8! Đang nạp vào Local Player...');
-    bridgeLog("🎯 Bắt link thành công! Đang phát video...", true);
-
-    try {
-      if (window.SnifferBridge && typeof window.SnifferBridge.playM3u8Content === 'function') {
-        window.SnifferBridge.playM3u8Content(m3u8Content, window.location.href);
-      } else {
-        bridgeLog('❌ SnifferBridge.playM3u8Content không khả dụng!');
-      }
-    } catch(e) {
-      bridgeLog('❌ [DISPATCH ERROR]: ' + e.message);
-    }
-  }
-
-  try {
-    if (typeof URL !== 'undefined' && URL.createObjectURL) {
-      var originalCreateObjectURL = URL.createObjectURL;
-      
-      URL.createObjectURL = function(blob) {
-        var blobUrl = originalCreateObjectURL.apply(this, arguments);
-
-        if (isFinished === 0 && blob && (blob instanceof Blob || blob instanceof File)) {
-          var processContent = function(content) {
-            if (isValidM3U8(content)) {
-              dispatchM3u8ToApp(content);
-            }
-          };
-
-          if (typeof blob.text === 'function') {
-            blob.text().then(processContent).catch(function(){});
-          } else {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-              processContent(e.target.result);
-            };
-            reader.readAsText(blob);
-          }
-        }
-
-        return blobUrl;
-      };
-      
-      bridgeLog('🚀 [INIT] Đã Hook thành công.');
-    }
-  } catch (e) {
-    bridgeLog('❌ [INIT-ERROR]: ' + e.message);
-  }
-})();
-  `;
 }
 
 function parseCategoriesResponse(apiResponseJson) {
