@@ -1,25 +1,43 @@
-var BASEURL = "https://clbphimxua.com";
-
-// Chuyển logic lấy Cookie thành Lazy Load để tránh crash iOS khi nạp file JS toàn cục
-function getLazyCookie() {
+BASEURL = "https://clbphimxua.com";
+BASESOURCE = "";
+function getValidCookie() {
     var domain = "https://clbphimxua.com";
-    var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
-    var c = "";
-    
-    if (typeof localStorage !== 'undefined') {
-        c = localStorage.getItem("clbpx_cookie") || "";
+    var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+    // 1. Kiểm tra Cookie hiện tại của domain bằng getSetCookies
+    console.log("[LOG] -> Kiểm tra trạng thái đăng nhập qua getSetCookies...");
+    var checkCookies = getSetCookies(domain, { "User-Agent": userAgent });
+    var checkCookieStr = "";
+
+    if (checkCookies && checkCookies.length > 0) {
+        checkCookieStr = checkCookies.map(function(c) { 
+            return c.split(";")[0].trim(); 
+        }).join("; ");
     }
-    if (c && c.indexOf("wordpress_logged_in_") !== -1) {
-        return c;
+
+    // 2. Nếu đã có cookie wordpress_logged_in_ -> Dùng luôn, KHÔNG cần đăng nhập lại
+    if (checkCookieStr && checkCookieStr.indexOf("wordpress_logged_in_") !== -1) {
+        console.log("[LOG] -> ĐÃ ĐĂNG NHẬP SẴN! Dùng lại Cookie hiện tại.");
+        return checkCookieStr;
     }
-    
+
+    // 3. Nếu chưa đăng nhập -> Mới tiến hành POST đăng nhập
+    console.log("[LOG] -> CHƯA ĐĂNG NHẬP! Tiến hành gửi POST đăng nhập...");
+    return loginAndGetCookie();
+}
+
+function loginAndGetCookie() {
+    var domain = "https://clbphimxua.com";
     var loginUrl = domain + "/wp-login.php";
+    var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+    // Bước 1: Dùng getSetCookies lấy test cookie ban đầu
     var initCookiesArr = getSetCookies(loginUrl, { "User-Agent": userAgent });
     var initialCookies = "";
 
     if (initCookiesArr && initCookiesArr.length > 0) {
-        initialCookies = initCookiesArr.map(function(cook) { 
-            return cook.split(";")[0].trim(); 
+        initialCookies = initCookiesArr.map(function(c) { 
+            return c.split(";")[0].trim(); 
         }).join("; ");
     }
     
@@ -27,6 +45,7 @@ function getLazyCookie() {
         initialCookies += (initialCookies ? "; " : "") + "wordpress_test_cookie=WP%20Cookie%20check";
     }
 
+    // Bước 2: POST đăng nhập
     var bodyData = "log=" + encodeURIComponent("gun95941@gmail.com") +
                    "&pwd=" + encodeURIComponent("123456") +
                    "&rememberme=forever" +
@@ -46,35 +65,41 @@ function getLazyCookie() {
         body: bodyData
     });
 
+    // Bước 3: Lấy Set-Cookie xác thực trả về
     var authCookiesArr = [];
     if (loginRes && loginRes.setCookies) {
-        authCookiesArr = loginRes.setCookies.map(function(cook) { 
-            return cook.split(";")[0].trim(); 
+        authCookiesArr = loginRes.setCookies.map(function(c) { 
+            return c.split(";")[0].trim(); 
         });
     }
 
     var fullCookieStr = authCookiesArr.join("; ");
+
     if (fullCookieStr && fullCookieStr.indexOf("wordpress_") !== -1) {
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem("clbpx_cookie", fullCookieStr);
-        }
+        toast("Đăng nhập thành công!");
         return fullCookieStr;
+    } else {
+        toast("Đăng nhập thất bại!");
+        return "";
     }
-    return "";
 }
+
+// Chạy kiểm tra phiên trước
+var cookie = getValidCookie();
 
 function getManifest() {
     return JSON.stringify({
         "id": "clbpxVIP",
         "name": "CLB Phim Xưa VIP",
-        "version": "1.5",
-        "info": "Fix lỗi iOS bằng Lazy Cookie Loading & Tối ưu Mini-JQ",
+        "version": "1.3",
+        "info": "",
         "BASEURL": "https://clbphimxua.com",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/clbpxVIP.png",
         "headers": {
             "Host": "clbphimxua.com",
             "Referer": "https://clbphimxua.com",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Cookie": cookie
         },
         "isEnabled": true,
         "isAdult": false,
@@ -86,118 +111,196 @@ function getManifest() {
     });
 }
 
+
+
+
+
+
 function getHomeSections() {
-    return JSON.stringify([{ slug: 'home', title: 'Mới Cập Nhật', type: 'Grid', path: '' }]);
+    return JSON.stringify([{
+        slug: 'home',
+        title: 'Mới Cập Nhật',
+        type: 'Grid',
+        path: ''
+    }]);
 }
 
 function getPrimaryCategories() {
-    return JSON.stringify([
-        { name: 'Kiếm Hiệp', slug: 'phim-bo-kiem-hiep-co-trang' },
-        { name: 'Tiên Hiệp', slug: 'tien-hiep-ngon-tinh' },
-        { name: 'Tâm Lý', slug: 'tlhd' },
-        { name: 'Ma Kinh Dị', slug: 'ma-kinh-di' },
-        { name: 'Điện Ảnh Châu Á', slug: 'phim-hk-tk' },
-        { name: 'Điện Ảnh Âu Mỹ', slug: 'dien-anh-tay' },
-        { name: 'Hàn Quốc', slug: 'drama-hq-nb' },
-        { name: 'Anime', slug: 'phim-hoat-hinh' },
-        { name: 'TV Series', slug: 'phim-tv' },
-        { name: 'Thập Niên 60', slug: 'thap-nien-60' },
-        { name: 'Thập Niên 70', slug: 'thap-nien-70' },
-        { name: 'Thập Niên 80', slug: 'thap-nien-80' },
-        { name: 'Thập Niên 90', slug: 'thap-nien-90' },
-        { name: 'Thập Niên 2000', slug: 'thap-nien-2000' }
+    if (typeof localStorage !== 'undefined' && localStorage.getItem("SVDATA")) {
+        localStorage.removeItem("SVDATA");
+    }
+    return JSON.stringify([{
+            name: 'Kiếm Hiệp',
+            slug: 'phim-bo-kiem-hiep-co-trang'
+        },
+        {
+            name: 'Tiên Hiệp',
+            slug: 'tien-hiep-ngon-tinh'
+        },
+        {
+            name: 'Tâm Lý',
+            slug: 'tlhd'
+        },
+        {
+            name: 'Ma Kinh Dị',
+            slug: 'ma-kinh-di'
+        },
+        {
+            name: 'Điện Ảnh Châu Á',
+            slug: 'phim-hk-tk'
+        },
+        {
+            name: 'Điện Ảnh Âu Mỹ',
+            slug: 'dien-anh-tay'
+        },
+        {
+            name: 'Hàn Quốc',
+            slug: 'drama-hq-nb'
+        },
+        {
+            name: 'Anime',
+            slug: 'phim-hoat-hinh'
+        },
+        {
+            name: 'TV Series',
+            slug: 'phim-tv'
+        },
+        {
+            name: 'Thập Niên 60',
+            slug: 'thap-nien-60'
+        },
+        {
+            name: 'Thập Niên 70',
+            slug: 'thap-nien-70'
+        },
+        {
+            name: 'Thập Niên 80',
+            slug: 'thap-nien-80'
+        },
+        {
+            name: 'Thập Niên 90',
+            slug: 'thap-nien-90'
+        },
+        {
+            name: 'Thập Niên 2000',
+            slug: 'thap-nien-2000'
+        }
     ]);
 }
 
 function getFilterConfig() {
     return JSON.stringify({
-        sort: [
-            { name: 'Cũ nhất', value: 'oldest' },
-            { name: 'Mới nhất', value: 'newest' }
+        sort: [{
+                name: 'Cũ nhất',
+                value: 'oldest'
+            },
+            {
+                name: 'Mới nhất',
+                value: 'newest'
+            }
         ]
     });
 }
 
+// =============================================================================
+// URL GENERATION
+// =============================================================================
+
 function getUrlList(slug, filtersJson) {
     var filters = JSON.parse(filtersJson || "{}");
     var page = filters.page || 1;
-    var url = "";
+    var baseUrl = BASEURL;
 
     if (slug === '' || slug === 'home') {
-        url = page > 1 ? BASEURL + "/page/" + page + "/" : BASEURL + "/";
-    } else {
-        url = page > 1 ? BASEURL + "/category/" + slug + "/page/" + page + "/" : BASEURL + "/category/" + slug + "/";
+        if (page > 1) {
+            return baseUrl + "/page/" + page + "/";
+        }
+        return baseUrl + "/";
     }
-    
-    var cookie = getLazyCookie();
-    return url + (cookie ? "|Cookie=" + cookie : "");
+
+    if (page > 1) {
+        return baseUrl + "/category/" + slug + "/page/" + page + "/";
+    }
+    return baseUrl + "/category/" + slug + "/";
 }
 
 function getUrlSearch(keyword, filtersJson) {
     var filters = JSON.parse(filtersJson || "{}");
     var page = filters.page || 1;
-    var url = page > 1 ? BASEURL + "/page/" + page + "/?s=" + encodeURIComponent(keyword) : BASEURL + "/?s=" + encodeURIComponent(keyword);
-    var cookie = getLazyCookie();
-    return url + (cookie ? "|Cookie=" + cookie : "");
+    if (page > 1) {
+        return BASEURL + "/page/" + page + "/?s=" + encodeURIComponent(keyword);
+    }
+    return BASEURL + "/?s=" + encodeURIComponent(keyword);
 }
 
 function getUrlDetail(slug) {
     if (!slug) return "";
-    var url = (slug.indexOf("http") === 0) ? slug : BASEURL + "/" + slug + "/";
-    var cookie = getLazyCookie();
-    return url + (cookie ? "|Cookie=" + cookie : "");
+    if (slug.indexOf("http") === 0) return slug;
+    return BASEURL + "/" + slug + "/";
 }
 
-function getUrlCategories() { return ""; }
-function getUrlCountries() { return ""; }
-function getUrlYears() { return ""; }
+function getUrlCategories() {
+    return "";
+}
+
+function getUrlCountries() {
+    return "";
+}
+
+function getUrlYears() {
+    return "";
+}
+
+// =============================================================================
+// PARSERS
+// =============================================================================
 
 function parseListResponse(htmlResponse, url) {
+    console.log("list\n" + url);
+
     var items = [];
-    var $doc = _$(htmlResponse);
-    
-    $doc.find("article").each(function() {
-        var aTag = this.find("a").first();
-        var link = aTag.attr("href");
-        var imgTag = this.find("img").first();
-        var thumb = imgTag.attr("src");
-        var title = imgTag.attr("alt") || aTag.text() || "";
+    var regex = /<article.*?id="post-[^>]+>[\s\S]*?<a href="([^"]+)".*?>\s*<figure[\s\S]*?<img.*?src="([^"]+)".*?alt="([^"]+)".*?>/gi;
+    var match;
 
-        if (link && thumb) {
-            title = title.replace(/&#8211;/g, '-').replace(/&#8217;/g, "'").trim();
-            var slugMatch = link.match(/clbphimxua\.com\/([^\/]+)\/?/);
-            var slug = slugMatch ? slugMatch[1] : link;
-            
-            var year = 0;
-            var yearMatch = title.match(/19\d{2}|20\d{2}/);
-            if (yearMatch) year = parseInt(yearMatch[0], 10);
+    while ((match = regex.exec(htmlResponse)) !== null) {
+        var link = match[1] || "";
+        var thumb = match[2] || "";
+        var title = match[3] || "";
 
-            items.push({
-                id: slug,
-                title: title,
-                posterUrl: thumb,
-                backdropUrl: thumb,
-                year: year
-            });
+        title = title.replace(/&#8211;/g, '-').replace(/&#8217;/g, "'");
+
+        var slugMatch = link.match(/clbphimxua\.com\/([^\/]+)\/?/);
+        var slug = slugMatch ? slugMatch[1] : link;
+        var year = 0;
+        var yearMatch = title.match(/19\d{2}|20\d{2}/);
+        if (yearMatch) {
+            year = parseInt(yearMatch[0], 10);
         }
-    });
+
+        items.push({
+            id: slug,
+            title: title.trim(),
+            posterUrl: thumb,
+            backdropUrl: thumb,
+            year: year
+        });
+    }
 
     var totalPages = 1;
     var currentPage = 1;
-    var curPageMatch = htmlResponse.match(/<span aria-current="page" class="page-numbers current">(\d+)<\/span>/i);
-    
-    if (curPageMatch) {
-        currentPage = parseInt(curPageMatch[1], 10);
-    }
-    
     var pageRegex = /<a class="page-numbers".*?>(\d+)<\/a>/gi;
     var pm;
     while ((pm = pageRegex.exec(htmlResponse)) !== null) {
-        var pNum = parseInt(pm[1], 10);
-        if (pNum > totalPages) totalPages = pNum;
+        if (parseInt(pm[1]) > totalPages) {
+            totalPages = parseInt(pm[1]);
+        }
     }
-    if (currentPage > totalPages) totalPages = currentPage;
-
+    var curPageMatch = htmlResponse.match(/<span aria-current="page" class="page-numbers current">(\d+)<\/span>/i);
+    if (curPageMatch) {
+        currentPage = parseInt(curPageMatch[1]);
+        if (currentPage > totalPages) totalPages = currentPage;
+    }
+    //console.log("list:\n" + JSON.stringify(items));
     return JSON.stringify({
         items: items,
         pagination: {
@@ -208,294 +311,318 @@ function parseListResponse(htmlResponse, url) {
 }
 
 function parseSearchResponse(htmlResponse) {
-    return parseListResponse(htmlResponse, "");
+    return parseListResponse(htmlResponse);
 }
 
-function parseMovieDetail(htmlResponse, url) {
+function extractVideoId(url) {
+    if (!url) return "";
+    var match = url.match(/[?&]v=([^&]+)/);
+    return match ? match[1] : url;
+}
+
+function BASE64ENCODE(str) {
     try {
-        var $doc = _$(htmlResponse);
+        if (!str) return "";
+
+        var utf8Bytes = [];
+        for (var i = 0; i < str.length; i++) {
+            var code = str.charCodeAt(i);
+            if (code < 128) {
+                utf8Bytes.push(code);
+            } else if (code < 2048) {
+                utf8Bytes.push((code >> 6) | 192, (code & 63) | 128);
+            } else if (
+                (code & 0xfc00) === 0xd800 &&
+                i + 1 < str.length &&
+                (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00
+            ) {
+                code =
+                    0x10000 + ((code & 0x03ff) << 10) + (str.charCodeAt(++i) & 0x03ff);
+                utf8Bytes.push(
+                    (code >> 18) | 240,
+                    ((code >> 12) & 63) | 128,
+                    ((code >> 6) & 63) | 128,
+                    (code & 63) | 128,
+                );
+            } else {
+                utf8Bytes.push(
+                    (code >> 12) | 224,
+                    ((code >> 6) & 63) | 128,
+                    (code & 63) | 128,
+                );
+            }
+        }
+
+        var chars =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+        var encoded = "";
+        var byte1, byte2, byte3;
+        var b1, b2, b3, b4;
+
+        for (var j = 0; j < utf8Bytes.length; j += 3) {
+            byte1 = utf8Bytes[j];
+            byte2 = j + 1 < utf8Bytes.length ? utf8Bytes[j + 1] : NaN;
+            byte3 = j + 2 < utf8Bytes.length ? utf8Bytes[j + 2] : NaN;
+
+            b1 = byte1 >> 2;
+            b2 = ((byte1 & 3) << 4) | (isNaN(byte2) ? 0 : byte2 >> 4);
+            b3 = isNaN(byte2) ?
+                64 :
+                ((byte2 & 15) << 2) | (isNaN(byte3) ? 0 : byte3 >> 6);
+            b4 = isNaN(byte3) ? 64 : byte3 & 63;
+
+            encoded +=
+                chars.charAt(b1) +
+                chars.charAt(b2) +
+                chars.charAt(b3) +
+                chars.charAt(b4);
+        }
+
+        return encoded;
+    } catch (e) {
+        console.log("[BASE64ENCODE Error]:", e.message || e);
+        return "";
+    }
+}
+
+function parseMovieDetail(htmlResponse) {
+    try {
         var id = "";
-        
+        var title = "";
+        var posterUrl = "";
+        var description = "";
+        var saveSV = [];
+        var nameMV = "";
         var slugMatch = htmlResponse.match(/<link rel="canonical" href="([^"]+)"/i);
         if (slugMatch) {
-            var parts = slugMatch[1].split('/');
+            var canonicalUrl = slugMatch[1];
+            var parts = canonicalUrl.split('/');
             id = parts[parts.length - 2] || parts[parts.length - 1] || "unknown_movie";
         } else {
             id = "movie_" + new Date().getTime();
         }
 
-        var title = $doc.find("h1.single-title").text() || "";
-        title = title.replace(/&#8211;/g, '-').replace(/&#8217;/g, "'").trim();
-        
-        var posterUrl = $doc.find("img.wp-post-image").attr("src") || "";
-        if (!posterUrl) {
+        var titleMatch = htmlResponse.match(/<h1 class="single-title">([^<]+)<\/h1>/i);
+        if (titleMatch) title = titleMatch[1].trim();
+        title = title.replace(/&#8211;/g, '-').replace(/&#8217;/g, "'");
+        nameMV = title;
+        var posterMatch = htmlResponse.match(/<img[^>]*class="[^"]*wp-post-image[^"]*"[^>]*src="([^"]+)"/i);
+        if (!posterMatch) {
+            posterMatch = htmlResponse.match(/<img[^>]*src="([^"]+)"[^>]*class="[^"]*wp-post-image[^"]*"/i);
+        }
+        if (!posterMatch) {
+            posterMatch = htmlResponse.match(/<article[^>]*>[\s\S]*?<figure>\s*<img[^>]*src="([^"]+)"/i);
+        }
+        if (posterMatch) posterUrl = posterMatch[1];
+        else {
             var ogImg = htmlResponse.match(/<meta property="og:image" content="([^"]+)"/i);
             if (ogImg) posterUrl = ogImg[1];
         }
 
-        var description = $doc.find(".sigle-post-content-area").text().trim() || "";
+        var descMatch = htmlResponse.match(/<div class="sigle-post-content-area">([\s\S]*?)<a href/i);
+        if (descMatch) {
+            description = descMatch[1].replace(/<[^>]+>/g, '').trim();
+        }
 
         var year = 0;
         var yearMatch = title.match(/(19\d{2}|20\d{2})/);
         if (yearMatch) year = parseInt(yearMatch[1], 10);
 
         var servers = [];
-        var episodes = [];
-        
-        $doc.find(".sigle-post-content-area").find("a").each(function() {
-            var href = this.attr("href");
-            var epLabel = this.text().trim();
-            
-            if (href && (href.indexOf("clbpx") !== -1 || href.indexOf("v=") !== -1)) {
-                if (!epLabel || /^\s*$/.test(epLabel)) {
-                    epLabel = "Tập " + (episodes.length + 1);
+        var contentArea = "";
+        var contentMatch = htmlResponse.match(/<div class="sigle-post-content-area">([\s\S]*?)<\/div>/i);
+        contentArea = contentMatch ? contentMatch[1] : htmlResponse;
+
+        var serverPatterns = [{
+                pattern: /\(L\u1ed3ng Ti\u1ebfng\)/gi,
+                name: "Lồng Tiếng"
+            },
+            {
+                pattern: /\(L&#7891;ng Ti&#7871;ng\)/gi,
+                name: "Lồng Tiếng"
+            },
+            {
+                pattern: /\(Ph\u1ee5 \u0110\u1ec1\)/gi,
+                name: "Phụ Đề"
+            },
+            {
+                pattern: /\(Ph&#7909; &#272;&#7873;\)/gi,
+                name: "Phụ Đề"
+            },
+            {
+                pattern: /\(Thuy\u1ebft Minh\)/gi,
+                name: "Thuyết Minh"
+            },
+            {
+                pattern: /\(Thuy&#7871;t Minh\)/gi,
+                name: "Thuyết Minh"
+            }
+        ];
+
+        var boldSections = [];
+        var boldRegex = /<b[^>]*>([\s\S]*?)<\/b>/gi;
+        var bMatch;
+        while ((bMatch = boldRegex.exec(contentArea)) !== null) {
+            boldSections.push(bMatch[1]);
+        }
+
+        // ✅ Đã sửa: Chuẩn hóa URL bằng Regex cực kỳ an toàn, không lo lỗi crash
+        function normalizeEpUrl(rawUrl) {
+            if (!rawUrl) return "";
+            // Loại bỏ domain cũ nếu có (http://domain.com hoặc https://domain.com)
+            var pathAndQuery = rawUrl.replace(/^https?:\/\/[^\/]+/i, '');
+
+            // Bắt buộc phải có dấu / ở đầu đường dẫn
+            if (!pathAndQuery.startsWith('/')) {
+                pathAndQuery = '/' + pathAndQuery;
+            }
+
+            return "https://example.com" + pathAndQuery;
+        }
+
+        if (boldSections.length > 0) {
+            for (var si = 0; si < boldSections.length; si++) {
+                var section = boldSections[si];
+                var serverName = "";
+
+                for (var pi = 0; pi < serverPatterns.length; pi++) {
+                    serverPatterns[pi].pattern.lastIndex = 0;
+                    if (serverPatterns[pi].pattern.test(section)) {
+                        serverName = serverPatterns[pi].name;
+                        break;
+                    }
                 }
-                
-                var vMatch = href.match(/[?&]v=([a-zA-Z0-9_-]+)/);
-                var videoId = vMatch ? vMatch[1] : "";
-                
-                if (videoId) {
-                    episodes.push({
-                        id: videoId + "|data:" + videoId, // Tuân thủ truyền dữ liệu qua |data:
+
+                if (!serverName) {
+                    var headerMatch = section.match(/^\s*\(([^)]+)\)/);
+                    if (headerMatch) serverName = headerMatch[1].trim();
+                }
+
+                var sectionEpisodes = [];
+                var sectionLinkRegex = /<a href="([^"]*clbpx(?:\.html)?\?v=[a-zA-Z0-9_-]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+                var slMatch;
+                var saveEp = [];
+
+                while ((slMatch = sectionLinkRegex.exec(section)) !== null) {
+                    var epUrl = normalizeEpUrl(slMatch[1]);
+                    var epLabel = slMatch[2].replace(/<[^>]+>/g, '').trim();
+
+                    if (!epLabel || /^\s*$/.test(epLabel) || /<img/i.test(slMatch[2])) {
+                        epLabel = sectionEpisodes.length === 0 && boldSections.length === 1 ? "Xem phim" : "Tập " + (sectionEpisodes.length + 1);
+                    }
+
+                    var vMatch = epUrl.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+                    var videoId = vMatch ? vMatch[1] : "";
+                    if (videoId) saveEp.push(videoId);
+                    var link = BASEURL + "?"
+                    sectionEpisodes.push({
+                        id: epUrl,
                         name: epLabel,
-                        slug: "tap-" + videoId
+                        slug: epUrl
+                    });
+                }
+
+                if (sectionEpisodes.length > 0) {
+                    var finalServerName = serverName || ("Server " + (servers.length + 1));
+                    saveSV.push({
+                        nameMV: nameMV,
+                        name: finalServerName,
+                        episodes: saveEp
+                    });
+                    servers.push({
+                        name: finalServerName,
+                        episodes: sectionEpisodes
                     });
                 }
             }
-        });
-
-        if (episodes.length > 0) {
-            servers.push({
-                name: "Thuyết Minh / Phụ Đề",
-                episodes: episodes
-            });
         }
 
-        return JSON.stringify({
+        if (servers.length === 0) {
+            var episodes = [];
+            var fallbackSaveEp = [];
+            var allLinksRegex = /<a href="([^"]*clbpx(?:\.html)?\?v=[a-zA-Z0-9_-]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+            var lMatch;
+
+            while ((lMatch = allLinksRegex.exec(htmlResponse)) !== null) {
+                var epUrl = normalizeEpUrl(lMatch[1]);
+                var epLabel = lMatch[2].replace(/<[^>]+>/g, '').trim();
+
+                if (!epLabel || /^\s*$/.test(epLabel) || /<img/i.test(lMatch[2])) {
+                    epLabel = "Tập " + (episodes.length + 1);
+                }
+
+                var vMatch = epUrl.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+                var videoId = vMatch ? vMatch[1] : "";
+                if (videoId) fallbackSaveEp.push(videoId);
+                var link = "https://sc.k-20.xyz/stream/series/clbpx:lo2b09rr074-2q1390mfi:" + videoId + ".json"
+                episodes.push({
+                    id: epUrl,
+                    name: epLabel,
+                    slug: epUrl
+                });
+            }
+
+            if (episodes.length > 0) {
+                saveSV.push({
+                    nameMV: nameMV,
+                    name: "Thuyết Minh",
+                    episodes: fallbackSaveEp
+                });
+                servers.push({
+                    name: "Thuyết Minh",
+                    episodes: episodes
+                });
+            }
+        }
+
+        var $return = JSON.stringify({
             id: id,
             title: title,
             posterUrl: posterUrl,
             backdropUrl: posterUrl,
             description: description,
             year: year,
+            rating: 0,
             quality: "HD",
-            servers: servers
+            servers: servers,
+            category: "",
+            country: "",
+            director: "",
+            casts: "",
+            datasend: ""
         });
 
+        console.log("return parseMovie\n" + $return);
+        return $return;
+
     } catch (error) {
-        return JSON.stringify({ id: "error", title: "Lỗi", servers: [] });
+        console.error("parseMovieDetail error: ", error);
+        return "null";
     }
 }
 
-function parseDetailResponse(htmlResponse, url, datasend) {
+
+
+function parseDetailResponse(htmlResponse, fallbackUrl, datasend) {
     try {
-        var videoId = datasend || url.replace(/\|data:.*/, '');
+        console.log("Detailt:\n" + fallbackUrl)
+        var vMatch = fallbackUrl.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+        var videoId = vMatch ? vMatch[1] : "";
         var stream = "https://abysscdn.com/?v=" + videoId;
-        
+      console.log("Stream:\n" + stream)
         return JSON.stringify({
             url: stream,
             mimeType: "video/mp4",
-            isEmbed: false,
             headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             }
         });
     } catch (error) {
-        return JSON.stringify({ url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", isEmbed: false, headers: {} });
-    }
-}
-
-function _$(htmlOrBlock) {
-    function parseHTML(htmlString) {
-        let nodes = [];
-        let root = { id: 0, tag: "ROOT", attrs: {}, childrenIds: [], parentId: null };
-        nodes.push(root);
-
-        try {
-            let html = (htmlString || "").trim();
-            if (!html) return { root, nodes };
-
-            const VOID_TAGS = new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
-            let stack = [0];
-            let tagRegex = /<(?:\/([a-zA-Z0-9_-]+)|([a-zA-Z0-9_-]+)([^>]*?)(\/)?)\s*>/g;
-            
-            let lastIndex = 0;
-            let match;
-            let maxIter = 50000;
-            let iter = 0;
-
-            while ((match = tagRegex.exec(html)) !== null && iter++ < maxIter) {
-                let textBefore = html.slice(lastIndex, match.index).trim();
-                let parentId = stack[stack.length - 1];
-
-                if (textBefore) {
-                    let textId = nodes.length;
-                    nodes.push({ id: textId, tag: "#text", text: textBefore, attrs: {}, childrenIds: [], parentId: parentId });
-                    nodes[parentId].childrenIds.push(textId);
-                }
-
-                lastIndex = tagRegex.lastIndex;
-                let isCloseTag = !!match[1];
-                let tagName = (match[1] || match[2] || "").toLowerCase();
-                let attrStr = match[3] || "";
-                let isSelfClosing = !!match[4] || VOID_TAGS.has(tagName);
-
-                if (isCloseTag) {
-                    for (let i = stack.length - 1; i > 0; i--) {
-                        if (nodes[stack[i]].tag === tagName) {
-                            stack.splice(i);
-                            break;
-                        }
-                    }
-                } else {
-                    let attrs = {};
-                    let attrRegex = /([a-zA-Z0-9_-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
-                    let attrMatch;
-                    while ((attrMatch = attrRegex.exec(attrStr)) !== null) {
-                        attrs[attrMatch[1].toLowerCase()] = attrMatch[2] || attrMatch[3] || attrMatch[4] || "";
-                    }
-
-                    let nodeId = nodes.length;
-                    let node = { id: nodeId, tag: tagName, attrs: attrs, childrenIds: [], parentId: parentId };
-                    nodes.push(node);
-                    nodes[parentId].childrenIds.push(nodeId);
-
-                    if (!isSelfClosing) {
-                        stack.push(nodeId);
-                    }
-                }
-            }
-        } catch (err) { }
-        return { root, nodes };
-    }
-
-    function getNodeText(node, nodes, depth) {
-        if (!node || (depth || 0) > 20) return "";
-        if (node.tag === "#text") return node.text || "";
-        let text = "";
-        if (node.childrenIds) {
-            for (let cid of node.childrenIds) {
-                text += getNodeText(nodes[cid], nodes, (depth || 0) + 1) + " ";
-            }
-        }
-        return text.trim();
-    }
-
-    function matchSingleSelector(node, sel, nodes) {
-        if (!node || node.tag === "#text" || node.tag === "ROOT") return false;
-        let cleanSel = sel.replace(/:first|:last|:eq\([0-9]+\)/gi, "").trim();
-        let pseudoContentArg = null;
-        let contentMatch = cleanSel.match(/:content\((['"]?)(.*?)\1\)/i);
-        if (contentMatch) {
-            pseudoContentArg = contentMatch[2];
-            cleanSel = cleanSel.replace(contentMatch[0], "").trim();
-        }
-        if (cleanSel && cleanSel !== "*") {
-            let tagMatch = cleanSel.match(/^[a-zA-Z0-9_-]+/);
-            if (tagMatch && node.tag !== tagMatch[0].toLowerCase()) return false;
-            let idMatch = cleanSel.match(/#([a-zA-Z0-9_-]+)/);
-            if (idMatch && (!node.attrs || node.attrs.id !== idMatch[1])) return false;
-            let classMatches = cleanSel.match(/\.([a-zA-Z0-9_\-\/\\:]+)/g);
-            if (classMatches) {
-                if (!node.attrs || !node.attrs.class) return false;
-                let elClasses = node.attrs.class.split(/\s+/);
-                for (let c of classMatches) {
-                    if (!elClasses.includes(c.substring(1))) return false;
-                }
-            }
-        }
-        if (pseudoContentArg !== null) {
-            let fullText = getNodeText(node, nodes, 0);
-            let keywords = pseudoContentArg.split("|").map(k => k.trim().toLowerCase());
-            let found = keywords.some(kw => fullText.toLowerCase().includes(kw));
-            if (!found) return false;
-        }
-        return true;
-    }
-
-    function querySelectorAllSingleLevel(startNode, selector, nodes) {
-        let results = [];
-        function search(currentId, depth) {
-            if (depth > 50) return;
-            let current = nodes[currentId];
-            if (!current) return;
-            if (current.tag !== "ROOT" && current.tag !== "#text" && current.id !== startNode.id) {
-                if (matchSingleSelector(current, selector, nodes)) results.push(current);
-            }
-            if (current.childrenIds) {
-                for (let cid of current.childrenIds) search(cid, depth + 1);
-            }
-        }
-        search(startNode.id, 0);
-        if (selector.indexOf(":first") !== -1) return results.slice(0, 1);
-        if (selector.indexOf(":last") !== -1) return results.slice(-1);
-        return results;
-    }
-
-    function querySelectorAll(startNode, selector, nodes) {
-        try {
-            if (!startNode || !selector) return [];
-            let spaceParts = selector.trim().split(/\s+/);
-            if (spaceParts.length > 1) {
-                let currentNodes = [startNode];
-                for (let part of spaceParts) {
-                    let nextLevelNodes = [];
-                    let addedIds = new Set();
-                    for (let cNode of currentNodes) {
-                        let subResults = querySelectorAllSingleLevel(cNode, part, nodes);
-                        for (let r of subResults) {
-                            if (!addedIds.has(r.id)) { addedIds.add(r.id); nextLevelNodes.push(r); }
-                        }
-                    }
-                    currentNodes = nextLevelNodes;
-                    if (currentNodes.length === 0) break;
-                }
-                return currentNodes;
-            }
-            return querySelectorAllSingleLevel(startNode, selector, nodes);
-        } catch (err) { return []; }
-    }
-
-    function MiniJQ(elements, nodesStore) {
-        this.elements = Array.isArray(elements) ? elements : (elements ? [elements] : []);
-        this.nodes = nodesStore || [];
-        this.length = this.elements.length;
-    }
-
-    MiniJQ.prototype = {
-        find: function(selector) {
-            if (this.elements.length === 0) return new MiniJQ([], this.nodes);
-            let matched = [];
-            let addedIds = new Set();
-            for (let el of this.elements) {
-                let res = querySelectorAll(el, selector, this.nodes);
-                for (let r of res) {
-                    if (!addedIds.has(r.id)) { addedIds.add(r.id); matched.push(r); }
-                }
-            }
-            return new MiniJQ(matched, this.nodes);
-        },
-        text: function() { return this.elements.length === 0 ? "" : getNodeText(this.elements[0], this.nodes, 0); },
-        attr: function(name) { return (this.elements.length > 0 && this.elements[0].attrs) ? (this.elements[0].attrs[name] || "") : ""; },
-        each: function(callback) {
-            this.elements.forEach((el, index) => {
-                let jqEl = new MiniJQ([el], this.nodes);
-                callback.call(jqEl, index, jqEl);
-            });
-            return this;
-        },
-        first: function() { return new MiniJQ(this.elements.length > 0 ? [this.elements[0]] : [], this.nodes); }
-    };
-
-    try {
-        if (!htmlOrBlock) return new MiniJQ([], []);
-        if (htmlOrBlock instanceof MiniJQ) return htmlOrBlock;
-        if (typeof htmlOrBlock === "string") {
-            let parsed = parseHTML(htmlOrBlock);
-            return new MiniJQ(parsed.root, parsed.nodes);
-        }
-        return new MiniJQ(htmlOrBlock, []);
-    } catch (err) {
-        return new MiniJQ([], []);
+        console.log("Lỗi parseDetail\n" + error);
+    return JSON.stringify({ 
+      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+      mimeType: "video/mp4", 
+      isEmbed: false, headers: {}, subtitles: [] 
+    });
     }
 }
