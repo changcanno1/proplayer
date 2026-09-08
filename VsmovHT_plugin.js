@@ -1,55 +1,37 @@
 var BASEURL = "https://vsmov.com";
 var BASEAPI = "https://vsmov.com/api";
 var DEV = true;
-
+var popup_html = "<div class='donate-container'><h2 class='donate-heading'>DONATE</h2><p class='donate-description'>Anh em yêu quý có thể mời bọn mình 2 ly cà phê nhé. Để có động lực duy trì App, cập nhật plugin và tìm thêm nhiều nguồn mới và hay cho anh em. Một chút lòng thành cũng làm bọn mình tiếp tục hoạt động tốt hơn, cám ơn anh em.</p><div class='donate-grid'><div class='donate-card'><div class='donate-title'>Donate Tác giả Plugin</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qrht.png' alt='Donate Tác giả Plugin' /></div></div><div class='donate-card'><div class='donate-title'>Donate Tác giả App</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qryb.png' alt='Donate Tác giả App' /></div></div></div></div><style>.donate-container{max-width:800px;margin:0 auto;padding:10px;box-sizing:border-box;font-family:Arial,sans-serif;text-align:center;color:#eee}.donate-heading{font-size:22px;font-weight:bold;margin:0 0 12px 0;color:#fff;text-transform:uppercase;letter-spacing:1px}.donate-description{font-size:14px;line-height:1.5;margin-bottom:18px;color:#ccc}.donate-grid{display:flex;flex-direction:row;justify-content:center;align-items:stretch;gap:16px}.donate-card{flex:1;min-width:0;background:#22252a;border-radius:12px;padding:14px;border:1px solid #33373e;display:flex;flex-direction:column;align-items:center}.donate-title{font-weight:bold;font-size:15px;margin-bottom:12px;color:#fff}.qr-wrapper{width:100%;max-width:240px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:#181a1d;border-radius:8px;padding:8px;box-sizing:border-box}.qr-wrapper img{width:100%;height:100%;object-fit:contain;border-radius:4px}@media(max-width:600px){.donate-grid{flex-direction:column}.donate-heading{font-size:18px;margin-bottom:8px}.donate-description{font-size:13px;margin-bottom:12px}.qr-wrapper{max-width:180px}}</style>"
 function getManifest() {
-    return JSON.stringify({
-        id: "vsmov",
-        name: "Nguồn Vsmov",
-        description: "Nguồn phim Vsmov...",
-        "version": "1.1",
-        info: "Nguồn phim vietsub và thuyết minh mới.\n\n Hỗ trợ lồng tiếng và có tốc độ phát rất nhanh.",
-        baseUrl: "https://vsmov.com",
-        iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/vsmov.png",
-        isEnabled: true,
-        "adblock": false,
-        "layoutType": "HORIZONTAL",
-        type: "MOVIE",
-        playerType: "exoplayer"
-    });
-}
+  return JSON.stringify({
+    id: "vsmov",
+    name: "Nguồn Vsmov",
+    description: "Nguồn phim Vsmov...",
+    "version": "1.2.3",
+    info: "",
+    baseUrl: "https://vsmov.com",
+    iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/vsmov.png",
+    isEnabled: true,
+    "adblock": false,
+    type: "MOVIE",
+    "author": "Alokillgtv",
 
+    playerType: "exoplayer"
+  });
+}
+//     popup_html: popup_html,
 
 function log(msg) {
-    console.log(msg);
+  	console.log(msg);
 }
 
 function getHomeSections() {
-    return JSON.stringify([{
-            "slug": "/danh-sach/long-tieng",
-            "title": "Phim Lồng Tiếng",
-            "type": "Horizontal"
-        },
-        {
-            "slug": "/danh-sach/phim-le",
-            "title": "Phim Lẻ",
-            "type": "Horizontal"
-        },
-        {
-            "slug": "/danh-sach/phim-bo",
-            "title": "Phim Bộ",
-            "type": "Horizontal"
-        },
-        {
-            "slug": "/danh-sach/thuyet-minh",
-            "title": "Thuyét Minh",
-            "type": "Horizontal"
-        },
-        {
-            "slug": "/danh-sach/phim-moi-cap-nhat/",
-            "title": "Phim Mới",
-            "type": "Grid"
-        }
+    return JSON.stringify([
+        {"slug": "/danh-sach/long-tieng","title": "Phim Lồng Tiếng","type": "Horizontal"},
+       {"slug": "/danh-sach/phim-le","title": "Phim Lẻ","type": "Horizontal"},
+       {"slug": "/danh-sach/phim-bo","title": "Phim Bộ","type": "Horizontal"},
+        {"slug": "/danh-sach/thuyet-minh","title": "Thuyét Minh","type": "Horizontal"},
+        {"slug": "/danh-sach/phim-moi-cap-nhat/","title": "Phim Mới","type": "Grid"}
     ]);
 }
 
@@ -75,9 +57,7 @@ function getFilterConfig() {
         });
     } catch (e) {
         log("getFilterConfig[err]:\n " + e);
-        return JSON.stringify({
-            category: []
-        });
+        return JSON.stringify({ category: [] });
     }
 }
 
@@ -115,12 +95,13 @@ function getUrlList(slug, filtersJson) {
         }
 
         // 3. Ghép URL an toàn với BASEURL
-        if (path.indexOf("/danh-sach/phim-le") > -1 || path.indexOf("/danh-sach/phim-bo") > -1 || path.indexOf("/danh-sach/thuyet-minh") > -1 || path.indexOf("/danh-sach/long-tieng") > -1) {
+        if(path.indexOf("/danh-sach/phim-le") > -1 || path.indexOf("/danh-sach/phim-bo") > -1 || path.indexOf("/danh-sach/thuyet-minh") > -1 || path.indexOf("/danh-sach/long-tieng") > -1){
             var resultUrl = BASEURL;
-        } else {
+        }
+        else{
             var resultUrl = BASEAPI;
         }
-
+        
         if (path) {
             resultUrl += (path.indexOf("/") === 0 ? "" : "/") + path;
         }
@@ -205,10 +186,10 @@ function getUrlDetail(slug) {
     }
 }
 
-function getUrlCategories() {
+function getUrlCategories() { 
     try {
         log("getUrlCategories[url]: \n" + BASEURL);
-        return BASEURL;
+        return BASEURL; 
     } catch (e) {
         log("getUrlCategories[err]:\n " + e);
         return "";
@@ -216,18 +197,18 @@ function getUrlCategories() {
 }
 
 
-function getUrlCountries() {
+function getUrlCountries() { 
     try {
-        return "";
+        return ""; 
     } catch (e) {
         log("getUrlCountries[err]:\n " + e);
         return "";
     }
 }
 
-function getUrlYears() {
+function getUrlYears() { 
     try {
-        return "";
+        return ""; 
     } catch (e) {
         log("getUrlYears[err]:\n " + e);
         return "";
@@ -293,14 +274,14 @@ function parseAPI(html, $url) {
 function parseRAW(html, $url) {
     var $html = _$(html);
     var items = [];
-    $html.find("tbody tr[class*='group/tr']").each(function() {
+    $html.find("tbody tr[class*='group/tr']").each(function(){
         var slug = this.find("a").attr("href");
-        slug = slug.replace(BASEURL, BASEAPI);
+        slug = slug.replace(BASEURL,BASEAPI);
         var name = this.find("h4").text();
         var poster = this.find("img").attr("data-original");
         var year = this.find("img.object-cover").closest("td").next().text();
         year = Number(year.trim());
-        // var img = typeof year === "number" ? year : 2026;
+     // var img = typeof year === "number" ? year : 2026;
         items.push({
             "id": slug,
             "title": name,
@@ -385,26 +366,26 @@ function parseMovieDetail(html, url) {
         ldes = $data.content;
         lactor = $data.actor.join(" - ");
         lduran = $data.time;
-        status = $data.status.replace("completed", "Hoàn Thành");
-        var categoryArray = [];
+        status = $data.status.replace("completed","Hoàn Thành");
+        var categoryArray =  [];
         // Dùng forEach để duyệt qua từng object
-        $data.category.forEach(function(item) {
-            if (item.name && item.slug) {
-                categoryArray.push("[" + item.name + "](/the-loai/" + item.slug + "/)");
-            }
+        $data.category.forEach(function (item) {
+          if (item.name && item.slug) {
+            categoryArray.push("[" + item.name + "](/the-loai/" + item.slug + "/)");
+          }
         });
         // Nối lại thành chuỗi phân cách bởi dấu phẩy
         category = categoryArray.join(", ");
-
+        
         episode_current = $data.episode_current;
         year = $data.year;
         lang = $data.lang;
-        var countryArray = [];
+        var countryArray =  [];
         // Dùng forEach để duyệt qua từng object
-        $data.country.forEach(function(item) {
-            if (item.name && item.slug) {
-                countryArray.push("[" + item.name + "](/quoc-gia/" + item.slug + ")");
-            }
+        $data.country.forEach(function (item) {
+          if (item.name && item.slug) {
+            countryArray.push("[" + item.name + "](/quoc-gia/" + item.slug + ")");
+          }
         });
         // Nối lại thành chuỗi phân cách bởi dấu phẩy
         country = countryArray.join(", ");
@@ -416,35 +397,35 @@ function parseMovieDetail(html, url) {
         var servers = [];
 
         rawData.forEach(function(serverItem) {
-            var episodes = [];
-
-            // Duyệt qua từng tập phim trong server_data
-            serverItem.server_data.forEach(function(episode) {
-                episodes.push({
-                    id: episode.link_embed, // + "?currennt=" + episode.name + "&list=" + url, 
-                    name: "Tập " + episode.name,
-                    slug: episode.slug
-                });
+          var episodes = [];
+        
+          // Duyệt qua từng tập phim trong server_data
+          serverItem.server_data.forEach(function(episode) {
+            episodes.push({
+              id: episode.link_embed,// + "?currennt=" + episode.name + "&list=" + url, 
+              name: "Tập " + episode.name,
+              slug: episode.slug
             });
-
-            // Làm sạch tên server (xóa khoảng trắng và ký tự \r\n thừa)
-            var cleanServerName = serverItem.server_name.replace(/\r?\n|\r/g, "").trim().replace(/\s+/g, " ");
-
-            // Đẩy vào mảng server
-            servers.push({
-                name: cleanServerName,
-                episodes: episodes
-            });
+          });
+        
+          // Làm sạch tên server (xóa khoảng trắng và ký tự \r\n thừa)
+          var cleanServerName = serverItem.server_name.replace(/\r?\n|\r/g, "").trim().replace(/\s+/g," ");
+        
+          // Đẩy vào mảng server
+          servers.push({
+            name: cleanServerName,
+            episodes: episodes
+          });
             servers.sort(function(a, b) {
-                var aIsThuyetMinh = a.name.toLowerCase().includes("thuyết minh");
-                var bIsThuyetMinh = b.name.toLowerCase().includes("thuyết minh");
-
-                if (aIsThuyetMinh && !bIsThuyetMinh) return -1; // a lên trước b
-                if (!aIsThuyetMinh && bIsThuyetMinh) return 1; // b lên trước a
-                return 0; // Giữ nguyên vị trí nếu cùng loại
+              var aIsThuyetMinh = a.name.toLowerCase().includes("thuyết minh");
+              var bIsThuyetMinh = b.name.toLowerCase().includes("thuyết minh");
+            
+              if (aIsThuyetMinh && !bIsThuyetMinh) return -1; // a lên trước b
+              if (!aIsThuyetMinh && bIsThuyetMinh) return 1;  // b lên trước a
+              return 0; // Giữ nguyên vị trí nếu cùng loại
             });
         });
-
+        
         return JSON.stringify({
             id: url,
             title: lname,
@@ -491,45 +472,45 @@ function parseMovieDetail(html, url) {
 */
 
 function parseDetailResponse(html, url) {
-    try {
-        console.log("parseDetailResponse dang xu ly: " + url);
-        var m3u8 = url.replace("/video/", "/stream/") + "/master.m3u8";
-        var $doc = _$(html);
-        var domain = url.replace(/^(https?:\/\/[^\/]+).*/, "$1");
-        var script = $doc.find("script:content('subtitles')").html()
-        var match = script.match(/subtitles:\s*(\[\s*\{.*?\}\s*\])/s);
-        var subitem = [];
-        if (match && match[1]) {
-            var sublist = JSON.parse(match[1]);
-            sublist.forEach(function(item, index) {
-                var name = item.code.replace("vie", "Vietsub").replace("eng", "Engsub");
-                var link = domain + item.url;
-                subitem.push({
-                    lang: name + " " + (index + 1),
-                    url: link
-                })
+  try {
+    console.log("parseDetailResponse dang xu ly: " + url);
+    var m3u8 = url.replace("/video/","/stream/") + "/master.m3u8";
+    var $doc = _$(html);
+    var domain = url.replace(/^(https?:\/\/[^\/]+).*/, "$1");
+    var script = $doc.find("script:content('subtitles')").html()
+    var match = script.match(/subtitles:\s*(\[\s*\{.*?\}\s*\])/s);
+    var subitem = [];
+    if(match && match[1]){
+        var sublist = JSON.parse(match[1]);
+        sublist.forEach(function(item, index){
+            var name = item.code.replace("vie","Vietsub").replace("eng","Engsub");
+            var link = domain + item.url;
+            subitem.push({
+                lang: name + " " + (index + 1),
+                url: link
             })
-        }
-        console.log("stream: " + m3u8);
-        return JSON.stringify({
-            url: m3u8,
-            isEmbed: false,
-            mimeType: "application/x-mpegURL",
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                Referer: BASEURL
-            },
-            subtitles: subitem,
-        });
-    } catch (e) {
-        log("parseDetailResponse[err]:\n " + e);
-        return JSON.stringify({
-            url: "",
-            isEmbed: false,
-            headers: {},
-            subtitles: [],
-        });
+        })
     }
+    console.log("stream: " + m3u8);
+    return JSON.stringify({
+      url: m3u8,
+      isEmbed: false,
+      mimeType: "application/x-mpegURL",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Referer: BASEURL
+      },
+      subtitles:subitem,
+    });
+  } catch (e) {
+    log("parseDetailResponse[err]:\n " + e);
+    return JSON.stringify({ 
+      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+      mimeType: "video/mp4", 
+      isEmbed: false, headers: {}, subtitles: [] 
+    });
+  }
 }
 
 function parseCategoriesResponse(apiResponseJson) {
@@ -567,39 +548,28 @@ function getLISTmenu() {
     return `[{"link":"/the-loai/action-adventure/","name":"Action & Adventure"},{"link":"/the-loai/bi-an/","name":"Bí Ẩn"},{"link":"/the-loai/chien-tranh/","name":"Chiến Tranh"},{"link":"/the-loai/chinh-kich/","name":"Chính Kịch"},{"link":"/the-loai/chinh-tri-chien-tranh/","name":"Chính Trị - Chiến Tranh"},{"link":"/the-loai/chu-de-thuc-te/","name":"Chủ Đề Thực Tế"},{"link":"/the-loai/co-trang/","name":"Cổ Trang"},{"link":"/the-loai/drama/","name":"Drama"},{"link":"/the-loai/gia-dinh/","name":"Gia Đình"},{"link":"/the-loai/gia-tuong/","name":"Giả Tưởng"},{"link":"/the-loai/giat-gan/","name":"Giật Gân"},{"link":"/the-loai/hai/","name":"Hài"},{"link":"/the-loai/hanh-dong/","name":"Hành Động"},{"link":"/the-loai/hanh-dong-phieu-luu/","name":"Hành Động & Phiêu Lưu"},{"link":"/the-loai/hinh-su/","name":"Hình Sự"},{"link":"/the-loai/hoat-hinh/","name":"Hoạt Hình"},{"link":"/the-loai/hoc-duong/","name":"Học Đường"},{"link":"/the-loai/hon-nhan/","name":"Hôn Nhân"},{"link":"/the-loai/hu-cau/","name":"Hư Cấu"},{"link":"/the-loai/khoa-hoc-vien-tuong/","name":"Khoa Học Viễn Tưởng"},{"link":"/the-loai/khoa-hoc-vien-tuong-gia-tuong/","name":"Khoa Học Viễn Tưởng & Giả Tưởng"},{"link":"/the-loai/kiem-hiep/","name":"Kiếm hiệp"},{"link":"/the-loai/kinh-di/","name":"Kinh Dị"},{"link":"/the-loai/lang-man/","name":"Lãng Mạng"},{"link":"/the-loai/lang-mang/","name":"Lãng Mạng"},{"link":"/the-loai/lgbt/","name":"LGBT"},{"link":"/the-loai/phieu-luu/","name":"Phiêu Lưu"},{"link":"/the-loai/phim-nhac/","name":"Phim Nhạc"},{"link":"/the-loai/phuctrangcodai/","name":"Phụctrangcổđại"},{"link":"/the-loai/sci-fi-fantasy/","name":"Sci-Fi & Fantasy"},{"link":"/the-loai/thanh-xuan/","name":"Thanh Xuân"},{"link":"/the-loai/thieu-nhi/","name":"Thiếu Nhi"},{"link":"/the-loai/thuong-truong/","name":"Thương Trường"},{"link":"/the-loai/tien-hiep/","name":"Tiên Hiệp"},{"link":"/the-loai/tieu-thuyet-chuyen-the/","name":"Tiểu Thuyết Chuyển Thể"},{"link":"/the-loai/tinh-ban/","name":"Tình Bạn"},{"link":"/the-loai/tinh-tiet/","name":"Tình Tiết"},{"link":"/the-loai/tinh-yeu-ngot-ngao/","name":"Tình Yêu Ngọt Ngào"},{"link":"/the-loai/toi-pham/","name":"Tội Phạm"},{"link":"/the-loai/tra-thu/","name":"Trả Thù"},{"link":"/the-loai/truyen-hinh-thuc-te/","name":"Truyền Hình Thực Tế"},{"link":"/the-loai/vien-tuong/","name":"Viễn Tưởng"},{"link":"/the-loai/vo-hiep/","name":"Võ hiệp"},{"link":"/the-loai/vo-thuat/","name":"Võ Thuật"},{"link":"/the-loai/xa-hoi-den/","name":"Xã Hội Đen"}]`;
 }
 
-function buildMenu(menuStr, type) {
-    var menuArray = JSON.parse(menuStr);
-    let menulist = [];
-    if (!menuArray || !Array.isArray(menuArray)) return menulist;
-    var typeStr = type !== undefined ? String(type).trim() : undefined;
-    for (var i = 0; i < menuArray.length; i++) {
-        var item = menuArray[i];
-        if (!item) continue;
-        var link = item.link ? String(item.link).trim() : "";
-        var name = item.name ? String(item.name).trim() : "";
-        if (!link || !name) continue;
-        var menuItem = {};
-        if (typeStr === "false") {
-            menuItem = {
-                "slug": link,
-                "title": name,
-                "type": "Horizontal"
-            };
-        } else if (typeStr === "true") {
-            menuItem = {
-                "slug": link,
-                "title": name,
-                "type": "Grid"
-            };
-        } else {
-            menuItem = {
-                "slug": link,
-                "name": name
-            };
-        }
-        menulist.push(menuItem);
-    }
-    return menulist;
+function buildMenu(menuStr, type) { 
+    var menuArray = JSON.parse(menuStr); 
+    let menulist = []; 
+    if (!menuArray || !Array.isArray(menuArray)) return menulist; 
+    var typeStr = type !== undefined ? String(type).trim() : undefined; 
+    for (var i = 0; i < menuArray.length; i++) { 
+        var item = menuArray[i]; 
+        if (!item) continue; 
+        var link = item.link ? String(item.link).trim() : ""; 
+        var name = item.name ? String(item.name).trim() : ""; 
+        if (!link || !name) continue; 
+        var menuItem = {}; 
+        if (typeStr === "false") { 
+            menuItem = { "slug": link, "title": name, "type": "Horizontal" }; 
+        } else if (typeStr === "true") { 
+            menuItem = { "slug": link, "title": name, "type": "Grid" }; 
+        } else { 
+            menuItem = { "slug": link, "name": name }; 
+        } 
+        menulist.push(menuItem); 
+    } 
+    return menulist; 
 }
 
 function _$(param) {
@@ -608,26 +578,17 @@ function _$(param) {
     // -------------------------------------------------------------
     function parseHTML(htmlString) {
         let nodes = [];
-        let root = {
-            id: 0,
-            tag: "ROOT",
-            attrs: {},
-            childrenIds: [],
-            parentId: null
-        };
+        let root = { id: 0, tag: "ROOT", attrs: {}, childrenIds: [], parentId: null };
         nodes.push(root);
 
         try {
             let html = (htmlString || "").trim();
-            if (!html) return {
-                root,
-                nodes
-            };
+            if (!html) return { root, nodes };
 
-            const VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
+            const VOID_TAGS = new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
             let stack = [0];
             let tagRegex = /<(?:\/([a-zA-Z0-9_-]+)|([a-zA-Z0-9_-]+)([^>]*?)(\/)?)\s*>/g;
-
+            
             let lastIndex = 0;
             let match;
             let maxIter = 50000;
@@ -639,14 +600,7 @@ function _$(param) {
 
                 if (textBefore) {
                     let textId = nodes.length;
-                    nodes.push({
-                        id: textId,
-                        tag: "#text",
-                        text: textBefore,
-                        attrs: {},
-                        childrenIds: [],
-                        parentId: parentId
-                    });
+                    nodes.push({ id: textId, tag: "#text", text: textBefore, attrs: {}, childrenIds: [], parentId: parentId });
                     nodes[parentId].childrenIds.push(textId);
                 }
 
@@ -672,13 +626,7 @@ function _$(param) {
                     }
 
                     let nodeId = nodes.length;
-                    let node = {
-                        id: nodeId,
-                        tag: tagName,
-                        attrs: attrs,
-                        childrenIds: [],
-                        parentId: parentId
-                    };
+                    let node = { id: nodeId, tag: tagName, attrs: attrs, childrenIds: [], parentId: parentId };
                     nodes.push(node);
                     nodes[parentId].childrenIds.push(nodeId);
 
@@ -692,23 +640,13 @@ function _$(param) {
             if (remainingText && stack.length > 0) {
                 let parentId = stack[stack.length - 1];
                 let textId = nodes.length;
-                nodes.push({
-                    id: textId,
-                    tag: "#text",
-                    text: remainingText,
-                    attrs: {},
-                    childrenIds: [],
-                    parentId: parentId
-                });
+                nodes.push({ id: textId, tag: "#text", text: remainingText, attrs: {}, childrenIds: [], parentId: parentId });
                 nodes[parentId].childrenIds.push(textId);
             }
         } catch (err) {
             if (typeof window !== "undefined" && window.log) window.log("parseHTML error: " + err.message);
         }
-        return {
-            root,
-            nodes
-        };
+        return { root, nodes };
     }
 
     function getNodeText(node, nodes, depth) {
@@ -730,7 +668,7 @@ function _$(param) {
         if (!node || node.tag === "#text" || node.tag === "ROOT") return false;
 
         let cleanSel = sel;
-
+        
         // 1. Tách pseudo positional (:first, :last, :eq)
         cleanSel = cleanSel.replace(/:first|:last|:eq\([0-9]+\)/gi, "").trim();
 
@@ -782,7 +720,6 @@ function _$(param) {
 
     function querySelectorAllSingleLevel(startNode, selector, nodes) {
         let results = [];
-
         function search(currentId, depth) {
             if (depth > 50) return;
             let current = nodes[currentId];
@@ -803,7 +740,7 @@ function _$(param) {
 
         if (selector.indexOf(":first") !== -1) return results.slice(0, 1);
         if (selector.indexOf(":last") !== -1) return results.slice(-1);
-
+        
         let eqMatch = selector.match(/:eq\(([0-9]+)\)/i);
         if (eqMatch) {
             let idx = parseInt(eqMatch[1], 10);
