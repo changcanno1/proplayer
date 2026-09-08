@@ -16,18 +16,25 @@
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
-      "id": "PhimBom",
-      "name": "PhimBom",
-      "version": "1.2.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
-    },
-    {
       "id": "vn2c",
       "name": "PhimVn2C",
       "version": "1.3.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VN2Cfilm_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vn2c.png"
+    },
+    {
+      "id": "phimhdcs",
+      "name": "Phim HDCS",
+      "version": "1.1.4",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
+      "iconUrl": "https://phimhdcss.com/favicon.ico"
+    },
+    {
+      "id": "kkphim",
+      "name": "KKPhim",
+      "version": "1.0.9",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
     },
     {
       "id": "nguoncnew",
@@ -36,14 +43,21 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
-     {
+    {
+      "id": "bilutv",
+      "name": "[MOVIE] Bilutv",
+      "version": "1.5.6",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Bilutv_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
+    },
+    {
       "id": "phimlongtieng",
       "name": "Phim Long Tieng",
       "version": "1.1.6",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/1phim23_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
     },
-     {
+    {
       "id": "phimfun",
       "name": "Nguồn Phim Fun",
       "version": "1.1.8",
@@ -58,25 +72,11 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hdvnn.png"
     },
     {
-      "id": "kkphim",
-      "name": "KKPhim",
-      "version": "1.0.9",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
-    },
-    {
       "id": "NOVAHD",
       "name": "NOVAHD",
       "version": "1.2.4",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NovaHDHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/novahd.png"
-    },
-     {
-      "id": "phimhdcs",
-      "name": "Phim HDCS",
-      "version": "1.1.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
-      "iconUrl": "https://phimhdcss.com/favicon.ico"
     },
     {
       "id": "Rổ Phim",
@@ -84,6 +84,13 @@
       "version": "1.2.6",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+    },
+    {
+      "id": "PhimBom",
+      "name": "PhimBom",
+      "version": "1.2.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
     },
     {
       "id": "shortflix",
