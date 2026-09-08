@@ -51,13 +51,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
     },
     {
-      "id": "phimlongtieng",
-      "name": "Phim Long Tieng",
-      "version": "1.1.6",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/1phim23_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
-    },
-    {
       "id": "phimfun",
       "name": "Nguồn Phim Fun",
       "version": "1.1.8",
@@ -72,6 +65,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hdvnn.png"
     },
     {
+      "id": "clbpxVIP",
+      "name": "CLB Phim Xưa VIP",
+      "version": "1.5.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/CLBPhimxua_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/clbpxVIP.png"
+    },
+    {
       "id": "NOVAHD",
       "name": "NOVAHD",
       "version": "1.2.4",
@@ -84,6 +84,13 @@
       "version": "1.2.6",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+    },
+    {
+      "id": "phimlongtieng",
+      "name": "Phim Long Tieng",
+      "version": "1.1.6",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/1phim23_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
     },
     {
       "id": "PhimBom",
