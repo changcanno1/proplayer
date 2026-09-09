@@ -1,4 +1,4 @@
-{
+ko{
   "version": 1,
   "plugins": [
     {
@@ -113,13 +113,6 @@
       "version": "1.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/mephimngan_plugin.js",
       "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
-    },
-    {
-      "id": "nartodrama",
-      "name": "[SHORT] Narto",
-      "version": "1.2.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Nartodrama_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nartodrama.png"
     },
     {
       "id": "ShortFilm",
