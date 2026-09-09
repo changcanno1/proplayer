@@ -78,14 +78,7 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HDVNN_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hdvnn.png"
     },
-     {
-      "id": "sieutamphim",
-      "name": "Sưu Tầm Phim",
-      "version": "1.2.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Suutamphim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/sieutamphim.png"
-    },
-   {
+    {
       "id": "NOVAHD",
       "name": "NOVAHD",
       "version": "1.2.4",
