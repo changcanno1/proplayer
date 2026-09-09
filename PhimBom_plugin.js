@@ -6,7 +6,7 @@ BASEURL = "https://phimbom.us";
 function getManifest() {
   try{
     return JSON.stringify({
-      "id": "phimbom",
+      "id": "PhimBom",
       "name": "Nguồn Phim Bom",
       "version": "1.2",
       "author": "Alokillgtv",
