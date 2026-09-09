@@ -51,6 +51,13 @@
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
+      "id": "PhimBom",
+      "name": "PhimBom",
+      "version": "1.2.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
+    },
+    {
       "id": "bilutv",
       "name": "[MOVIE] Bilutv",
       "version": "1.5.6",
@@ -84,13 +91,6 @@
       "version": "1.2.6",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
-    },
-    {
-      "id": "PhimBom",
-      "name": "PhimBom",
-      "version": "1.2.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
     },
     {
       "id": "shortflix",
