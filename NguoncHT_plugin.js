@@ -5,7 +5,7 @@
 
 function getManifest() {
     return JSON.stringify({
-        "id": "nguoncnew_ios",
+        "id": "nguoncvip",
         "name": "Phim NguonC VIP",
         "version": "1.7",
         "baseUrl": "https://phim.nguonc.com",
