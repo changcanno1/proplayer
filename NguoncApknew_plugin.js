@@ -5,7 +5,7 @@ var popuphtml = "<div class='donate-container'><h2 class='donate-heading'>DONATE
 
 function getManifest() {
     return JSON.stringify({
-        "id": "nguoncnew_ios",
+        "id": "nguoncvip",
         "name": "Phim NguonC VIP",
         "version": "2.0",
         "baseUrl": "https://phim.nguonc.com",
