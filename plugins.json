@@ -157,6 +157,41 @@
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBfZXavFvLlt56VptIFEx-RSQI-oSTGEEjJT7D9hNKJA&s"
     },
     {
+      "id": "nettruyen",
+      "name": "[MANGA] Nettruyen",
+      "version": "1.6.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/nettruyen_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nettruyen.png"
+    },
+    {
+      "id": "mangadex",
+      "name": "[MANGA] MangaDex",
+      "version": "1.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/mangadex_plugin.js",
+      "iconUrl": "https://mangadex.org/favicon.ico"
+    },
+    {
+      "id": "truyentuoitho",
+      "name": "[MANGA] Truyện Tuổi Thơ",
+      "version": "1.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/truyentuoitho_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/truyentuoitho.png"
+    },
+    {
+      "id": "truyenqq",
+      "name": "[MANGA] TruyệnQQ",
+      "version": "1.8.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/TruyenQQ_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/truyenqq.png"
+    },
+    {
+      "id": "zettruyen",
+      "name": "[MANGA] ZetTruyen",
+      "version": "1.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/ztruyen_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/zettruyen.png"
+    },
+    {
       "id": "ThethaoTV",
       "name": "ThethaoTV",
       "version": "1.0.1",
