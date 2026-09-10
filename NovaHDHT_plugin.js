@@ -2,30 +2,34 @@ var BASEURL = "https://moviedb.alokillgtv.workers.dev";
 var BASEAPI = "https://moviedb.alokillgtv.workers.dev";
 var BASESV = "novahd";
 var BASELINK = BASEURL;
-
+var popup_html = "<div class='donate-container'><h2 class='donate-heading'>DONATE</h2><p class='donate-description'>Anh em yêu quý có thể mời bọn mình 2 ly cà phê nhé. Để có động lực duy trì App, cập nhật plugin và tìm thêm nhiều nguồn mới và hay cho anh em. Một chút lòng thành cũng làm bọn mình tiếp tục hoạt động tốt hơn, cám ơn anh em.</p><div class='donate-grid'><div class='donate-card'><div class='donate-title'>Donate Tác giả Plugin</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qrht.png' alt='Donate Tác giả Plugin' /></div></div><div class='donate-card'><div class='donate-title'>Donate Tác giả App</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qryb.png' alt='Donate Tác giả App' /></div></div></div></div><style>.donate-container{max-width:800px;margin:0 auto;padding:10px;box-sizing:border-box;font-family:Arial,sans-serif;text-align:center;color:#eee}.donate-heading{font-size:22px;font-weight:bold;margin:0 0 12px 0;color:#fff;text-transform:uppercase;letter-spacing:1px}.donate-description{font-size:14px;line-height:1.5;margin-bottom:18px;color:#ccc}.donate-grid{display:flex;flex-direction:row;justify-content:center;align-items:stretch;gap:16px}.donate-card{flex:1;min-width:0;background:#22252a;border-radius:12px;padding:14px;border:1px solid #33373e;display:flex;flex-direction:column;align-items:center}.donate-title{font-weight:bold;font-size:15px;margin-bottom:12px;color:#fff}.qr-wrapper{width:100%;max-width:240px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:#181a1d;border-radius:8px;padding:8px;box-sizing:border-box}.qr-wrapper img{width:100%;height:100%;object-fit:contain;border-radius:4px}@media(max-width:600px){.donate-grid{flex-direction:column}.donate-heading{font-size:18px;margin-bottom:8px}.donate-description{font-size:13px;margin-bottom:12px}.qr-wrapper{max-width:180px}}</style>"
 function getManifest() {
   return JSON.stringify({
-    id: "Nên ChọnVietsub2",
-    name: "Nên ChọnVietsub2",
-    description: "Backup Film",
-    "version": "1.2.4",
+    id: "novahd",
+    name: "Nguồn NovaHD",
+    description: "Nguồn phim NovaHD",
+    "version": "1.2.5",
     "author": "Alokillgtv",
+    "headers":{
+        "X-VAX-YB": "vax_yb_token_2030_1990"
+    },
     info: "",
     BASEURL: BASEURL,
     iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/novahd.png",
     isEnabled: true,
     "adblock": false,
-    debug: true,
-    "layoutType": "HORIZONTAL",
+    "author": "Alokillgtv",
     type: "MOVIE",
     "subtitleCat": false,
     playerType: "exoplayer"
   });
 }
-
+//     popup_html: popup_html,
 // ===== HÀM MENU LIST BEGIN ======
 {
 // Tạo List phim ở menu Home
+  //           {"slug": "/api/themoviedb?endpoint=tv/top_rated&language=vi-VN","title": "TV SHOW Hot","type": "Horizontal"},
+  //           {"slug": "/api/themoviedb?endpoint=trending/movie/day&language=vi-VN","title": "Phim Mới","type": "Grid"}
   function getHomeSections() {
       localStorage.clear();
       return JSON.stringify([
@@ -69,6 +73,8 @@ function getManifest() {
         return `[{"link":"/","name":"Đang lỗi getLISTmenu()"}]`;
     }
 }
+
+
 
 } // getHomeSections(), getLISTmenu()
 // ===== HÀM MENU LIST END ======
@@ -155,7 +161,12 @@ function getUrlList(slug, filtersJson) {
       }
   }
 } // getUrlList, getUrlSearch
-
+// http://vkey.vn/animevv
+// /quoc-gia/M%E1%BB%B9
+// /top
+//filtersJson = "{page:5}"
+//getUrlList("/top", filtersJson)
+//getUrlSearch("girl", filtersJson)
 // ===== HÀM TẠO URL END ======
 
 // ===== HÀM TẠO KHỐI LIST PHIM BEGIN ======
@@ -286,6 +297,15 @@ function getGenres(ids = [], baseUrl = '/api/themoviedb?endpoint=discover/movie&
     .join(', ');
 }
 
+// --- VÍ DỤ SỬ DỤNG ---
+//const input = [28, 80, 18, 53];
+//const result = getGenres(input);
+
+//console.log(result);
+
+
+
+// ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
 // ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
 // =========================================================
 // 1. HÀM PARSE MOVIE DETAIL (XỬ LÝ DỮ LIỆU TMDB & NOVAHD)
@@ -442,6 +462,12 @@ function parseMovieDetail(html, url) {
         return JSON.stringify({ id: url || "", title: "Lỗi", description: String(e), servers: [], extra: "" });
     }
 }
+
+//var url = "https://novahd.cc/api/show/1413"
+//var url = "http://vkey.vn/novahd/api/show/1413"
+// https://novahd.cc/api/shows/1413
+//var html = sourceHTML;
+//JSON.parse(parseMovieDetail(sourceHTML, url))
 // ===== HÀM TẠO KHỐI CHI TIẾT PHIM END ======
 
 // ===== HÀM TẠO XỬ LÝ STREAM PHIM BEGIN ======
@@ -1462,7 +1488,7 @@ BASE64 = {
         var fixedLine = currentLine;
         if (returnFixed) {
           // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
-          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
+          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
         }
   
         fixedLines.push(fixedLine);
