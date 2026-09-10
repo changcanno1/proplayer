@@ -37,13 +37,6 @@
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
-      "id": "supermv",
-      "name": "[MOVIE] SuperMV",
-      "version": "1.6.7",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Super4K_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
-    },
-     {
       "id": "kkphim",
       "name": "KKPhim",
       "version": "1.0.9",
@@ -77,6 +70,13 @@
       "version": "1.3.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HDVNN_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hdvnn.png"
+    },
+    {
+      "id": "supermv",
+      "name": "[MOVIE] SuperMV",
+      "version": "1.6.7",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Super4K_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
     },
     {
       "id": "novahd",
