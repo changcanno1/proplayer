@@ -29,7 +29,7 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VN2Cfilm_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vn2c.png"
     },
-     {
+    {
       "id": "phimlongtieng",
       "name": "[MOVIE] Phim Lồng Tiếng",
       "version": "1.1.6",
@@ -43,7 +43,7 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
     },
-     {
+    {
       "id": "Vsmov",
       "name": "PhimVsmov",
       "version": "1.2.3",
@@ -56,6 +56,13 @@
       "version": "1.2.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
+    },
+    {
+      "id": "supermv",
+      "name": "[MOVIE] SuperMV",
+      "version": "1.6.7",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Super4K_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
     },
     {
       "id": "bilutv",
