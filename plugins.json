@@ -1,13 +1,6 @@
 {
   "version": 1,
   "plugins": [
-     {
-      "id": "nguoncvip",
-      "name": "Phim NguồnC",
-      "version": "2.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
-    },
     {
       "id": "vicdn",
       "name": "Nguồn Vicdn",
@@ -42,6 +35,13 @@
       "version": "1.0.9",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
+    },
+    {
+      "id": "phimlongtieng",
+      "name": "[MOVIE] Phim Lồng Tiếng",
+      "version": "1.1.6",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/1phim23_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
     },
     {
       "id": "PhimBom",
@@ -86,11 +86,11 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/novahd.png"
     },
     {
-      "id": "phimlongtieng",
-      "name": "[MOVIE] Phim Lồng Tiếng",
-      "version": "1.1.6",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/1phim23_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
+      "id": "nguoncvip",
+      "name": "Phim NguồnC",
+      "version": "2.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
     {
       "id": "Rổ Phim",
