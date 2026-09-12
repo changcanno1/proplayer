@@ -23,10 +23,9 @@ function getManifest() {
   catch(e){
     // VERTICAL
     return JSON.stringify({
-      "id": "loiapp",
-      "name": "Plugin bị lỗi cài đặt",
-      "version": "1.0",
-      "info": "Plugin đang bị lỗi: \n" + e,
+      "id": "phimbom",
+      "name": "[MOVIE] Phim Bom",
+      "version": "1.2.1",
       "baseUrl": "http://vkey.vn/",
       "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
       "isEnabled": true,
