@@ -1,20 +1,19 @@
 // =============================================================================
-// NGUONC TỐI ƯU iOS (NATIVE EXOPLAYER + PIPE DATA)
+// CONFIGURATION & METADATA
 // =============================================================================
-var popuphtml = "<div class='donate-container'><h2 class='donate-heading'>DONATE</h2><p class='donate-description'>Anh em yêu quý có thể mời bọn mình 2 ly cà phê nhé.</p></div><style>.donate-container{max-width:800px;margin:0 auto;padding:10px;text-align:center;color:#eee}.donate-heading{font-size:22px;font-weight:bold;color:#fff}</style>";
-
+var popuphtml = "<div class='donate-container'><h2 class='donate-heading'>DONATE</h2><p class='donate-description'>Anh em yêu quý có thể mời bọn mình 2 ly cà phê nhé. Để có động lực duy trì App, cập nhật plugin và tìm thêm nhiều nguồn mới và hay cho anh em. Một chút lòng thành cũng làm bọn mình tiếp tục hoạt động tốt hơn, cám ơn anh em.</p><div class='donate-grid'><div class='donate-card'><div class='donate-title'>Donate Tác giả Plugin</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qrht.png' alt='Donate Tác giả Plugin' /></div></div><div class='donate-card'><div class='donate-title'>Donate Tác giả App</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qryb.png' alt='Donate Tác giả App' /></div></div></div></div><style>.donate-container{max-width:800px;margin:0 auto;padding:10px;box-sizing:border-box;font-family:Arial,sans-serif;text-align:center;color:#eee}.donate-heading{font-size:22px;font-weight:bold;margin:0 0 12px 0;color:#fff;text-transform:uppercase;letter-spacing:1px}.donate-description{font-size:14px;line-height:1.5;margin-bottom:18px;color:#ccc}.donate-grid{display:flex;flex-direction:row;justify-content:center;align-items:stretch;gap:16px}.donate-card{flex:1;min-width:0;background:#22252a;border-radius:12px;padding:14px;border:1px solid #33373e;display:flex;flex-direction:column;align-items:center}.donate-title{font-weight:bold;font-size:15px;margin-bottom:12px;color:#fff}.qr-wrapper{width:100%;max-width:240px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:#181a1d;border-radius:8px;padding:8px;box-sizing:border-box}.qr-wrapper img{width:100%;height:100%;object-fit:contain;border-radius:4px}@media(max-width:600px){.donate-grid{flex-direction:column}.donate-heading{font-size:18px;margin-bottom:8px}.donate-description{font-size:13px;margin-bottom:12px}.qr-wrapper{max-width:180px}}</style>";
 function getManifest() {
     return JSON.stringify({
-        "id": "nguoncvip",
+        "id": "nguoncnew",
         "name": "Phim NguonC VIP",
-        "version": "2.0",
+        "version": "1.8.1",
         "baseUrl": "https://phim.nguonc.com",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png",
         "isEnabled": true,
         "type": "MOVIE",
-        "popup_html": popuphtml,
+        popuphtml: popuphtm,
         "author": "Alokillgtv",
-        "playerType": "exoplayer" // Dùng Native Player, loại bỏ WebView ngầm
+        "playerType": "embedtoexoplay"
     });
 }
 
@@ -47,30 +46,69 @@ function getFilterConfig() {
     });
 }
 
+// =============================================================================
+// URL GENERATION
+// =============================================================================
+
 function getUrlList(slug, filtersJson) {
     try {
         var filters = JSON.parse(filtersJson || "{}");
         var page = filters.page || 1;
-        var sort = filters.sort || "updated";
+        var sort = filters.sort || "updated"; // updated, view, year
 
+        // Handle "Phim Mới Cập Nhật" specially if no filter
         if (slug === 'phim-moi-cap-nhat' && !filters.category && !filters.country && !filters.year) {
             return "https://phim.nguonc.com/api/films/phim-moi-cap-nhat?page=" + page;
         }
 
-        if (filters.category) return "https://phim.nguonc.com/api/films/the-loai/" + filters.category + "?page=" + page + "&sort=" + sort;
-        if (filters.country) return "https://phim.nguonc.com/api/films/quoc-gia/" + filters.country + "?page=" + page + "&sort=" + sort;
-        if (filters.year) return "https://phim.nguonc.com/api/films/nam-phat-hanh/" + filters.year + "?page=" + page + "&sort=" + sort;
-        if (/^\d{4}$/.test(slug)) return "https://phim.nguonc.com/api/films/nam-phat-hanh/" + slug + "?page=" + page + "&sort=" + sort;
-
-        var listSlugs = ['phim-le', 'phim-bo', 'phim-dang-chieu', 'tv-shows', 'subteam'];
-        if (listSlugs.indexOf(slug) >= 0 && slug !== 'hoat-hinh') {
-            return "https://phim.nguonc.com/api/films/danh-sach/" + slug + "?page=" + page + "&sort=" + sort;
+        // Priority 1: Category Support //v1/api/the-loai/{slug}
+        if (filters.category) {
+            return "https://phim.nguonc.com/api/films/the-loai/" + filters.category + "?page=" + page + "&sort=" + sort;
         }
 
-        var countrySlugs = ['au-my', 'anh', 'trung-quoc', 'indonesia', 'viet-nam', 'phap', 'hong-kong', 'han-quoc', 'nhat-ban', 'thai-lan', 'dai-loan', 'nga', 'ha-lan', 'philippines', 'an-do', 'quoc-gia-khac'];
-        if (countrySlugs.indexOf(slug) >= 0) return "https://phim.nguonc.com/api/films/quoc-gia/" + slug + "?page=" + page + "&sort=" + sort;
+        // Priority 2: Country Support //v1/api/quoc-gia/{slug}
+        if (filters.country) {
+            return "https://phim.nguonc.com/api/films/quoc-gia/" + filters.country + "?page=" + page + "&sort=" + sort;
+        }
 
+        // Priority 3: Year Support //v1/api/nam-phat-hanh/{year}
+        if (filters.year) {
+            return "https://phim.nguonc.com/api/films/nam-phat-hanh/" + filters.year + "?page=" + page + "&sort=" + sort;
+        }
+
+        // --- Slug-based Logic (if no active filter) ---
+
+        // Handle Years (4 digits)
+        if (/^\d{4}$/.test(slug)) {
+            return "https://phim.nguonc.com/api/films/nam-phat-hanh/" + slug + "?page=" + page + "&sort=" + sort;
+        }
+
+        // Handle specific Lists (Danh sách)
+        var listSlugs = ['phim-le', 'phim-bo', 'phim-dang-chieu', 'tv-shows', 'subteam'];
+        // Note: 'hoat-hinh' is sometimes a list, sometimes a category. 
+        // On NguonC, 'hoat-hinh' is usually in 'the-loai' but let's check standard lists.
+        // NguonC commonly puts 'phim-hoat-hinh' in lists or 'hoat-hinh' in genres.
+
+        if (listSlugs.indexOf(slug) >= 0) {
+            // If slug is 'hoat-hinh', prefer 'the-loai' logic unless we know it's a list
+            if (slug !== 'hoat-hinh') {
+                return "https://phim.nguonc.com/api/films/danh-sach/" + slug + "?page=" + page + "&sort=" + sort;
+            }
+        }
+
+        // Handle Countries (Fallback if slug matches country list)
+        var countrySlugs = [
+            'au-my', 'anh', 'trung-quoc', 'indonesia', 'viet-nam', 'phap', 'hong-kong',
+            'han-quoc', 'nhat-ban', 'thai-lan', 'dai-loan', 'nga', 'ha-lan',
+            'philippines', 'an-do', 'quoc-gia-khac'
+        ];
+        if (countrySlugs.indexOf(slug) >= 0) {
+            return "https://phim.nguonc.com/api/films/quoc-gia/" + slug + "?page=" + page + "&sort=" + sort;
+        }
+
+        // Default to Genres (Thể loại)
         return "https://phim.nguonc.com/api/films/the-loai/" + slug + "?page=" + page + "&sort=" + sort;
+
     } catch (e) {
         return "https://phim.nguonc.com/api/films/phim-moi-cap-nhat?page=1";
     }
@@ -78,27 +116,47 @@ function getUrlList(slug, filtersJson) {
 
 function getUrlSearch(keyword, filtersJson) {
     try {
-        var page = JSON.parse(filtersJson || "{}").page || 1;
+        var filters = JSON.parse(filtersJson || "{}");
+        var page = filters.page || 1;
         return "https://phim.nguonc.com/api/films/search?keyword=" + encodeURIComponent(keyword) + "&page=" + page;
     } catch (e) {
         return "https://phim.nguonc.com/api/films/search?keyword=" + encodeURIComponent(keyword) + "&page=1";
     }
 }
 
+
 function getUrlDetail(slug) {
     if (slug.indexOf("http") === 0) return slug;
     return "https://phim.nguonc.com/api/film/" + slug;
 }
 
+// Just returning the home page to trigger the parser, which will return hardcoded data
 function getUrlCategories() { return "https://phim.nguonc.com"; }
 function getUrlCountries() { return "https://phim.nguonc.com"; }
 function getUrlYears() { return "https://phim.nguonc.com"; }
 
-function parseListResponse(apiResponseJson) {
+// =============================================================================
+// PARSERS
+// =============================================================================
+
+function parseListResponse(apiResponseJson, url) {
+    console.log("List\n" + url)
     try {
         var response = JSON.parse(apiResponseJson);
+        // Handle NguonC structure: sometimes data is array directly (search), sometimes an object (list)
         var data = response.data || {};
-        var items = Array.isArray(data) ? data : (Array.isArray(response.items) ? response.items : (data.items || []));
+        var items = [];
+
+        if (Array.isArray(data)) {
+            items = data;
+        } else if (Array.isArray(response.items)) {
+            items = response.items;
+        } else if (data.items && Array.isArray(data.items)) {
+            items = data.items;
+        }
+
+        // Handle NguonC 'paginate' structure
+        // User provided: "paginate": { "current_page": 1, ... }
         var paginate = response.paginate || response.pagination || (data.params && data.params.pagination) || {};
 
         var movies = items.map(function (item) {
@@ -109,19 +167,33 @@ function parseListResponse(apiResponseJson) {
                 backdropUrl: getImageUrl(item.poster_url),
                 year: item.year || 0,
                 quality: item.quality || "",
+                // Handle different field names for current episode
                 episode_current: item.current_episode || item.episode_current || "",
+                // Handle different field names for language
                 lang: item.language || item.lang || ""
             };
         });
 
+        // Determine pagination values
         var currentPage = paginate.current_page || paginate.currentPage || 1;
-        var itemsPerPage = paginate.items_per_page || paginate.itemsPerPage || paginate.totalItemsPerPage || 24;
         var totalItems = paginate.total_items || paginate.totalItems || 0;
-        var totalPages = paginate.total_page || paginate.totalPages || (itemsPerPage > 0 ? Math.ceil(totalItems / itemsPerPage) : 1);
+        var itemsPerPage = paginate.items_per_page || paginate.itemsPerPage || paginate.totalItemsPerPage || 24;
+
+        // Calculate total pages if not provided directly
+        var totalPages = paginate.total_page || paginate.totalPages || 0;
+        if (totalPages === 0 && itemsPerPage > 0) {
+            totalPages = Math.ceil(totalItems / itemsPerPage);
+        }
+        if (totalPages === 0) totalPages = 1;
 
         return JSON.stringify({
             items: movies,
-            pagination: { currentPage: currentPage, totalPages: totalPages === 0 ? 1 : totalPages, totalItems: totalItems, itemsPerPage: itemsPerPage }
+            pagination: {
+                currentPage: currentPage,
+                totalPages: totalPages,
+                totalItems: totalItems,
+                itemsPerPage: itemsPerPage
+            }
         });
     } catch (error) {
         return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
@@ -135,8 +207,11 @@ function parseSearchResponse(apiResponseJson) {
 function parseMovieDetail(apiResponseJson) {
     try {
         var response = JSON.parse(apiResponseJson);
-        var movie = response.movie || (response.data && response.data.item) || response.data || {};
-        var rawEpisodes = movie.episodes || response.episodes || (response.data && response.data.item && response.data.item.episodes) || [];
+        // Normalize movie object (supports standard and potential variants)
+        var movie = response.movie || response.data?.item || response.data || {};
+
+        // Normalize episodes
+        var rawEpisodes = movie.episodes || response.episodes || response.data?.item?.episodes || [];
 
         var servers = [];
         if (Array.isArray(rawEpisodes)) {
@@ -148,31 +223,38 @@ function parseMovieDetail(apiResponseJson) {
                     serverItems.forEach(function (ep) {
                         var embed = ep.embed || ep.link_embed || "";
                         var m3u8 = ep.m3u8 || ep.link_m3u8 || "";
-                        
-                        // Ưu tiên m3u8 để phát native không qua WebView
-                        var streamLink = m3u8 || embed;
 
-                        if (streamLink) {
-                            // Tuân thủ quy tắc |data: để nhét link trực tiếp vào bộ nhớ tạm[cite: 9]
-                            var pipeId = "https://phim.nguonc.com/api/film/" + (movie.slug || "") + "|data:" + streamLink;
+                        // Use Embed URL as ID to allow scraping Referer/M3u8 details
+                        // If no embed, use m3u8 directly.
+                        var link = embed || m3u8;
+
+                        if (link) {
                             episodes.push({
-                                id: pipeId,
+                                id: link,
                                 name: ep.name || ep.episode_name || "",
                                 slug: ep.slug || ep.episode_slug || ""
                             });
                         }
                     });
                 }
+
                 if (episodes.length > 0) {
-                    servers.push({ name: server.server_name || server.name || "Server", episodes: episodes });
+                    servers.push({
+                        name: server.server_name || server.name || "Server",
+                        episodes: episodes
+                    });
                 }
             });
         }
 
-        var extractGroup = function (catObj, groupName) {
-            if (!catObj) return "";
-            for (var key in catObj) {
-                var group = catObj[key];
+        // Helper to extract category/country/year
+        // Handles both { "1": { group: ..., list: [...] } } AND typical arrays
+        var extractGroup = function (categoryObj, groupName) {
+            if (!categoryObj) return "";
+
+            // If it's an object with keys "1", "2"...
+            for (var key in categoryObj) {
+                var group = categoryObj[key];
                 if (group && group.group && group.group.name === groupName && group.list && group.list.length > 0) {
                     return group.list.map(function (item) { return item.name; }).join(", ");
                 }
@@ -180,19 +262,21 @@ function parseMovieDetail(apiResponseJson) {
             return "";
         };
 
+        var extractedYear = extractGroup(movie.category, "Năm");
+
         return JSON.stringify({
             id: movie.slug || "",
             title: movie.name || "",
             posterUrl: getImageUrl(movie.thumb_url),
             backdropUrl: getImageUrl(movie.poster_url),
             description: (movie.description || movie.content || "").replace(/<[^>]*>/g, ""),
-            year: parseInt(movie.year || extractGroup(movie.category, "Năm")) || 0,
+            year: parseInt(movie.year || extractedYear) || 0,
             rating: parseFloat(movie.view) || 0,
             quality: movie.quality || "",
             servers: servers,
             episode_current: movie.current_episode || movie.episode_current || "",
             lang: movie.language || movie.lang || "",
-            casts: movie.casts || movie.actor || "",
+            casts: movie.casts || movie.actor || "", // Fallback to 'actor' if casts is missing
             director: movie.director || "",
             category: extractGroup(movie.category, "Thể loại"),
             country: extractGroup(movie.category, "Quốc gia"),
@@ -204,54 +288,251 @@ function parseMovieDetail(apiResponseJson) {
     }
 }
 
-// Hàm này nhận datasend từ quy tắc |data: cấu hình bên trên[cite: 9]
-function parseDetailResponse(html, apiUrl, datasend) {
-    try {
-        var streamLink = datasend || ""; 
-        var isEmbed = streamLink.indexOf(".m3u8") === -1 && streamLink.indexOf("embed") > -1;
-        var mimeType = isEmbed ? "" : "application/x-mpegURL";
 
+function parseDetailResponse(html, url) {
+    try {
+        var customjs = runJS();
         return JSON.stringify({
-            "url": streamLink,
-            "isEmbed": isEmbed,
-            "mimeType": mimeType,
+            "url": url,
             "headers": {
-                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
-                "Referer": "https://phim.nguonc.com/",
-                "Origin": "https://phim.nguonc.com/"
+                "Referer": "https://embed.streamc.xyz/",
+                "Origin": "https://embed.streamc.xyz/",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+                // Đánh lừa thuật toán Client Hints của tường lửa
+                "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+                "Sec-Ch-Ua-Mobile": "?1",
+                "Sec-Ch-Ua-Platform": '"Android"',
+                
+                // Khai báo kiểu dữ liệu được chấp nhận giống như trình duyệt thật
+                "Accept": "*/*",
+                "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+                "X-Requested-With": "com.android.chrome",
+                "Block-Ads": false,
+                "Block-Css": "",
+                "Custom-Js": customjs.trim()
             },
             "subtitles": []
         });
+        
     } catch (e) {
-        return JSON.stringify({ "url": "", "headers": {} });
+      return JSON.stringify({ 
+        url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+        mimeType: "video/mp4", 
+        isEmbed: false, headers: {}, subtitles: [] 
+      });
     }
 }
 
+
+
+function runJS(referer) {
+    return `
+function bridgeLog(msg, check) {
+    try {
+      if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
+        window.SnifferBridge.log(msg);
+        if (check === true && typeof window.SnifferBridge.toast === 'function') {
+          window.SnifferBridge.toast(msg, 1000);
+        }
+      } else if (typeof console !== 'undefined' && console.log) {
+        console.log(msg);
+      }
+    } catch(e) {}
+}
+
+(function injectCSS() {
+  try {
+    const cssStyle = "body,html,*{display:none!important;background:black!important;opacity:0!important;z-index:-999999}";
+    const styleElement = document.createElement('style');
+    styleElement.type = 'text/css';
+    styleElement.setAttribute('data-injected-by', 'custom-script');
+
+    if (styleElement.styleSheet) {
+      styleElement.styleSheet.cssText = cssStyle;
+    } else {
+      styleElement.appendChild(document.createTextNode(cssStyle));
+    }
+
+    const targetNode = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
+
+    if (targetNode) {
+      targetNode.appendChild(styleElement);
+      bridgeLog("Chèn css ẩn trang thành công.");
+    } else {
+      document.addEventListener('DOMContentLoaded', function () {
+        (document.head || document.documentElement).appendChild(styleElement);
+      });
+    }
+  } catch (error) {
+    bridgeLog('Không thể chèn CSS:', error);
+  }
+})();
+
+(function initCryptoHookSniffer() {
+  if (window.__CRYPTO_SNIFFER_INITIALIZED__) return;
+  window.__CRYPTO_SNIFFER_INITIALIZED__ = 1;
+
+  var hasDispatchedAny = 0;
+  var isFinished = 0;
+  var timeoutTimer = null;
+
+  bridgeLog("Đang tiến hành giải mã & bắt link M3U8, xin chờ....", true);
+
+  // 1. Timeout 20 giây bảo vệ
+  timeoutTimer = setTimeout(function() {
+    if (hasDispatchedAny === 0 && isFinished === 0) {
+      isFinished = 1;
+      bridgeLog("❌ [TIMEOUT] Đã quá 20 giây nhưng không bắt được dữ liệu giải mã!", false);
+      bridgeLog("Không tìm thấy link video (Hết thời gian 20s).", true);
+      
+      if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
+        window.SnifferBridge.play("https://google.com", "");
+      }
+    }
+  }, 20000);
+
+  function stopTimeout() {
+    if (timeoutTimer) {
+      clearTimeout(timeoutTimer);
+      timeoutTimer = null;
+    }
+  }
+
+  // 2. Kiểm tra M3U8 hợp lệ
+  function isValidM3U8(content) {
+    if (typeof content !== 'string') return false;
+    var trimmed = content.trim();
+    return trimmed.indexOf('#EXTM3U') === 0 && 
+          (trimmed.indexOf('#EXTINF') !== -1 || trimmed.indexOf('#EXT-X-STREAM-INF') !== -1);
+  }
+
+  // 3. Chuyển M3U8 về App
+  function dispatchM3u8ToApp(m3u8Content) {
+    if (!m3u8Content || hasDispatchedAny === 1) return;
+    hasDispatchedAny = 1;
+    isFinished = 1;
+    stopTimeout();
+
+    bridgeLog('🎯 [CRYPTO-HOOK] Giải mã thành công M3U8! Đang gửi lên App...');
+    bridgeLog("🎯 Bắt link thành công! Đang xử lý video...", true);
+
+    try {
+      if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
+        window.SnifferBridge.log("M3U8\\n" + m3u8Content);
+      }
+      bridgeLog('🎯 Đang bắn m3u8 cho native');
+      SnifferBridge.playM3u8Content(m3u8Content, JSON.stringify({"Origin":"https://phim.nguonc.com","Referer":"${referer}"}));
+    } catch(e) {
+      bridgeLog('❌ [DISPATCH ERROR]: ' + e.message);
+    }
+  }
+
+  // 4. HOOK TRỰC TIẾP VÀO WEB CRYPTO API (crypto.subtle.decrypt)
+  try {
+    if (window.crypto && window.crypto.subtle && window.crypto.subtle.decrypt) {
+      const originalDecrypt = window.crypto.subtle.decrypt;
+
+      window.crypto.subtle.decrypt = async function() {
+        // Thực thi hàm giải mã gốc của trình duyệt
+        const decryptedBuffer = await originalDecrypt.apply(this, arguments);
+
+        if (isFinished === 0 && decryptedBuffer) {
+          try {
+            // Chuyển kết quả vừa giải mã từ ArrayBuffer sang chuỗi Text
+            const textDecoder = new TextDecoder("utf-8");
+            const decodedText = textDecoder.decode(decryptedBuffer);
+
+            // Kiểm tra xem dữ liệu sau khi giải mã có phải là file M3U8 không
+            if (isValidM3U8(decodedText)) {
+              dispatchM3u8ToApp(decodedText);
+            }
+          } catch (err) {
+            // Bỏ qua các dữ liệu giải mã không phải text (ví dụ giải mã mảng byte hình ảnh/audio)
+          }
+        }
+
+        return decryptedBuffer;
+      };
+
+      bridgeLog('🚀 [INIT] Hook Crypto.subtle.decrypt thành công!');
+    } else {
+      bridgeLog('❌ Web Crypto API không khả dụng trên WebView này!');
+    }
+  } catch (e) {
+    bridgeLog('❌ [HOOK ERROR]: ' + e.message);
+  }
+
+})();
+  `;
+}
+
+
+
+
+// Hardcoded Categories (Genres)
 function parseCategoriesResponse(apiResponseJson) {
-    return JSON.stringify([
-        { name: "Hành Động", slug: "hanh-dong" }, { name: "Phiêu Lưu", slug: "phieu-luu" },
-        { name: "Hoạt Hình", slug: "hoat-hinh" }, { name: "Hài", slug: "phim-hai" },
-        { name: "Hình Sự", slug: "hinh-su" }, { name: "Tài Liệu", slug: "tai-lieu" },
-        { name: "Chính Kịch", slug: "chinh-kich" }, { name: "Kinh Dị", slug: "kinh-di" }
-    ]);
+    var genres = [
+        { name: "Hành Động", slug: "hanh-dong" },
+        { name: "Phiêu Lưu", slug: "phieu-luu" },
+        { name: "Hoạt Hình", slug: "hoat-hinh" },
+        { name: "Hài", slug: "phim-hai" },
+        { name: "Hình Sự", slug: "hinh-su" },
+        { name: "Tài Liệu", slug: "tai-lieu" },
+        { name: "Chính Kịch", slug: "chinh-kich" },
+        { name: "Gia Đình", slug: "gia-dinh" },
+        { name: "Giả Tưởng", slug: "gia-tuong" },
+        { name: "Lịch Sử", slug: "lich-su" },
+        { name: "Kinh Dị", slug: "kinh-di" },
+        { name: "Nhạc", slug: "phim-nhac" },
+        { name: "Bí Ẩn", slug: "bi-an" },
+        { name: "Lãng Mạn", slug: "lang-man" },
+        { name: "Khoa Học Viễn Tưởng", slug: "khoa-hoc-vien-tuong" },
+        { name: "Gây Cấn", slug: "gay-can" },
+        { name: "Chiến Tranh", slug: "chien-tranh" },
+        { name: "Tâm Lý", slug: "tam-ly" },
+        { name: "Tình Cảm", slug: "tinh-cam" },
+        { name: "Cổ Trang", slug: "co-trang" },
+        { name: "Miền Tây", slug: "mien-tay" },
+        { name: "Phim 18+", slug: "phim-18" }
+    ];
+    return JSON.stringify(genres);
 }
 
+// Hardcoded Countries
 function parseCountriesResponse(apiResponseJson) {
-    return JSON.stringify([
-        { name: "Âu Mỹ", value: "au-my" }, { name: "Anh", value: "anh" },
-        { name: "Trung Quốc", value: "trung-quoc" }, { name: "Hàn Quốc", value: "han-quoc" },
-        { name: "Nhật Bản", value: "nhat-ban" }, { name: "Thái Lan", value: "thai-lan" }
-    ]);
+    var countries = [
+        { name: "Âu Mỹ", value: "au-my" },
+        { name: "Anh", value: "anh" },
+        { name: "Trung Quốc", value: "trung-quoc" },
+        { name: "Indonesia", value: "indonesia" },
+        { name: "Việt Nam", value: "viet-nam" },
+        { name: "Pháp", value: "phap" },
+        { name: "Hồng Kông", value: "hong-kong" },
+        { name: "Hàn Quốc", value: "han-quoc" },
+        { name: "Nhật Bản", value: "nhat-ban" },
+        { name: "Thái Lan", value: "thai-lan" },
+        { name: "Đài Loan", value: "dai-loan" },
+        { name: "Nga", value: "nga" },
+        { name: "Hà Lan", value: "ha-lan" },
+        { name: "Philippines", value: "philippines" },
+        { name: "Ấn Độ", value: "an-do" },
+        { name: "Quốc gia khác", value: "quoc-gia-khac" }
+    ];
+    return JSON.stringify(countries);
 }
 
+// Hardcoded Years
 function parseYearsResponse(apiResponseJson) {
     var years = [];
-    for (var i = 2026; i >= 2004; i--) years.push({ name: i.toString(), value: i.toString() });
+    for (var i = 2026; i >= 2004; i--) {
+        years.push({ name: i.toString(), value: i.toString() });
+    }
     return JSON.stringify(years);
 }
 
 function getImageUrl(path) {
     if (!path) return "";
     if (path.indexOf("http") === 0) return path;
+    // Base image URL for NguonC
     return "https://img.phimapi.com/" + path;
 }
