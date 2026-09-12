@@ -6,7 +6,7 @@ function getManifest() {
   return JSON.stringify({
     id: "streamed",
     name: "Streamed",
-    version: "1.4.1",
+    version: "1.4.0",
     baseUrl: BASE_DOMAIN,
     iconUrl: "https://i.ibb.co/N2mkkD4N/streamed-logo.png",
     isEnabled: true,
@@ -14,7 +14,7 @@ function getManifest() {
     type: "MOVIE",
     layoutType: "HORIZONTAL",
     playerType: "embedtoexoplay",
-    debug: false
+    debug: true
   });
 }
 
@@ -71,6 +71,7 @@ function getFilterConfig() {
 // =============================================================================
 
 function getUrlList(slug, filtersJson) {
+  const basePath = "";
   return `${BASE_API_URL}/matches/${slug}`;
 }
 
@@ -84,9 +85,15 @@ function getUrlDetail(path) {
   return BASE_API_URL + path;
 }
 
-function getUrlCategories() { return ""; }
-function getUrlCountries() { return ""; }
-function getUrlYears() { return ""; }
+function getUrlCategories() {
+  return "";
+}
+function getUrlCountries() {
+  return "";
+}
+function getUrlYears() {
+  return "";
+}
 
 // =============================================================================
 // NHÓM 3: PARSER (App fetch URL xong → ném HTML/JSON thô vào đây → bạn parse)
@@ -106,6 +113,7 @@ function parseListResponse(html, apiUrl) {
 
       for (const item of stream.sources) {
         const serverName = item.source?.toUpperCase();
+        //remove server echo
         if (serverName === "ECHO") continue;
         const description = `Event "${title}" is hosted on server ${serverName}.`;
         const encodedData = encodeURIComponent(JSON.stringify({ title, posterUrl, category, description }));
@@ -128,6 +136,7 @@ function parseListResponse(html, apiUrl) {
       pagination: { currentPage: 1, totalPages: 1 }
     });
   } catch (error) {
+      console.error("⛔ [parseListResponse in streamed_plugin.js] ERROR MESSAGE: ", error);
       return JSON.stringify({
         items: [],
         pagination: { currentPage: 1, totalPages: 1 }
@@ -142,6 +151,7 @@ function parseSearchResponse(html, apiUrl) {
 function parseMovieDetail(html, apiUrl, datasend) {
   try {
     const stream = JSON.parse(html);
+
     if (!Array.isArray(stream) || stream.length === 0) return EMPTY_MOVIE_DETAIL;
       
     const data = JSON.parse(decodeURIComponent(datasend));
@@ -170,6 +180,7 @@ function parseMovieDetail(html, apiUrl, datasend) {
       servers: [{ name: serverName, episodes: episodes }]
     });
   } catch (error) {
+      console.error("⛔ [parseMovieDetail in streamed_plugin.js] ERROR MESSAGE: ", error);
       return EMPTY_MOVIE_DETAIL;
   }
 }
@@ -181,26 +192,41 @@ function parseDetailResponse(html, embedUrl) {
       headers: {
         Referer: embedUrl,
         Origin: embedUrl,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "*/*",
+        "User-Agent":
+          "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+        "Sec-Ch-Ua":
+          '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        "Sec-Ch-Ua-Mobile": "?1",
+        "Sec-Ch-Ua-Platform": '"Android"',
+        Accept: "*/*",
         "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Block-Ads": "true",
-        "Custom-Js": getSnifferJS()
+        "X-Requested-With": "com.android.chrome"
       },
       isEmbed: true
     });
   } catch (error) {
+      console.error("⛔ [parseDetailResponse in streamed_plugin.js] ERROR MESSAGE: ", error);
       return "{}";
   }
 }
 
-function parseCategoriesResponse(html) { return "[]"; }
-function parseCountriesResponse(html) { return "[]"; }
-function parseYearsResponse(html) { return "[]"; }
+function parseCategoriesResponse(html) {
+  return "[]";
+}
+function parseCountriesResponse(html) {
+  return "[]";
+}
+function parseYearsResponse(html) {
+  return "[]";
+}
 
 // =============================================================================
 // NHÓM 4: HELPERS
 // =============================================================================
+
+// ======================================
+// VARIABLES
+// ======================================
 
 const BACKUP_DOMAINS = "https://strmd.link";
 const BASE_DOMAIN = "https://streamed.pk";
@@ -214,6 +240,10 @@ const EMPTY_MOVIE_DETAIL = JSON.stringify({
   servers: []
 });
 const SELECTION_GUIDE = `\n\n✅The format of each live event link is: [VideoQuality - ConcurrentViewers].\n✅Video quality: Prefer at least HD.\n✅Concurrent viewers: higher is better, 1N = 1000 concurrent viewers.`;
+
+// ======================================
+// FUNCTIONS
+// ======================================
 
 function getPosterUrl(stream) {
   if (stream?.poster) return BASE_API_URL + stream.poster.substring(stream.poster.indexOf("/api/") + 4);
@@ -230,7 +260,9 @@ function getPosterUrl(stream) {
 
 function formatDateTime(timestamp) {
   if (timestamp == null) return "";
-  if (timestamp < 1e12) timestamp *= 1000;
+  if (timestamp < 1e12) {
+    timestamp *= 1000;
+  }
   const date = new Date(timestamp);
   const hh = String(date.getHours()).padStart(2, "0");
   const mm = String(date.getMinutes()).padStart(2, "0");
@@ -252,13 +284,16 @@ function formatViewerCount(viewerCount) {
 function extractParamFromUrl(url, param) {
   if (!url) return "";
   var match = url.match(new RegExp("[?&]" + param + "=([^&]+)"));
+
   return match ? decodeURIComponent(match[1]) : "";
 }
 
 function filterStreams(streams, keyword) {
   if (keyword) {
     streams = streams.filter((stream) => {
-      return (stream.title?.toLowerCase()?.indexOf(keyword.toLowerCase() || "") >= 0);
+      return (
+        stream.title?.toLowerCase()?.indexOf(keyword.toLowerCase() || "") >= 0
+      );
     });
   }
   return streams;
@@ -266,59 +301,7 @@ function filterStreams(streams, keyword) {
 
 function getPath(apiUrl, keyword) {
   const index = apiUrl.indexOf(keyword);
+
   if (!keyword || index === -1) return "";
   return apiUrl.substring(index);
-}
-
-// =============================================================================
-// SNIFFER: XỬ LÝ BẮT LINK CHỐNG LAG XOAY MÀN HÌNH
-// =============================================================================
-function getSnifferJS() {
-  return `
-  (function () {
-      'use strict';
-      let hasSentToBridge = false;
-      const rawFetch = window.fetch;
-      const rawXHROpen = XMLHttpRequest.prototype.open;
-
-      function isDirectStreamUrl(url) {
-          if (!url || typeof url !== 'string') return false;
-          const cleanUrl = url.split('?')[0].toLowerCase();
-          return cleanUrl.endsWith('.m3u8') || cleanUrl.endsWith('.mp4') || url.includes('.m3u8?');
-      }
-
-      function sendToNativeBridge(playUrl) {
-          if (hasSentToBridge) return;
-          hasSentToBridge = true;
-          if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
-              window.SnifferBridge.play(playUrl, window.location.href);
-          }
-      }
-
-      function processDetectedUrl(url) {
-          if (!url || hasSentToBridge) return;
-          if (isDirectStreamUrl(url)) {
-              sendToNativeBridge(url);
-          }
-      }
-
-      window.fetch = async function (...args) {
-          const url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url ? args[0].url : '');
-          processDetectedUrl(url);
-          return rawFetch.apply(this, args);
-      };
-
-      XMLHttpRequest.prototype.open = function (method, url) {
-          processDetectedUrl(url);
-          return rawXHROpen.apply(this, arguments);
-      };
-
-      setInterval(() => {
-          if (hasSentToBridge) return;
-          document.querySelectorAll('video, source').forEach(el => {
-              if (el.src) processDetectedUrl(el.src);
-          });
-      }, 1000);
-  })();
-  `;
 }
