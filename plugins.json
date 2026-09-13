@@ -122,6 +122,13 @@
       "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
     },
     {
+      "id": "nartodrama",
+      "name": "[SHORT] Narto",
+      "version": "1.2.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/Nartodrama_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nartodrama.png",
+     },
+    {
       "id": "ShortFilm",
       "name": "ShortFilm",
       "version": "1.1.0",
