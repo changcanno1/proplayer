@@ -7,7 +7,7 @@ function getManifest() {
     id: "Vsmov",
     name: "Nguồn Vsmov",
     description: "Nguồn phim Vsmov...",
-    "version": "1.2.3",
+    "version": "1.2.4",
     info: "",
     baseUrl: "https://vsmov.com",
     iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/vsmov.png",
@@ -20,15 +20,15 @@ function getManifest() {
 }
 
 function log(msg) {
-  	console.log(msg);
+    if (DEV && typeof console !== 'undefined') console.log(msg);
 }
 
 function getHomeSections() {
     return JSON.stringify([
         {"slug": "/danh-sach/long-tieng","title": "Phim Lồng Tiếng","type": "Horizontal"},
-       {"slug": "/danh-sach/phim-le","title": "Phim Lẻ","type": "Horizontal"},
-       {"slug": "/danh-sach/phim-bo","title": "Phim Bộ","type": "Horizontal"},
-        {"slug": "/danh-sach/thuyet-minh","title": "Thuyét Minh","type": "Horizontal"},
+        {"slug": "/danh-sach/phim-le","title": "Phim Lẻ","type": "Horizontal"},
+        {"slug": "/danh-sach/phim-bo","title": "Phim Bộ","type": "Horizontal"},
+        {"slug": "/danh-sach/thuyet-minh","title": "Thuyết Minh","type": "Horizontal"},
         {"slug": "/danh-sach/phim-moi-cap-nhat/","title": "Phim Mới","type": "Grid"}
     ]);
 }
@@ -36,10 +36,8 @@ function getHomeSections() {
 function getPrimaryCategories() {
     try {
         var listurl = getLISTmenu();
-        var menulist = buildMenu(listurl);
-        return JSON.stringify(menulist);
+        return JSON.stringify(buildMenu(listurl));
     } catch (e) {
-        log("getPrimaryCategories[err]:\n " + e);
         return JSON.stringify([]);
     }
 }
@@ -47,39 +45,24 @@ function getPrimaryCategories() {
 function getFilterConfig() {
     try {
         var listurl = getLISTmenu();
-        var menulist = buildMenu(listurl);
-        return JSON.stringify({
-            category: menulist
-        });
+        return JSON.stringify({ category: buildMenu(listurl) });
     } catch (e) {
-        log("getFilterConfig[err]:\n " + e);
         return JSON.stringify({ category: [] });
     }
 }
 
 function getUrlList(slug, filtersJson) {
     try {
-        log("getUrlList[url]: \n" + slug);
-
-        // 1. Kiểm tra nếu slug là link tuyệt đối (chứa http)
-        if (slug && slug.indexOf("http") > -1) {
-            log("getUrlList[url]: \n" + slug);
-            return slug;
-        }
+        if (slug && slug.indexOf("http") > -1) return slug;
 
         var page = 1;
         var path = slug || "";
 
-        // 2. Xử lý an toàn filtersJson cho link tương đối
         if (filtersJson) {
-            var fixedJson2 = filtersJson
-                .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
-                .replace(/:,/g, ':');
-
+            var fixedJson2 = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":').replace(/:,/g, ':');
             try {
                 var filters = JSON.parse(fixedJson2);
                 page = parseInt(filters.page) || 1;
-
                 if (filters.category) {
                     if (Array.isArray(filters.category) && filters.category.length > 0) {
                         path = filters.category[0].slug;
@@ -90,295 +73,127 @@ function getUrlList(slug, filtersJson) {
             } catch (jsonErr) {}
         }
 
-        // 3. Ghép URL an toàn với BASEURL
-        if(path.indexOf("/danh-sach/phim-le") > -1 || path.indexOf("/danh-sach/phim-bo") > -1 || path.indexOf("/danh-sach/thuyet-minh") > -1 || path.indexOf("/danh-sach/long-tieng") > -1){
-            var resultUrl = BASEURL;
-        }
-        else{
-            var resultUrl = BASEAPI;
-        }
-        
-        if (path) {
-            resultUrl += (path.indexOf("/") === 0 ? "" : "/") + path;
-        }
+        var resultUrl = (path.indexOf("/danh-sach/") > -1) ? BASEURL : BASEAPI;
+        if (path) resultUrl += (path.indexOf("/") === 0 ? "" : "/") + path;
+        if (page > 0 && resultUrl.indexOf("page=") === -1) resultUrl += "?page=" + page;
 
-        // 4. Ghép tham số phân trang page (tự động nhận biết ? hay &)
-        if (page > 0 && resultUrl.indexOf("page=") === -1) {
-            resultUrl += "?page=" + page;
-        }
-
-        // 5. Làm sạch dấu // thừa ở path (giữ nguyên https://)
-        var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
-        log("getUrlList[url]: \n" + finalUrl);
-        return finalUrl;
-
+        return resultUrl.replace(/([^:]\/)\/+/g, "$1");
     } catch (e) {
-        log("getUrlList[err]:\n " + e);
-        if (slug && slug.indexOf("http") > -1) {
-            log("getUrlList[url]: \n" + slug);
-            return slug;
-        }
         var fallback = BASEAPI + (slug ? (slug.indexOf("/") === 0 ? slug : "/" + slug) : "");
-        var finalFallback = fallback.replace(/([^:]\/)\/+/g, "$1");
-        log("getUrlList[url]: \n" + finalFallback);
-        return finalFallback;
+        return fallback.replace(/([^:]\/)\/+/g, "$1");
     }
 }
 
 function getUrlSearch(keyword, filtersJson) {
     try {
         var page = 1;
-
-        // 1. Giải mã filtersJson lấy trang đúng chuẩn hàm gốc
         if (filtersJson) {
-            var fixedJson = filtersJson
-                .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
-                .replace(/:,/g, ':');
-
+            var fixedJson = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":').replace(/:,/g, ':');
             try {
                 var filters = JSON.parse(fixedJson);
                 page = parseInt(filters.page) || 1;
             } catch (jsonErr) {}
         }
 
-        // 2. Khởi tạo URL tìm kiếm kèm cấu trúc /search?lang=vi-VN&q=
-        var encodedKeyword = encodeURIComponent(keyword || "");
-        var resultUrl = BASEAPI + "/tim-kiem?keyword=" + encodedKeyword;
+        var resultUrl = BASEAPI + "/tim-kiem?keyword=" + encodeURIComponent(keyword || "");
+        if (page > 1) resultUrl += "&page=" + page;
 
-        // 3. Nếu page > 1 thì nối thêm &page=
-        if (page > 1) {
-            resultUrl += "&page=" + page;
-        }
-
-        var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
-        log("getUrlSearch[url]: \n" + finalUrl);
-        return finalUrl;
-
+        return resultUrl.replace(/([^:]\/)\/+/g, "$1");
     } catch (e) {
-        log("getUrlSearch[err]:\n " + e);
         var fallback = BASEAPI + "/tim-kiem?keyword=" + encodeURIComponent(keyword || "");
-        var finalFallback = fallback.replace(/([^:]\/)\/+/g, "$1");
-        log("getUrlSearch[url]: \n" + finalFallback);
-        return finalFallback;
+        return fallback.replace(/([^:]\/)\/+/g, "$1");
     }
 }
 
 function getUrlDetail(slug) {
     try {
-        log("getUrlDetail[url]: \n" + slug);
         if (!slug) return "";
         if (slug.indexOf('http') === 0) return slug;
-        var detailUrl = BASEURL + "/" + slug;
-        log("getUrlDetail[url]: \n" + detailUrl);
-        return detailUrl;
+        return BASEURL + "/" + slug;
     } catch (e) {
-        log("getUrlDetail[err]:\n " + e);
         return "";
     }
 }
 
-function getUrlCategories() { 
-    try {
-        log("getUrlCategories[url]: \n" + BASEURL);
-        return BASEURL; 
-    } catch (e) {
-        log("getUrlCategories[err]:\n " + e);
-        return "";
-    }
-}
-
-function getUrlCountries() { 
-    try {
-        return ""; 
-    } catch (e) {
-        log("getUrlCountries[err]:\n " + e);
-        return "";
-    }
-}
-
-function getUrlYears() { 
-    try {
-        return ""; 
-    } catch (e) {
-        log("getUrlYears[err]:\n " + e);
-        return "";
-    }
-}
+function getUrlCategories() { return BASEURL; }
+function getUrlCountries() { return ""; }
+function getUrlYears() { return ""; }
 
 // =============================================================================
 // PARSERS
 // =============================================================================
+
 function parseListResponse(html, $url) {
     try {
         if ($url.indexOf("/api") > -1) {
-            log("api parse")
-            return parseAPI(html, $url)
+            return parseAPI(html, $url);
         } else {
-            return parseRAW(html, $url)
+            return parseRAW(html, $url);
         }
     } catch (e) {
-        log("parseListResponse[err]:\n " + e);
-        return JSON.stringify({
-            "items": [{
-                "id": $url || "error_url",
-                "title": "Lỗi: " + e,
-                "posterUrl": "",
-                "backdropUrl": ""
-            }],
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 1
-            }
-        });
+        return JSON.stringify({ "items": [], "pagination": { "currentPage": 1, "totalPages": 1 } });
     }
 }
 
 function parseAPI(html, $url) {
     var $data = JSON.parse(html);
-    var $items = $data.items;
     var items = [];
-    for (var $j = 0; $j < $items.length; $j++) {
-        var item = $items[$j];
-
+    for (var $j = 0; $j < $data.items.length; $j++) {
+        var item = $data.items[$j];
         items.push({
             "id": BASEAPI + "/phim/" + item.slug,
             "title": item.name,
-            "posterUrl": typeof item.poster_url === "string" ? item.poster_url : "",
-            "backdropUrl": typeof item.thumb_url === "string" ? item.thumb_url : "",
-            "year": typeof item.year === "number" ? item.year : 2026
+            "posterUrl": item.poster_url || "",
+            "backdropUrl": item.thumb_url || "",
+            "year": item.year || 2026
         });
     }
-    return JSON.stringify({
-        "items": items,
-        "pagination": {
-            "currentPage": 1,
-            "totalPages": 9999
-        }
-    });
+    return JSON.stringify({ "items": items, "pagination": { "currentPage": 1, "totalPages": 9999 } });
 }
 
 function parseRAW(html, $url) {
     var $html = _$(html);
     var items = [];
     $html.find("tbody tr[class*='group/tr']").each(function(){
-        var slug = this.find("a").attr("href");
-        slug = slug.replace(BASEURL,BASEAPI);
+        var slug = this.find("a").attr("href").replace(BASEURL, BASEAPI);
         var name = this.find("h4").text();
         var poster = this.find("img").attr("data-original");
-        var year = this.find("img.object-cover").closest("td").next().text();
-        year = Number(year.trim());
+        var yearText = this.find("img.object-cover").closest("td").next().text();
+        var year = Number(yearText.trim()) || 2026;
+        
         items.push({
             "id": slug,
             "title": name,
-            "posterUrl": typeof poster === "string" ? poster : "",
-            "backdropUrl": typeof poster === "string" ? poster : "",
-            "year": typeof year === "number" ? year : 2026
+            "posterUrl": poster || "",
+            "backdropUrl": poster || "",
+            "year": year
         });
-    })
-    return JSON.stringify({
-        "items": items,
-        "pagination": {
-            "currentPage": 1,
-            "totalPages": 9999
-        }
     });
+    return JSON.stringify({ "items": items, "pagination": { "currentPage": 1, "totalPages": 9999 } });
 }
 
 function parseSearchResponse(html, url) {
-    try {
-        log("parseSearchResponse[url]: \n" + url);
-        return parseListResponse(html, url);
-    } catch (e) {
-        log("parseSearchResponse[err]:\n " + e);
-        return JSON.stringify({
-            "items": [],
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 1
-            }
-        });
-    }
-}
-
-function decodeHTMLEntities(str) {
-    try {
-        if (!str) return "";
-        return str.replace(/&#(\d+);|&#x([0-9a-fA-F]+);/g, (match, dec, hex) => {
-            if (dec) {
-                return String.fromCharCode(parseInt(dec, 10));
-            }
-            if (hex) {
-                return String.fromCharCode(parseInt(hex, 16));
-            }
-            return match;
-        });
-    } catch (e) {
-        log("decodeHTMLEntities[err]:\n " + e);
-    }
+    return parseListResponse(html, url);
 }
 
 function parseMovieDetail(html, url) {
     try {
-        log("parseMovieDetail[url]: \n" + url);
-
-        // === BƯỚC 2: TRÍCH XUẤT THÔNG TIN PHIM ===
-        var lurl = "";
-        var limg = "";
-        var lname = "Đang cập nhật...";
-        var ldes = "Không có mô tả.";
-        var ldirec = "";
-        var lactor = "";
-        var lduran = "";
-        var status = "";
-        var category = "";
-        var episode_current = "";
-        var year = 2026;
-        var extra = "";
-        var lang = "";
-        var country = "";
-        var quality = "";
-        var director = "";
-        var $movie = JSON.parse(html)
-        $data = $movie.movie
-        limg = $data.thumb_url;
-        lname = $data.name;
-        ldes = $data.content;
-        lactor = $data.actor.join(" - ");
-        lduran = $data.time;
-        status = $data.status.replace("completed","Hoàn Thành");
-        var categoryArray =  [];
-        // Dùng forEach để duyệt qua từng object
-        $data.category.forEach(function (item) {
-          if (item.name && item.slug) {
-            categoryArray.push("[" + item.name + "](/the-loai/" + item.slug + "/)");
-          }
-        });
-        // Nối lại thành chuỗi phân cách bởi dấu phẩy
-        category = categoryArray.join(", ");
+        var $movie = JSON.parse(html);
+        var $data = $movie.movie;
         
-        episode_current = $data.episode_current;
-        year = $data.year;
-        lang = $data.lang;
-        var countryArray =  [];
-        // Dùng forEach để duyệt qua từng object
-        $data.country.forEach(function (item) {
-          if (item.name && item.slug) {
-            countryArray.push("[" + item.name + "](/quoc-gia/" + item.slug + ")");
-          }
+        var categoryArray = [];
+        $data.category.forEach(function (item) {
+          if (item.name && item.slug) categoryArray.push("[" + item.name + "](/the-loai/" + item.slug + "/)");
         });
-        // Nối lại thành chuỗi phân cách bởi dấu phẩy
-        country = countryArray.join(", ");
-        director = $data.director.join(" - ");;
-        quality = $data.quality;
-
-        var rawData = $movie.episodes;
+        
+        var countryArray = [];
+        $data.country.forEach(function (item) {
+          if (item.name && item.slug) countryArray.push("[" + item.name + "](/quoc-gia/" + item.slug + ")");
+        });
 
         var servers = [];
-
-        rawData.forEach(function(serverItem) {
+        $movie.episodes.forEach(function(serverItem) {
           var episodes = [];
-        
-          // Duyệt qua từng tập phim trong server_data
           serverItem.server_data.forEach(function(episode) {
             episodes.push({
               id: episode.link_embed, 
@@ -387,128 +202,152 @@ function parseMovieDetail(html, url) {
             });
           });
         
-          // Làm sạch tên server (xóa khoảng trắng và ký tự \r\n thừa)
           var cleanServerName = serverItem.server_name.replace(/\r?\n|\r/g, "").trim().replace(/\s+/g," ");
+          servers.push({ name: cleanServerName, episodes: episodes });
+        });
         
-          // Đẩy vào mảng server
-          servers.push({
-            name: cleanServerName,
-            episodes: episodes
-          });
-            servers.sort(function(a, b) {
-              var aIsThuyetMinh = a.name.toLowerCase().includes("thuyết minh");
-              var bIsThuyetMinh = b.name.toLowerCase().includes("thuyết minh");
-            
-              if (aIsThuyetMinh && !bIsThuyetMinh) return -1; // a lên trước b
-              if (!aIsThuyetMinh && bIsThuyetMinh) return 1;  // b lên trước a
-              return 0; // Giữ nguyên vị trí nếu cùng loại
-            });
+        servers.sort(function(a, b) {
+            var aTm = a.name.toLowerCase().includes("thuyết minh");
+            var bTm = b.name.toLowerCase().includes("thuyết minh");
+            if (aTm && !bTm) return -1;
+            if (!aTm && bTm) return 1;
+            return 0;
         });
         
         return JSON.stringify({
             id: url,
-            title: lname,
-            posterUrl: limg,
-            backdropUrl: limg,
-            description: ldes,
-            quality: quality,
-            year: year,
+            title: $data.name,
+            posterUrl: $data.thumb_url,
+            backdropUrl: $data.thumb_url,
+            description: $data.content,
+            quality: $data.quality,
+            year: $data.year,
             rating: 8.5,
-            status: status,
-            category: category,
-            episode_current: episode_current,
+            status: $data.status.replace("completed","Hoàn Thành"),
+            category: categoryArray.join(", "),
+            episode_current: $data.episode_current,
             servers: servers,
-            duration: lduran || "",
-            casts: lactor || "",
-            director: director || "",
-            lang: lang,
-            country: country,
-            extra: extra
+            duration: $data.time || "",
+            casts: ($data.actor || []).join(" - "),
+            director: ($data.director || []).join(" - "),
+            lang: $data.lang,
+            country: countryArray.join(", ")
         });
-
     } catch (e) {
-        log("parseMovieDetail[err]:\n " + e);
-        return JSON.stringify({
-            id: url || url || "error",
-            title: "error",
-            servers: []
-        });
+        return JSON.stringify({ id: url || "error", title: "error", servers: [] });
     }
 }
 
 function parseDetailResponse(html, url) {
-  try {
-    console.log("parseDetailResponse dang xu ly: " + url);
-    var m3u8 = url.replace("/video/","/stream/") + "/master.m3u8";
-    var $doc = _$(html);
-    var domain = url.replace(/^(https?:\/\/[^\/]+).*/, "$1");
-    var script = $doc.find("script:content('subtitles')").html()
-    var match = script.match(/subtitles:\s*(\[\s*\{.*?\}\s*\])/s);
-    var subitem = [];
-    if(match && match[1]){
-        var sublist = JSON.parse(match[1]);
-        sublist.forEach(function(item, index){
-            var name = item.code.replace("vie","Vietsub").replace("eng","Engsub");
-            var link = domain + item.url;
-            subitem.push({
-                lang: name + " " + (index + 1),
-                url: link
-            })
-        })
+    try {
+        var m3u8 = url.replace("/video/", "/stream/") + "/master.m3u8";
+        var domain = url.replace(/^(https?:\/\/[^\/]+).*/, "$1");
+        var $doc = _$(html);
+        var script = $doc.find("script:content('subtitles')").html() || "";
+        
+        var subitem = [];
+        var subStr = "";
+
+        // 1. Tìm chuỗi JSON phụ đề nguyên bản
+        var matchObj = script.match(/subtitles:\s*(\[\s*\{.*?\}\s*\])/s);
+        // 2. Tìm chuỗi phụ đề mã hóa (thường dùng Base64 hoặc ngoặc kép)
+        var matchEnc = script.match(/subtitles:\s*['"]([^'"]+)['"]/s);
+
+        if (matchObj && matchObj[1]) {
+            subStr = matchObj[1];
+        } else if (matchEnc && matchEnc[1]) {
+            try { subStr = BASE64.decode(matchEnc[1]); } catch(err) {}
+        }
+
+        if (subStr) {
+            try {
+                var sublist = JSON.parse(subStr);
+                sublist.forEach(function(item, index) {
+                    var name = (item.code || "vi").replace("vie", "Vietsub").replace("eng", "Engsub");
+                    var link = item.url.indexOf("http") === 0 ? item.url : domain + item.url;
+                    subitem.push({
+                        lang: name + " " + (index + 1),
+                        url: link
+                    });
+                });
+            } catch(err) { log("Lỗi parse JSON phụ đề: " + err); }
+        }
+
+        return JSON.stringify({
+            url: m3u8,
+            isEmbed: false,
+            mimeType: "application/x-mpegURL",
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Referer": BASEURL
+            },
+            subtitles: subitem
+        });
+    } catch (e) {
+        log("parseDetailResponse[err]:\n " + e);
+        return JSON.stringify({ url: "", isEmbed: false, headers: {}, subtitles: [] });
     }
-    console.log("stream: " + m3u8);
-    return JSON.stringify({
-      url: m3u8,
-      isEmbed: false,
-      mimeType: "application/x-mpegURL",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Referer: BASEURL
-      },
-      subtitles:subitem,
-    });
-  } catch (e) {
-    log("parseDetailResponse[err]:\n " + e);
-    return JSON.stringify({ 
-      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-      mimeType: "video/mp4", 
-      isEmbed: false, headers: {}, subtitles: [] 
-    });
-  }
 }
 
 function parseCategoriesResponse(apiResponseJson) {
-    try {
-        var listurl = getLISTmenu();
-        var menulist = buildMenu(listurl);
-        return JSON.stringify(menulist);
-    } catch (e) {
-        log("parseCategoriesResponse[err]:\n " + e);
-        return JSON.stringify([]);
-    }
+    try { return JSON.stringify(buildMenu(getLISTmenu())); } catch (e) { return "[]"; }
 }
+function parseCountriesResponse(html) { return "[]"; }
+function parseYearsResponse(html) { return "[]"; }
 
-function parseCountriesResponse(html) {
-    try {
-        return "[]";
-    } catch (e) {
-        log("parseCountriesResponse[err]:\n " + e);
-        return "[]";
-    }
-}
+// =============================================================================
+// THƯ VIỆN BỔ SUNG & CÔNG CỤ
+// =============================================================================
 
-function parseYearsResponse(html) {
-    try {
-        return "[]";
-    } catch (e) {
-        log("parseYearsResponse[err]:\n " + e);
-        return "[]";
+var BASE64 = {
+    decode: function (base64String) {
+        try {
+            if (!base64String) return "";
+            var str = decodeURIComponent(base64String.trim());
+            str = str.replace(/-/g, "+").replace(/_/g, "/");
+            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+            var output = [];
+            var buffer = 0, bits = 0;
+            for (var i = 0; i < str.length; i++) {
+                var char = str.charAt(i);
+                if (char === "=") break;
+                var index = chars.indexOf(char);
+                if (index === -1) continue;
+                buffer = (buffer << 6) | index;
+                bits += 6;
+                if (bits >= 8) {
+                    bits -= 8;
+                    output.push((buffer >> bits) & 0xff);
+                }
+            }
+            var result = "";
+            var j = 0;
+            while (j < output.length) {
+                var c = output[j++];
+                if (c < 128) {
+                    result += String.fromCharCode(c);
+                } else if (c > 191 && c < 224) {
+                    var c2 = output[j++];
+                    result += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
+                } else if (c > 223 && c < 240) {
+                    var c2 = output[j++];
+                    var c3 = output[j++];
+                    result += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+                } else if (c >= 240) {
+                    var c2 = output[j++];
+                    var c3 = output[j++];
+                    var c4 = output[j++];
+                    var u = (((c & 7) << 18) | ((c2 & 63) << 12) | ((c3 & 63) << 6) | (c4 & 63)) - 0x10000;
+                    result += String.fromCharCode(0xd800 + (u >> 10), 0xdc00 + (u & 0x3ff));
+                }
+            }
+            return result;
+        } catch (e) { return ""; }
     }
-}
+};
 
 function getLISTmenu() {
-    return `[{"link":"/the-loai/action-adventure/","name":"Action & Adventure"},{"link":"/the-loai/bi-an/","name":"Bí Ẩn"},{"link":"/the-loai/chien-tranh/","name":"Chiến Tranh"},{"link":"/the-loai/chinh-kich/","name":"Chính Kịch"},{"link":"/the-loai/chinh-tri-chien-tranh/","name":"Chính Trị - Chiến Tranh"},{"link":"/the-loai/chu-de-thuc-te/","name":"Chủ Đề Thực Tế"},{"link":"/the-loai/co-trang/","name":"Cổ Trang"},{"link":"/the-loai/drama/","name":"Drama"},{"link":"/the-loai/gia-dinh/","name":"Gia Đình"},{"link":"/the-loai/gia-tuong/","name":"Giả Tưởng"},{"link":"/the-loai/giat-gan/","name":"Giật Gân"},{"link":"/the-loai/hai/","name":"Hài"},{"link":"/the-loai/hanh-dong/","name":"Hành Động"},{"link":"/the-loai/hanh-dong-phieu-luu/","name":"Hành Động & Phiêu Lưu"},{"link":"/the-loai/hinh-su/","name":"Hình Sự"},{"link":"/the-loai/hoat-hinh/","name":"Hoạt Hình"},{"link":"/the-loai/hoc-duong/","name":"Học Đường"},{"link":"/the-loai/hon-nhan/","name":"Hôn Nhân"},{"link":"/the-loai/hu-cau/","name":"Hư Cấu"},{"link":"/the-loai/khoa-hoc-vien-tuong/","name":"Khoa Học Viễn Tưởng"},{"link":"/the-loai/khoa-hoc-vien-tuong-gia-tuong/","name":"Khoa Học Viễn Tưởng & Giả Tưởng"},{"link":"/the-loai/kiem-hiep/","name":"Kiếm hiệp"},{"link":"/the-loai/kinh-di/","name":"Kinh Dị"},{"link":"/the-loai/lang-man/","name":"Lãng Mạng"},{"link":"/the-loai/lang-mang/","name":"Lãng Mạng"},{"link":"/the-loai/lgbt/","name":"LGBT"},{"link":"/the-loai/phieu-luu/","name":"Phiêu Lưu"},{"link":"/the-loai/phim-nhac/","name":"Phim Nhạc"},{"link":"/the-loai/phuctrangcodai/","name":"Phụctrangcổđại"},{"link":"/the-loai/sci-fi-fantasy/","name":"Sci-Fi & Fantasy"},{"link":"/the-loai/thanh-xuan/","name":"Thanh Xuân"},{"link":"/the-loai/thieu-nhi/","name":"Thiếu Nhi"},{"link":"/the-loai/thuong-truong/","name":"Thương Trường"},{"link":"/the-loai/tien-hiep/","name":"Tiên Hiệp"},{"link":"/the-loai/tieu-thuyet-chuyen-the/","name":"Tiểu Thuyết Chuyển Thể"},{"link":"/the-loai/tinh-ban/","name":"Tình Bạn"},{"link":"/the-loai/tinh-tiet/","name":"Tình Tiết"},{"link":"/the-loai/tinh-yeu-ngot-ngao/","name":"Tình Yêu Ngọt Ngào"},{"link":"/the-loai/toi-pham/","name":"Tội Phạm"},{"link":"/the-loai/tra-thu/","name":"Trả Thù"},{"link":"/the-loai/truyen-hinh-thuc-te/","name":"Truyền Hình Thực Tế"},{"link":"/the-loai/vien-tuong/","name":"Viễn Tưởng"},{"link":"/the-loai/vo-hiep/","name":"Võ hiệp"},{"link":"/the-loai/vo-thuat/","name":"Võ Thuật"},{"link":"/the-loai/xa-hoi-den/","name":"Xã Hội Đen"}]`;
+    return `[{"link":"/the-loai/action-adventure/","name":"Action & Adventure"},{"link":"/the-loai/bi-an/","name":"Bí Ẩn"},{"link":"/the-loai/chien-tranh/","name":"Chiến Tranh"},{"link":"/the-loai/chinh-kich/","name":"Chính Kịch"},{"link":"/the-loai/chinh-tri-chien-tranh/","name":"Chính Trị - Chiến Tranh"},{"link":"/the-loai/chu-de-thuc-te/","name":"Chủ Đề Thực Tế"},{"link":"/the-loai/co-trang/","name":"Cổ Trang"},{"link":"/the-loai/drama/","name":"Drama"},{"link":"/the-loai/gia-dinh/","name":"Gia Đình"},{"link":"/the-loai/gia-tuong/","name":"Giả Tưởng"},{"link":"/the-loai/giat-gan/","name":"Giật Gân"},{"link":"/the-loai/hai/","name":"Hài"},{"link":"/the-loai/hanh-dong/","name":"Hành Động"},{"link":"/the-loai/hanh-dong-phieu-luu/","name":"Hành Động & Phiêu Lưu"},{"link":"/the-loai/hinh-su/","name":"Hình Sự"},{"link":"/the-loai/hoat-hinh/","name":"Hoạt Hình"},{"link":"/the-loai/hoc-duong/","name":"Học Đường"},{"link":"/the-loai/hon-nhan/","name":"Hôn Nhân"},{"link":"/the-loai/hu-cau/","name":"Hư Cấu"},{"link":"/the-loai/khoa-hoc-vien-tuong/","name":"Khoa Học Viễn Tưởng"},{"link":"/the-loai/khoa-hoc-vien-tuong-gia-tuong/","name":"Khoa Học Viễn Tưởng & Giả Tưởng"},{"link":"/the-loai/kiem-hiep/","name":"Kiếm hiệp"},{"link":"/the-loai/kinh-di/","name":"Kinh Dị"},{"link":"/the-loai/lang-man/","name":"Lãng Mạng"},{"link":"/the-loai/lgbt/","name":"LGBT"},{"link":"/the-loai/phieu-luu/","name":"Phiêu Lưu"},{"link":"/the-loai/phim-nhac/","name":"Phim Nhạc"},{"link":"/the-loai/phuctrangcodai/","name":"Phụctrangcổđại"},{"link":"/the-loai/sci-fi-fantasy/","name":"Sci-Fi & Fantasy"},{"link":"/the-loai/thanh-xuan/","name":"Thanh Xuân"},{"link":"/the-loai/thieu-nhi/","name":"Thiếu Nhi"},{"link":"/the-loai/thuong-truong/","name":"Thương Trường"},{"link":"/the-loai/tien-hiep/","name":"Tiên Hiệp"},{"link":"/the-loai/tieu-thuyet-chuyen-the/","name":"Tiểu Thuyết Chuyển Thể"},{"link":"/the-loai/tinh-ban/","name":"Tình Bạn"},{"link":"/the-loai/tinh-tiet/","name":"Tình Tiết"},{"link":"/the-loai/tinh-yeu-ngot-ngao/","name":"Tình Yêu Ngọt Ngào"},{"link":"/the-loai/toi-pham/","name":"Tội Phạm"},{"link":"/the-loai/tra-thu/","name":"Trả Thù"},{"link":"/the-loai/truyen-hinh-thuc-te/","name":"Truyền Hình Thực Tế"},{"link":"/the-loai/vien-tuong/","name":"Viễn Tưởng"},{"link":"/the-loai/vo-hiep/","name":"Võ hiệp"},{"link":"/the-loai/vo-thuat/","name":"Võ Thuật"},{"link":"/the-loai/xa-hoi-den/","name":"Xã Hội Đen"}]`;
 }
 
 function buildMenu(menuStr, type) { 
@@ -536,49 +375,36 @@ function buildMenu(menuStr, type) {
 }
 
 function _$(param) {
-    // -------------------------------------------------------------
-    // 1. HELPER PARSER & UTILS
-    // -------------------------------------------------------------
     function parseHTML(htmlString) {
         let nodes = [];
         let root = { id: 0, tag: "ROOT", attrs: {}, childrenIds: [], parentId: null };
         nodes.push(root);
-
         try {
             let html = (htmlString || "").trim();
             if (!html) return { root, nodes };
-
             const VOID_TAGS = new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
             let stack = [0];
             let tagRegex = /<(?:\/([a-zA-Z0-9_-]+)|([a-zA-Z0-9_-]+)([^>]*?)(\/)?)\s*>/g;
-            
             let lastIndex = 0;
             let match;
             let maxIter = 50000;
             let iter = 0;
-
             while ((match = tagRegex.exec(html)) !== null && iter++ < maxIter) {
                 let textBefore = html.slice(lastIndex, match.index).trim();
                 let parentId = stack[stack.length - 1];
-
                 if (textBefore) {
                     let textId = nodes.length;
                     nodes.push({ id: textId, tag: "#text", text: textBefore, attrs: {}, childrenIds: [], parentId: parentId });
                     nodes[parentId].childrenIds.push(textId);
                 }
-
                 lastIndex = tagRegex.lastIndex;
                 let isCloseTag = !!match[1];
                 let tagName = (match[1] || match[2] || "").toLowerCase();
                 let attrStr = match[3] || "";
                 let isSelfClosing = !!match[4] || VOID_TAGS.has(tagName);
-
                 if (isCloseTag) {
                     for (let i = stack.length - 1; i > 0; i--) {
-                        if (nodes[stack[i]].tag === tagName) {
-                            stack.splice(i);
-                            break;
-                        }
+                        if (nodes[stack[i]].tag === tagName) { stack.splice(i); break; }
                     }
                 } else {
                     let attrs = {};
@@ -587,28 +413,14 @@ function _$(param) {
                     while ((attrMatch = attrRegex.exec(attrStr)) !== null) {
                         attrs[attrMatch[1].toLowerCase()] = attrMatch[2] || attrMatch[3] || attrMatch[4] || "";
                     }
-
                     let nodeId = nodes.length;
                     let node = { id: nodeId, tag: tagName, attrs: attrs, childrenIds: [], parentId: parentId };
                     nodes.push(node);
                     nodes[parentId].childrenIds.push(nodeId);
-
-                    if (!isSelfClosing) {
-                        stack.push(nodeId);
-                    }
+                    if (!isSelfClosing) stack.push(nodeId);
                 }
             }
-
-            let remainingText = html.slice(lastIndex).trim();
-            if (remainingText && stack.length > 0) {
-                let parentId = stack[stack.length - 1];
-                let textId = nodes.length;
-                nodes.push({ id: textId, tag: "#text", text: remainingText, attrs: {}, childrenIds: [], parentId: parentId });
-                nodes[parentId].childrenIds.push(textId);
-            }
-        } catch (err) {
-            if (typeof window !== "undefined" && window.log) window.log("parseHTML error: " + err.message);
-        }
+        } catch (err) {}
         return { root, nodes };
     }
 
@@ -624,44 +436,28 @@ function _$(param) {
         return text.trim();
     }
 
-    // -------------------------------------------------------------
-    // 2. QUERY ENGINE & SELECTOR MATCHING
-    // -------------------------------------------------------------
     function matchSingleSelector(node, sel, nodes) {
         if (!node || node.tag === "#text" || node.tag === "ROOT") return false;
-
-        let cleanSel = sel;
-        
-        // 1. Tách pseudo positional (:first, :last, :eq)
-        cleanSel = cleanSel.replace(/:first|:last|:eq\([0-9]+\)/gi, "").trim();
-
-        // 2. Tách pseudo :content(...)
+        let cleanSel = sel.replace(/:first|:last|:eq\([0-9]+\)/gi, "").trim();
         let pseudoContentArg = null;
         let contentMatch = cleanSel.match(/:content\((['"]?)(.*?)\1\)/i);
         if (contentMatch) {
             pseudoContentArg = contentMatch[2];
             cleanSel = cleanSel.replace(contentMatch[0], "").trim();
         }
-
-        // 3. Khớp Selector gốc
         if (cleanSel && cleanSel !== "*") {
             let tagMatch = cleanSel.match(/^[a-zA-Z0-9_-]+/);
             if (tagMatch && node.tag !== tagMatch[0].toLowerCase()) return false;
-
             let idMatch = cleanSel.match(/#([a-zA-Z0-9_-]+)/);
             if (idMatch && (!node.attrs || node.attrs.id !== idMatch[1])) return false;
-
-            // Class matching (hỗ trợ Tailwind)
             let classMatches = cleanSel.match(/\.([a-zA-Z0-9_\-\/\\:]+)/g);
             if (classMatches) {
                 if (!node.attrs || !node.attrs.class) return false;
                 let elClasses = node.attrs.class.split(/\s+/);
                 for (let c of classMatches) {
-                    let targetClass = c.substring(1);
-                    if (!elClasses.includes(targetClass)) return false;
+                    if (!elClasses.includes(c.substring(1))) return false;
                 }
             }
-
             let attrMatch = cleanSel.match(/\[([a-zA-Z0-9_-]+)(?:=['"]?(.*?)['"]?)?\]/);
             if (attrMatch) {
                 let attrName = attrMatch[1].toLowerCase();
@@ -670,14 +466,10 @@ function _$(param) {
                 if (attrVal !== undefined && node.attrs[attrName] !== attrVal) return false;
             }
         }
-
         if (pseudoContentArg !== null) {
-            let fullText = getNodeText(node, nodes, 0);
-            let keywords = pseudoContentArg.split("|").map(k => k.trim().toLowerCase());
-            let found = keywords.some(kw => fullText.toLowerCase().includes(kw));
-            if (!found) return false;
+            let fullText = getNodeText(node, nodes, 0).toLowerCase();
+            if (!pseudoContentArg.split("|").map(k => k.trim().toLowerCase()).some(kw => fullText.includes(kw))) return false;
         }
-
         return true;
     }
 
@@ -687,59 +479,32 @@ function _$(param) {
             if (depth > 50) return;
             let current = nodes[currentId];
             if (!current) return;
-
             if (current.tag !== "ROOT" && current.tag !== "#text" && current.id !== startNode.id) {
-                if (matchSingleSelector(current, selector, nodes)) {
-                    results.push(current);
-                }
+                if (matchSingleSelector(current, selector, nodes)) results.push(current);
             }
             if (current.childrenIds) {
-                for (let cid of current.childrenIds) {
-                    search(cid, depth + 1);
-                }
+                for (let cid of current.childrenIds) search(cid, depth + 1);
             }
         }
         search(startNode.id, 0);
-
         if (selector.indexOf(":first") !== -1) return results.slice(0, 1);
         if (selector.indexOf(":last") !== -1) return results.slice(-1);
-        
         let eqMatch = selector.match(/:eq\(([0-9]+)\)/i);
-        if (eqMatch) {
-            let idx = parseInt(eqMatch[1], 10);
-            return results[idx] ? [results[idx]] : [];
-        }
-
+        if (eqMatch) return results[parseInt(eqMatch[1], 10)] ? [results[parseInt(eqMatch[1], 10)]] : [];
         return results;
     }
 
     function querySelectorAll(startNode, selector, nodes) {
         try {
             if (!startNode || !selector) return [];
-
-            if (selector.indexOf(',') !== -1) {
-                let groupSelectors = selector.split(',').map(s => s.trim());
-                let resMap = new Map();
-                for (let gSel of groupSelectors) {
-                    let subRes = querySelectorAll(startNode, gSel, nodes);
-                    for (let r of subRes) resMap.set(r.id, r);
-                }
-                return Array.from(resMap.values());
-            }
-
             let spaceParts = selector.trim().split(/\s+/);
             if (spaceParts.length > 1) {
                 let currentNodes = [startNode];
                 for (let part of spaceParts) {
-                    let nextLevelNodes = [];
-                    let addedIds = new Set();
+                    let nextLevelNodes = [], addedIds = new Set();
                     for (let cNode of currentNodes) {
-                        let subResults = querySelectorAllSingleLevel(cNode, part, nodes);
-                        for (let r of subResults) {
-                            if (!addedIds.has(r.id)) {
-                                addedIds.add(r.id);
-                                nextLevelNodes.push(r);
-                            }
+                        for (let r of querySelectorAllSingleLevel(cNode, part, nodes)) {
+                            if (!addedIds.has(r.id)) { addedIds.add(r.id); nextLevelNodes.push(r); }
                         }
                     }
                     currentNodes = nextLevelNodes;
@@ -747,16 +512,10 @@ function _$(param) {
                 }
                 return currentNodes;
             }
-
             return querySelectorAllSingleLevel(startNode, selector, nodes);
-        } catch (err) {
-            return [];
-        }
+        } catch (err) { return []; }
     }
 
-    // -------------------------------------------------------------
-    // 3. MINIJQ CLASS CONSTRUCTOR & PROTOTYPE
-    // -------------------------------------------------------------
     function MiniJQ(elements, nodesStore) {
         this.elements = Array.isArray(elements) ? elements : (elements ? [elements] : []);
         this.nodes = nodesStore || [];
@@ -765,171 +524,57 @@ function _$(param) {
 
     MiniJQ.prototype = {
         find: function(selector) {
-            if (this.elements.length === 0) return new MiniJQ([], this.nodes);
-            let matched = [];
-            let addedIds = new Set();
+            let matched = [], addedIds = new Set();
             for (let el of this.elements) {
-                let res = querySelectorAll(el, selector, this.nodes);
-                for (let r of res) {
-                    if (!addedIds.has(r.id)) {
-                        addedIds.add(r.id);
-                        matched.push(r);
-                    }
+                for (let r of querySelectorAll(el, selector, this.nodes)) {
+                    if (!addedIds.has(r.id)) { addedIds.add(r.id); matched.push(r); }
                 }
             }
             return new MiniJQ(matched, this.nodes);
         },
-
-        text: function() {
-            if (this.elements.length === 0) return "";
-            return getNodeText(this.elements[0], this.nodes, 0);
-        },
-
-        html: function() {
-            if (this.elements.length === 0) return "";
-            let self = this;
-            let serialize = function(nodeId, depth) {
-                if (depth > 20) return "";
-                let node = self.nodes[nodeId];
-                if (!node) return "";
-                if (node.tag === "#text") return node.text || "";
-                let attrs = Object.entries(node.attrs || {}).map(([k, v]) => ` ${k}="${v}"`).join("");
-                let childrenHTML = (node.childrenIds || []).map(cid => serialize(cid, depth + 1)).join("");
-                return `<${node.tag}${attrs}>${childrenHTML}</${node.tag}>`;
-            };
-            return (this.elements[0].childrenIds || []).map(cid => serialize(cid, 0)).join("");
-        },
-
-        attr: function(name, value) {
-            if (value !== undefined) {
-                for (let el of this.elements) {
-                    if (el && el.tag !== "#text") {
-                        if (!el.attrs) el.attrs = {};
-                        el.attrs[name] = value;
-                    }
-                }
-                return this;
-            }
-            if (this.elements.length === 0 || !this.elements[0].attrs) return "";
-            return this.elements[0].attrs[name] || "";
-        },
-
+        text: function() { return this.elements.length === 0 ? "" : getNodeText(this.elements[0], this.nodes, 0); },
+        attr: function(name) { return this.elements.length === 0 || !this.elements[0].attrs ? "" : this.elements[0].attrs[name] || ""; },
         each: function(callback) {
-            if (typeof callback !== 'function') return this;
             this.elements.forEach((el, index) => {
                 let jqEl = new MiniJQ([el], this.nodes);
                 callback.call(jqEl, index, jqEl);
             });
             return this;
         },
-
-        textAll: function(delimiter) {
-            if (delimiter === undefined) delimiter = " ";
-            let texts = [];
-            for (let el of this.elements) {
-                texts.push(getNodeText(el, this.nodes, 0));
-            }
-            return texts.join(delimiter);
-        },
-
-        first: function() {
-            return new MiniJQ(this.elements.length > 0 ? [this.elements[0]] : [], this.nodes);
-        },
-
-        last: function() {
-            return new MiniJQ(this.elements.length > 0 ? [this.elements[this.elements.length - 1]] : [], this.nodes);
-        },
-
-        eq: function(index) {
-            return new MiniJQ(this.elements[index] ? [this.elements[index]] : [], this.nodes);
-        },
-
-        parent: function() {
-            let parents = [];
-            let addedIds = new Set();
-            for (let el of this.elements) {
-                if (el && el.parentId !== null && el.parentId !== 0) {
-                    let pNode = this.nodes[el.parentId];
-                    if (pNode && !addedIds.has(pNode.id)) {
-                        addedIds.add(pNode.id);
-                        parents.push(pNode);
-                    }
-                }
-            }
-            return new MiniJQ(parents, this.nodes);
-        },
-
-        next: function() {
-            let nexts = [];
-            for (let el of this.elements) {
-                if (!el || el.parentId === null) continue;
-                let pNode = this.nodes[el.parentId];
-                if (!pNode) continue;
-
-                let siblings = pNode.childrenIds.map(cid => this.nodes[cid]).filter(c => c && c.tag !== "#text");
-                let idx = siblings.findIndex(s => s.id === el.id);
-                if (idx !== -1 && idx + 1 < siblings.length) {
-                    nexts.push(siblings[idx + 1]);
-                }
-            }
-            return new MiniJQ(nexts, this.nodes);
-        },
-
-        before: function() {
-            let befores = [];
-            for (let el of this.elements) {
-                if (!el || el.parentId === null) continue;
-                let pNode = this.nodes[el.parentId];
-                if (!pNode) continue;
-
-                let siblings = pNode.childrenIds.map(cid => this.nodes[cid]).filter(c => c && c.tag !== "#text");
-                let idx = siblings.findIndex(s => s.id === el.id);
-                if (idx > 0) {
-                    befores.push(siblings[idx - 1]);
-                }
-            }
-            return new MiniJQ(befores, this.nodes);
-        },
-
-        after: function() {
-            return this.next();
-        },
-
         closest: function(selector) {
-            let matched = [];
-            let addedIds = new Set();
+            let matched = [], addedIds = new Set();
             for (let el of this.elements) {
-                let currParentId = el.parentId;
-                let depth = 0;
+                let currParentId = el.parentId, depth = 0;
                 while (currParentId !== null && currParentId !== 0 && depth++ < 30) {
                     let curr = this.nodes[currParentId];
                     if (!curr) break;
                     if (matchSingleSelector(curr, selector, this.nodes)) {
-                        if (!addedIds.has(curr.id)) {
-                            addedIds.add(curr.id);
-                            matched.push(curr);
-                        }
+                        if (!addedIds.has(curr.id)) { addedIds.add(curr.id); matched.push(curr); }
                         break;
                     }
                     currParentId = curr.parentId;
                 }
             }
             return new MiniJQ(matched, this.nodes);
+        },
+        next: function() {
+            let nexts = [];
+            for (let el of this.elements) {
+                if (!el || el.parentId === null) continue;
+                let pNode = this.nodes[el.parentId];
+                if (!pNode) continue;
+                let siblings = pNode.childrenIds.map(cid => this.nodes[cid]).filter(c => c && c.tag !== "#text");
+                let idx = siblings.findIndex(s => s.id === el.id);
+                if (idx !== -1 && idx + 1 < siblings.length) nexts.push(siblings[idx + 1]);
+            }
+            return new MiniJQ(nexts, this.nodes);
         }
     };
 
-    // -------------------------------------------------------------
-    // 4. MAIN ENTRY POINT LOGIC FOR _$
-    // -------------------------------------------------------------
     try {
         if (!param) return new MiniJQ([], []);
         if (param instanceof MiniJQ) return param;
-        if (typeof param === "string") {
-            let parsed = parseHTML(param);
-            return new MiniJQ(parsed.root, parsed.nodes);
-        }
-        return new MiniJQ(param, []);
-    } catch (err) {
-        return new MiniJQ([], []);
-    }
+        let parsed = typeof param === "string" ? parseHTML(param) : { root: param, nodes: [] };
+        return new MiniJQ(parsed.root, parsed.nodes);
+    } catch (err) { return new MiniJQ([], []); }
 }
