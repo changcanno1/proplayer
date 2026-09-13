@@ -171,20 +171,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nettruyen.png"
     },
     {
-      "id": "mangadex",
-      "name": "[MANGA] MangaDex",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/mangadex_plugin.js",
-      "iconUrl": "https://mangadex.org/favicon.ico"
-    },
-    {
-      "id": "truyentuoitho",
-      "name": "[MANGA] Truyện Tuổi Thơ",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/truyentuoitho_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/truyentuoitho.png"
-    },
-    {
       "id": "truyenqq",
       "name": "[MANGA] TruyệnQQ",
       "version": "1.8.0",
