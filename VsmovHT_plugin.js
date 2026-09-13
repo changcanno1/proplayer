@@ -474,3 +474,4 @@ function _$(param) {
         return new MiniJQ(parsed.root, parsed.nodes);
     } catch (err) { return new MiniJQ([], []); }
 }
+
