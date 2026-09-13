@@ -7,15 +7,15 @@ function getManifest() {
     id: "Vsmov",
     name: "Nguồn Vsmov",
     description: "Nguồn phim Vsmov...",
-    "version": "1.2.4",
-    info: "",
+    "version": "1.2.5",
+    info: "Cập nhật phát qua WebView để giữ Vietsub gốc",
     baseUrl: "https://vsmov.com",
     iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/vsmov.png",
     isEnabled: true,
     "adblock": false,
     type: "MOVIE",
     "author": "Alokillgtv",
-    playerType: "exoplayer"
+    playerType: "webview" // Chuyển ưu tiên sang webview
   });
 }
 
@@ -195,6 +195,7 @@ function parseMovieDetail(html, url) {
         $movie.episodes.forEach(function(serverItem) {
           var episodes = [];
           serverItem.server_data.forEach(function(episode) {
+            // Lấy ID là link_embed trực tiếp
             episodes.push({
               id: episode.link_embed, 
               name: "Tập " + episode.name,
@@ -238,50 +239,20 @@ function parseMovieDetail(html, url) {
     }
 }
 
+// Xử lý xem bằng WebView thay vì bóc tách luồng m3u8
 function parseDetailResponse(html, url) {
     try {
-        var m3u8 = url.replace("/video/", "/stream/") + "/master.m3u8";
-        var domain = url.replace(/^(https?:\/\/[^\/]+).*/, "$1");
-        var $doc = _$(html);
-        var script = $doc.find("script:content('subtitles')").html() || "";
-        
-        var subitem = [];
-        var subStr = "";
-
-        // 1. Tìm chuỗi JSON phụ đề nguyên bản
-        var matchObj = script.match(/subtitles:\s*(\[\s*\{.*?\}\s*\])/s);
-        // 2. Tìm chuỗi phụ đề mã hóa (thường dùng Base64 hoặc ngoặc kép)
-        var matchEnc = script.match(/subtitles:\s*['"]([^'"]+)['"]/s);
-
-        if (matchObj && matchObj[1]) {
-            subStr = matchObj[1];
-        } else if (matchEnc && matchEnc[1]) {
-            try { subStr = BASE64.decode(matchEnc[1]); } catch(err) {}
-        }
-
-        if (subStr) {
-            try {
-                var sublist = JSON.parse(subStr);
-                sublist.forEach(function(item, index) {
-                    var name = (item.code || "vi").replace("vie", "Vietsub").replace("eng", "Engsub");
-                    var link = item.url.indexOf("http") === 0 ? item.url : domain + item.url;
-                    subitem.push({
-                        lang: name + " " + (index + 1),
-                        url: link
-                    });
-                });
-            } catch(err) { log("Lỗi parse JSON phụ đề: " + err); }
-        }
-
+        log("Chạy webview cho link: " + url);
+        // Trả về thẳng link embed, set isEmbed = true để app mở webview
         return JSON.stringify({
-            url: m3u8,
-            isEmbed: false,
-            mimeType: "application/x-mpegURL",
+            url: url,
+            isEmbed: true, 
+            mimeType: "text/html",
             headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "Referer": BASEURL
             },
-            subtitles: subitem
+            subtitles: []
         });
     } catch (e) {
         log("parseDetailResponse[err]:\n " + e);
@@ -298,53 +269,6 @@ function parseYearsResponse(html) { return "[]"; }
 // =============================================================================
 // THƯ VIỆN BỔ SUNG & CÔNG CỤ
 // =============================================================================
-
-var BASE64 = {
-    decode: function (base64String) {
-        try {
-            if (!base64String) return "";
-            var str = decodeURIComponent(base64String.trim());
-            str = str.replace(/-/g, "+").replace(/_/g, "/");
-            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-            var output = [];
-            var buffer = 0, bits = 0;
-            for (var i = 0; i < str.length; i++) {
-                var char = str.charAt(i);
-                if (char === "=") break;
-                var index = chars.indexOf(char);
-                if (index === -1) continue;
-                buffer = (buffer << 6) | index;
-                bits += 6;
-                if (bits >= 8) {
-                    bits -= 8;
-                    output.push((buffer >> bits) & 0xff);
-                }
-            }
-            var result = "";
-            var j = 0;
-            while (j < output.length) {
-                var c = output[j++];
-                if (c < 128) {
-                    result += String.fromCharCode(c);
-                } else if (c > 191 && c < 224) {
-                    var c2 = output[j++];
-                    result += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
-                } else if (c > 223 && c < 240) {
-                    var c2 = output[j++];
-                    var c3 = output[j++];
-                    result += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
-                } else if (c >= 240) {
-                    var c2 = output[j++];
-                    var c3 = output[j++];
-                    var c4 = output[j++];
-                    var u = (((c & 7) << 18) | ((c2 & 63) << 12) | ((c3 & 63) << 6) | (c4 & 63)) - 0x10000;
-                    result += String.fromCharCode(0xd800 + (u >> 10), 0xdc00 + (u & 0x3ff));
-                }
-            }
-            return result;
-        } catch (e) { return ""; }
-    }
-};
 
 function getLISTmenu() {
     return `[{"link":"/the-loai/action-adventure/","name":"Action & Adventure"},{"link":"/the-loai/bi-an/","name":"Bí Ẩn"},{"link":"/the-loai/chien-tranh/","name":"Chiến Tranh"},{"link":"/the-loai/chinh-kich/","name":"Chính Kịch"},{"link":"/the-loai/chinh-tri-chien-tranh/","name":"Chính Trị - Chiến Tranh"},{"link":"/the-loai/chu-de-thuc-te/","name":"Chủ Đề Thực Tế"},{"link":"/the-loai/co-trang/","name":"Cổ Trang"},{"link":"/the-loai/drama/","name":"Drama"},{"link":"/the-loai/gia-dinh/","name":"Gia Đình"},{"link":"/the-loai/gia-tuong/","name":"Giả Tưởng"},{"link":"/the-loai/giat-gan/","name":"Giật Gân"},{"link":"/the-loai/hai/","name":"Hài"},{"link":"/the-loai/hanh-dong/","name":"Hành Động"},{"link":"/the-loai/hanh-dong-phieu-luu/","name":"Hành Động & Phiêu Lưu"},{"link":"/the-loai/hinh-su/","name":"Hình Sự"},{"link":"/the-loai/hoat-hinh/","name":"Hoạt Hình"},{"link":"/the-loai/hoc-duong/","name":"Học Đường"},{"link":"/the-loai/hon-nhan/","name":"Hôn Nhân"},{"link":"/the-loai/hu-cau/","name":"Hư Cấu"},{"link":"/the-loai/khoa-hoc-vien-tuong/","name":"Khoa Học Viễn Tưởng"},{"link":"/the-loai/khoa-hoc-vien-tuong-gia-tuong/","name":"Khoa Học Viễn Tưởng & Giả Tưởng"},{"link":"/the-loai/kiem-hiep/","name":"Kiếm hiệp"},{"link":"/the-loai/kinh-di/","name":"Kinh Dị"},{"link":"/the-loai/lang-man/","name":"Lãng Mạng"},{"link":"/the-loai/lgbt/","name":"LGBT"},{"link":"/the-loai/phieu-luu/","name":"Phiêu Lưu"},{"link":"/the-loai/phim-nhac/","name":"Phim Nhạc"},{"link":"/the-loai/phuctrangcodai/","name":"Phụctrangcổđại"},{"link":"/the-loai/sci-fi-fantasy/","name":"Sci-Fi & Fantasy"},{"link":"/the-loai/thanh-xuan/","name":"Thanh Xuân"},{"link":"/the-loai/thieu-nhi/","name":"Thiếu Nhi"},{"link":"/the-loai/thuong-truong/","name":"Thương Trường"},{"link":"/the-loai/tien-hiep/","name":"Tiên Hiệp"},{"link":"/the-loai/tieu-thuyet-chuyen-the/","name":"Tiểu Thuyết Chuyển Thể"},{"link":"/the-loai/tinh-ban/","name":"Tình Bạn"},{"link":"/the-loai/tinh-tiet/","name":"Tình Tiết"},{"link":"/the-loai/tinh-yeu-ngot-ngao/","name":"Tình Yêu Ngọt Ngào"},{"link":"/the-loai/toi-pham/","name":"Tội Phạm"},{"link":"/the-loai/tra-thu/","name":"Trả Thù"},{"link":"/the-loai/truyen-hinh-thuc-te/","name":"Truyền Hình Thực Tế"},{"link":"/the-loai/vien-tuong/","name":"Viễn Tưởng"},{"link":"/the-loai/vo-hiep/","name":"Võ hiệp"},{"link":"/the-loai/vo-thuat/","name":"Võ Thuật"},{"link":"/the-loai/xa-hoi-den/","name":"Xã Hội Đen"}]`;
@@ -540,34 +464,6 @@ function _$(param) {
                 callback.call(jqEl, index, jqEl);
             });
             return this;
-        },
-        closest: function(selector) {
-            let matched = [], addedIds = new Set();
-            for (let el of this.elements) {
-                let currParentId = el.parentId, depth = 0;
-                while (currParentId !== null && currParentId !== 0 && depth++ < 30) {
-                    let curr = this.nodes[currParentId];
-                    if (!curr) break;
-                    if (matchSingleSelector(curr, selector, this.nodes)) {
-                        if (!addedIds.has(curr.id)) { addedIds.add(curr.id); matched.push(curr); }
-                        break;
-                    }
-                    currParentId = curr.parentId;
-                }
-            }
-            return new MiniJQ(matched, this.nodes);
-        },
-        next: function() {
-            let nexts = [];
-            for (let el of this.elements) {
-                if (!el || el.parentId === null) continue;
-                let pNode = this.nodes[el.parentId];
-                if (!pNode) continue;
-                let siblings = pNode.childrenIds.map(cid => this.nodes[cid]).filter(c => c && c.tag !== "#text");
-                let idx = siblings.findIndex(s => s.id === el.id);
-                if (idx !== -1 && idx + 1 < siblings.length) nexts.push(siblings[idx + 1]);
-            }
-            return new MiniJQ(nexts, this.nodes);
         }
     };
 
