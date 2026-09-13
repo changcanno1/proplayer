@@ -30,13 +30,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vn2c.png"
     },
     {
-      "id": "Vsmov",
-      "name": "PhimVsmov",
-      "version": "1.2.3",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
-      "iconUrl": "https://vsmov.com/VSmov.png"
-    },
-    {
       "id": "kkphim",
       "name": "KKPhim",
       "version": "1.0.9",
@@ -63,13 +56,6 @@
       "version": "1.2.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
-    },
-    {
-      "id": "bilutv",
-      "name": "[MOVIE] Bilutv",
-      "version": "1.5.6",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Bilutv_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
     },
     {
       "id": "phimfun",
@@ -105,6 +91,20 @@
       "version": "1.2.6",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+    },
+    {
+      "id": "Vsmov",
+      "name": "PhimVsmov",
+      "version": "1.2.3",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
+      "iconUrl": "https://vsmov.com/VSmov.png"
+    },
+     {
+      "id": "bilutv",
+      "name": "[MOVIE] Bilutv",
+      "version": "1.5.6",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Bilutv_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
     },
     {
       "id": "shortflix",
