@@ -204,6 +204,13 @@
       "version": "1.0.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Thethao_plugin.js",
       "iconUrl": "https://yt3.googleusercontent.com/kJ7itr1ZrmnC7UmE79u3yQIhcHP6vfI9RZLlgIlgXwdWhtwMjzjLTmxs6sI0pbg_R-ZYQ5Or-g=s160-c-k-c0x00ffffff-no-rj"
+   },
+    {
+      "id": "SportEng",
+      "name": "SportEng",
+      "version": "1.0.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/SportsEng_plugin.js",
+      "iconUrl": "https://yt3.googleusercontent.com/kJ7itr1ZrmnC7UmE79u3yQIhcHP6vfI9RZLlgIlgXwdWhtwMjzjLTmxs6sI0pbg_R-ZYQ5Or-g=s160-c-k-c0x00ffffff-no-rj"
    }
 ]
 }
