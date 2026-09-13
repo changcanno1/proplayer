@@ -1,27 +1,27 @@
 BASEURL = "https://onflix.lat";
 BASEAPI = "https://k8s.onflixcdn.com/api";
-
+var popup_html = "<div class='donate-container'><h2 class='donate-heading'>DONATE</h2><p class='donate-description'>Anh em yêu quý có thể mời bọn mình 2 ly cà phê nhé. Để có động lực duy trì App, cập nhật plugin và tìm thêm nhiều nguồn mới và hay cho anh em. Một chút lòng thành cũng làm bọn mình tiếp tục hoạt động tốt hơn, cám ơn anh em.</p><div class='donate-grid'><div class='donate-card'><div class='donate-title'>Donate Tác giả Plugin</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qrht.png' alt='Donate Tác giả Plugin' /></div></div><div class='donate-card'><div class='donate-title'>Donate Tác giả App</div><div class='qr-wrapper'><img src='https://vaxplugin.alokillgtv.workers.dev/img/qryb.png' alt='Donate Tác giả App' /></div></div></div></div><style>.donate-container{max-width:800px;margin:0 auto;padding:10px;box-sizing:border-box;font-family:Arial,sans-serif;text-align:center;color:#eee}.donate-heading{font-size:22px;font-weight:bold;margin:0 0 12px 0;color:#fff;text-transform:uppercase;letter-spacing:1px}.donate-description{font-size:14px;line-height:1.5;margin-bottom:18px;color:#ccc}.donate-grid{display:flex;flex-direction:row;justify-content:center;align-items:stretch;gap:16px}.donate-card{flex:1;min-width:0;background:#22252a;border-radius:12px;padding:14px;border:1px solid #33373e;display:flex;flex-direction:column;align-items:center}.donate-title{font-weight:bold;font-size:15px;margin-bottom:12px;color:#fff}.qr-wrapper{width:100%;max-width:240px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:#181a1d;border-radius:8px;padding:8px;box-sizing:border-box}.qr-wrapper img{width:100%;height:100%;object-fit:contain;border-radius:4px}@media(max-width:600px){.donate-grid{flex-direction:column}.donate-heading{font-size:18px;margin-bottom:8px}.donate-description{font-size:13px;margin-bottom:12px}.qr-wrapper{max-width:180px}}</style>"
 function getManifest() {
-    return JSON.stringify({
-        "id": "onflix",
-        "name": "Onflix",
-        "description": "Trang xem phim siêu hay.",
-        "version": "1.9",
-        "baseUrl": "https://onflix.lat",
-        "info": "Nguồn phim Onflix, nhanh mượt và dễ tìm phim là ưu điểm.",
-        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png",
-        "isEnabled": true,
-        "type": "MOVIE",
-        "layoutType": "HORIZONTAL",
-        "playerType": "auto"
-    });
+	return JSON.stringify({
+		"id": "onflix",
+		"name": "Onflix",
+		"description": "Trang xem phim siêu hay.",
+		"version": "1.9.8",
+		"baseUrl": "https://onflix.lat",
+    "info": "",
+		"iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png",
+		"isEnabled": true,
+		"type": "MOVIE",
+    "author": "Alokillgtv",
+		"playerType": "auto"
+	});
 }
-
+//     popup_html: popup_html,
 function log(msg) {
     if (typeof nativeLog !== 'undefined') {
-        nativeLog("[" + BASEURL + "] " + msg);
+        nativeLog("["+BASEURL+"] " + msg);
     } else if (typeof console !== 'undefined' && console.log) {
-        console.log("[" + BASEURL + "] " + msg);
+        console.log("["+BASEURL+"] " + msg);
     }
 }
 
@@ -30,7 +30,7 @@ function log(msg) {
 // https://k8s.onflixcdn.com/api/movies?type=phim-le&sort=newest&page=2&limit=24
 function getHomeSections() {
     try {
-        // /movies?type=chieu_rap&sort=newest&page=2&limit=24
+// /movies?type=chieu_rap&sort=newest&page=2&limit=24
         var listurl = `
 /movies?type=chieu_rap&sort=newest&limit=24@@Phim Chiêú Rạp@@false
 /movies?type=phim-bo&sort=newest&limit=24@@Phim Bộ@@false
@@ -66,9 +66,7 @@ function getFilterConfig() {
         });
     } catch (e) {
         log("getFilterConfig[err]:\n " + e);
-        return JSON.stringify({
-            category: []
-        });
+        return JSON.stringify({ category: [] });
     }
 }
 
@@ -196,7 +194,7 @@ function getUrlDetail(slug) {
     }
 }
 
-function getUrlCategories() {
+function getUrlCategories() { 
     try {
         var domain = (typeof BASEURL !== "undefined" && BASEURL) ? BASEURL : "https://onflix.lat";
         log("getUrlCategories[url]: \n" + domain);
@@ -207,18 +205,18 @@ function getUrlCategories() {
     }
 }
 
-function getUrlCountries() {
+function getUrlCountries() { 
     try {
-        return "";
+        return ""; 
     } catch (e) {
         log("getUrlCountries[err]:\n " + e);
         return "";
     }
 }
 
-function getUrlYears() {
+function getUrlYears() { 
     try {
-        return "";
+        return ""; 
     } catch (e) {
         log("getUrlYears[err]:\n " + e);
         return "";
@@ -239,13 +237,7 @@ function parseListResponse(html, $url) {
         var videoData = typeof html === "string" ? JSON.parse(html) : html;
 
         if (!videoData) {
-            return JSON.stringify({
-                "items": [],
-                "pagination": {
-                    "currentPage": 1,
-                    "totalPages": 1
-                }
-            });
+            return JSON.stringify({ "items": [], "pagination": { "currentPage": 1, "totalPages": 1 } });
         }
 
         // Ưu tiên đọc mảng movies (cho Search API) hoặc data (cho Danh sách)
@@ -279,22 +271,22 @@ function parseListResponse(html, $url) {
             var itemUrl = domain + "/phim/" + movieSlug;
             var poster = block.poster_url;
             var backdrop = block.thumb_url;
-            if (!block.episode_current.match(/sắp|chiếu/)) {
-                if (poster && poster.indexOf("ophim") > -1 || backdrop && backdrop.indexOf("ophim") > -1) {
-                    // https://img.ophim.live
-                    poster = poster.replace("https://img.ophim.live", "https://ophim1.com");
-                    backdrop = backdrop.replace("https://img.ophim.live", "https://ophim1.com");
-                }
-                items.push({
-                    "id": itemUrl,
-                    "title": (block.title || block.name || "").trim(),
-                    "posterUrl": poster || "",
-                    "backdropUrl": backdrop || "",
-                    "year": block.year || "",
-                    "quality": block.quality || "",
-                    "episode_current": block.episode_current || "",
-                    "lang": block.lang || ""
-                });
+            if(!block.episode_current.match(/sắp|chiếu/)){
+              if(poster && poster.indexOf("ophim") > -1 || backdrop && backdrop.indexOf("ophim") > -1){
+                // https://img.ophim.live
+                poster = poster.replace("https://img.ophim.live","https://ophim1.com");
+                backdrop = backdrop.replace("https://img.ophim.live","https://ophim1.com");
+              }
+              items.push({
+                  "id": itemUrl,
+                  "title": (block.title || block.name || "").trim(),
+                  "posterUrl": poster || "",
+                  "backdropUrl": backdrop || "",
+                  "year": block.year || "",
+                  "quality": block.quality || "",
+                  "episode_current": block.episode_current || "",
+                  "lang": block.lang || ""
+              });
             }
         }
 
@@ -310,10 +302,7 @@ function parseListResponse(html, $url) {
         log("parseListResponse[err]:\n " + e);
         return JSON.stringify({
             "items": [],
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 1
-            }
+            "pagination": { "currentPage": 1, "totalPages": 1 }
         });
     }
 }
@@ -326,10 +315,7 @@ function parserFind(html, $url) {
         log("parserFind[err]:\n " + e);
         return JSON.stringify({
             "items": [],
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 1
-            }
+            "pagination": { "currentPage": 1, "totalPages": 1 }
         });
     }
 }
@@ -341,10 +327,7 @@ function parseSearchResponse(html) {
         log("parseSearchResponse[err]:\n " + e);
         return JSON.stringify({
             "items": [],
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 1
-            }
+            "pagination": { "currentPage": 1, "totalPages": 1 }
         });
     }
 }
@@ -404,7 +387,7 @@ function extractCleanData(data) {
                         traverse(node[key]);
                     }
                 }
-            }
+            } 
             // Nếu là Mảng, duyệt qua từng phần tử của mảng
             else if (Array.isArray(node)) {
                 for (let i = 0; i < node.length; i++) {
@@ -417,12 +400,7 @@ function extractCleanData(data) {
         return result;
     } catch (e) {
         log("extractCleanData[err]:\n " + e);
-        return {
-            movie: null,
-            episodes: [],
-            related: [],
-            collection: []
-        };
+        return { movie: null, episodes: [], related: [], collection: [] };
     }
 }
 
@@ -439,7 +417,7 @@ function parseMovieDetail(html, $url) {
         var dataVD = extractCleanData(rawVD);
         var movie = dataVD.movie;
         var actors = "";
-
+        
         if (movie && movie.actors) {
             movie.actors.forEach(actor => {
                 actors += actor.name + ", ";
@@ -452,7 +430,7 @@ function parseMovieDetail(html, $url) {
         }
         var rawVDEmbed = parseNextPayload(scriptEmbed);
         dataVD = extractCleanData(rawVDEmbed);
-
+        
         var $listEpi = dataVD.episodes;
         var servers = [];
 
@@ -478,9 +456,9 @@ function parseMovieDetail(html, $url) {
                     streamLink = episode.link_embed;
                 }
                 server.episodes.push({
-                    id: streamLink, // URL lấy từ link_m3u8
-                    name: "Tập " + episode.slug, // Tập + slug (ví dụ: Tập 1)
-                    slug: "tap-" + episode.slug // tap-slug (ví dụ: tap-1)
+                    id: streamLink,            // URL lấy từ link_m3u8
+                    name: "Tập " + episode.slug,      // Tập + slug (ví dụ: Tập 1)
+                    slug: "tap-" + episode.slug       // tap-slug (ví dụ: tap-1)
                 });
             });
         }
@@ -506,10 +484,10 @@ function parseMovieDetail(html, $url) {
         // 3. Sắp xếp lại danh sách theo tên mới đã được đổi
         servers.sort((a, b) => {
             const getPriority = (name) => {
-                if (name.includes("KK Phim")) return 1; // KK Phim (PA cũ) lên đầu
-                if (name.includes("Ổ Phim")) return 2; // Ổ Phim (OP cũ) xếp thứ hai
-                if (name.includes("Nguồn C")) return 4; // Nguồn C (NC cũ) xuống cuối cùng
-                return 3; // Các nguồn còn lại (SN, v.v.) nằm giữa
+                if (name.includes("KK Phim")) return 1;  // KK Phim (PA cũ) lên đầu
+                if (name.includes("Ổ Phim")) return 2;   // Ổ Phim (OP cũ) xếp thứ hai
+                if (name.includes("Nguồn C")) return 4;  // Nguồn C (NC cũ) xuống cuối cùng
+                return 3;                                // Các nguồn còn lại (SN, v.v.) nằm giữa
             };
 
             return getPriority(a.name) - getPriority(b.name);
@@ -533,7 +511,8 @@ function parseMovieDetail(html, $url) {
             lang: movie ? movie.lang : "",
             country: (movie && movie.countries && movie.countries[0]) ? movie.countries[0].name : ""
         });
-    } catch (e) {
+    } 
+    catch (e) {
         log("parseMovieDetail[err]:\n " + e);
         return JSON.stringify({
             id: $url,
@@ -557,11 +536,11 @@ function parseDetailResponse(html, url) {
     try {
         var $stream = "";
         var $type = "application/x-mpegURL";
-        if (url.indexOf("embed") > -1) {
+        if(url.indexOf("embed") > -1){
             $stream = url;
             $type = "";
         }
-        var customjs = textJS(url);
+        var customjs = runJS(BASEURL);
         return JSON.stringify({
             "url": $stream,
             "mimeType": $type,
@@ -575,16 +554,18 @@ function parseDetailResponse(html, url) {
                 "Accept": "*/*",
                 "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
                 "X-Requested-With": "com.android.chrome",
+                "Block-Ads": false,
                 "Custom-Js": customjs.trim()
             },
             "subtitles": []
         });
-
+        
     } catch (e) {
         log("parseDetailResponse[err]:\n " + e);
-        return JSON.stringify({
-            "url": "",
-            "headers": {}
+        return JSON.stringify({ 
+          url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+          mimeType: "video/mp4", 
+          isEmbed: false, headers: {}, subtitles: [] 
         });
     }
 }
@@ -596,10 +577,10 @@ function sortEpisodesByName(data) {
                 server.episodes.sort((a, b) => {
                     const matchA = a.name.match(/Tập\s*(\d+)/i);
                     const matchB = b.name.match(/Tập\s*(\d+)/i);
-
+                    
                     const numA = matchA ? parseInt(matchA[1], 10) : 0;
                     const numB = matchB ? parseInt(matchB[1], 10) : 0;
-
+                    
                     return numA - numB;
                 });
             }
@@ -612,113 +593,145 @@ function sortEpisodesByName(data) {
 }
 
 
-function textJS($links) {
-    // Sử dụng biến $url từ tham số truyền vào thay vì ghi cứng link
+function runJS(referer) {
     return `
-LINKVIDEO = ${JSON.stringify($links)}
-
-SCRIPTURL = "https://script.google.com/macros/s/AKfycbwsvLFzWMdxvX9ZH-3wnP3GJzS58v0CtT_0mlEYeOz6cOsgen9IR3c6VPv_EssPXMFzwQ/exec?name=onflix&type=js"; 
-const style = document.createElement('style');
-var customcss = 'body{background:#000000;overflow:hidden;margin:0;height:100vh;display:flex;justify-content:center;align-items:center;position:relative;font-family:sans-serif;}body::before{content:"";width:60px;height:60px;border:4px solid rgba(255, 255, 255, 0.1);border-top-color:#00ffcc;border-radius:50%;animation:spin 0.8s linear infinite;transform:translateY(-20px);box-shadow:0 0 10px rgba(0, 255, 204, 0.2);}body::after{content:"LOADING";position:absolute;color:#ffffff;font-size:11px;letter-spacing:3px;transform:translateY(40px);animation:pulse 1.5s ease-in-out infinite;opacity:0.8;}@keyframes spin{to{transform:translateY(-20px) rotate(360deg);}}@keyframes pulse{0%, 100%{opacity:0.3;}50%{opacity:1;text-shadow:0 0 8px rgba(0, 255, 204, 0.6);}}';
-style.innerHTML = customcss;
-//document.head.appendChild(style);
-
-/* Build Video Begin*/
-
-
-    // ─── HÀM TOAST ĐƯỢC ĐƯA RA NGOÀI (Có thể gọi ở mọi nơi) ───
-    function showToast(message, duration, check) {
-        if (typeof duration === 'undefined') duration = 7000;
-        if (typeof check === 'undefined') check = true;
-        if (check === false) return;
-        var container = document.getElementById('global-toast-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'global-toast-container';
-            container.style.cssText =
-                'position:fixed;bottom:20px;right:20px;z-index:9999999;display:flex;flex-direction:column;gap:10px;';
-            document.body.appendChild(container);
+function bridgeLog(msg, check) {
+    try {
+      if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
+        window.SnifferBridge.log(msg);
+        if (check === true && typeof window.SnifferBridge.toast === 'function') {
+          window.SnifferBridge.toast(msg, 1000);
         }
-        var toastEl = document.createElement('div');
-        toastEl.innerHTML = message;
-        toastEl.style.cssText =
-            'background:rgba(50,50,50,0.95);color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,0.2);font-family:sans-serif;font-size:14px;min-width:200px;transition:all 0.3s ease;transform:translateX(120%);opacity:0;';
-        container.appendChild(toastEl);
-        setTimeout(function() {
-            toastEl.style.transform = 'translateX(0)';
-            toastEl.style.opacity = '1';
-        }, 10);
-        setTimeout(function() {
-            toastEl.style.transform = 'translateX(120%)';
-            toastEl.style.opacity = '0';
-            setTimeout(function() {
-                toastEl.remove();
-                if (container.childElementCount === 0) container.remove();
-            }, 300);
-        }, duration);
-    }
+      } else if (typeof console !== 'undefined' && console.log) {
+        console.log(msg);
+      }
+    } catch(e) {}
+}
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', GetlinkVideo);
+(function injectCSS() {
+  try {
+    const cssStyle = "body,html,*{display:none!important;background:black!important;opacity:0!important;z-index:-999999}";
+    const styleElement = document.createElement('style');
+    styleElement.type = 'text/css';
+    styleElement.setAttribute('data-injected-by', 'custom-script');
+
+    if (styleElement.styleSheet) {
+      styleElement.styleSheet.cssText = cssStyle;
     } else {
-        GetlinkVideo();
+      styleElement.appendChild(document.createTextNode(cssStyle));
     }
 
+    const targetNode = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
 
-/* Build Video End */
-
-function injectScriptAfterLoad(scriptUrl) {
-    function doFetchAndInject() {
-        console.log('⏳ Đang tiến hành fetch code từ:', scriptUrl);
-        
-        fetch(SCRIPTURL)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Mã phản hồi từ Server không tốt: ' + response.status);
-                }
-                return response.text(); // Lấy toàn bộ mã nguồn dưới dạng chuỗi chữ
-            })
-            .then(codeText => {
-                // 1. Tạo một thẻ script trống mới hoàn toàn bằng JS
-                const scriptElement = document.createElement('script');
-                scriptElement.type = 'text/javascript';
-                
-                // 2. Đổ thẳng nội dung code dạng chữ vào trong thẻ script vừa tạo
-                scriptElement.textContent = codeText;
-                
-                // 3. Nhúng (Inject) thẻ script này vào vị trí cuối cùng của thẻ body
-                document.body.appendChild(scriptElement);
-               // showToast('🎯 Đã fetch và nhúng thành công script vào sau body,!',5000);
-            })
-            .catch(error => {
-                console.error('❌ Lỗi không thể fetch hoặc nhúng script:', error);
-            });
-    }
-    
-    // Kiểm tra trạng thái tải của trang web
-    if (document.readyState !== 'loading') {
-        // Nếu trang web đã tải xong cấu trúc DOM cơ bản, thực hiện ngay lập tức
-        doFetchAndInject();
+    if (targetNode) {
+      targetNode.appendChild(styleElement);
+      bridgeLog("Chèn css ẩn trang thành công.");
     } else {
-        // Nếu trang web vẫn đang load thô, đợi sự kiện DOMContentLoaded kích hoạt rồi chạy
-        document.addEventListener('DOMContentLoaded', doFetchAndInject);
+      document.addEventListener('DOMContentLoaded', function () {
+        (document.head || document.documentElement).appendChild(styleElement);
+      });
     }
-}
+  } catch (error) {
+    bridgeLog('Không thể chèn CSS:', error);
+  }
+})();
 
-function initCustomVideoFix() {
-    // SỬA: Lấy động giá trị từ tham số $url truyền vào hàm textJS bên ngoài
-    if (SCRIPTURL && SCRIPTURL !== "undefined") {
-        injectScriptAfterLoad(SCRIPTURL);
+(function initCryptoHookSniffer() {
+  if (window.__CRYPTO_SNIFFER_INITIALIZED__) return;
+  window.__CRYPTO_SNIFFER_INITIALIZED__ = 1;
+
+  var hasDispatchedAny = 0;
+  var isFinished = 0;
+  var timeoutTimer = null;
+
+  bridgeLog("Đang tiến hành giải mã & bắt link M3U8, xin chờ....", true);
+
+  // 1. Timeout 20 giây bảo vệ
+  timeoutTimer = setTimeout(function() {
+    if (hasDispatchedAny === 0 && isFinished === 0) {
+      isFinished = 1;
+      bridgeLog("❌ [TIMEOUT] Đã quá 20 giây nhưng không bắt được dữ liệu giải mã!", false);
+      bridgeLog("Không tìm thấy link video (Hết thời gian 20s).", true);
+      
+      if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
+        window.SnifferBridge.play("https://google.com", "");
+      }
     }
-}
+  }, 20000);
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCustomVideoFix);
-} else {
-    initCustomVideoFix();
-}
+  function stopTimeout() {
+    if (timeoutTimer) {
+      clearTimeout(timeoutTimer);
+      timeoutTimer = null;
+    }
+  }
 
-`;
+  // 2. Kiểm tra M3U8 hợp lệ
+  function isValidM3U8(content) {
+    if (typeof content !== 'string') return false;
+    var trimmed = content.trim();
+    return trimmed.indexOf('#EXTM3U') === 0 && 
+          (trimmed.indexOf('#EXTINF') !== -1 || trimmed.indexOf('#EXT-X-STREAM-INF') !== -1);
+  }
+
+  // 3. Chuyển M3U8 về App
+  function dispatchM3u8ToApp(m3u8Content) {
+    if (!m3u8Content || hasDispatchedAny === 1) return;
+    hasDispatchedAny = 1;
+    isFinished = 1;
+    stopTimeout();
+
+    bridgeLog('🎯 [CRYPTO-HOOK] Giải mã thành công M3U8! Đang gửi lên App...');
+    bridgeLog("🎯 Bắt link thành công! Đang xử lý video...", true);
+
+    try {
+      if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
+        window.SnifferBridge.log("M3U8\\n" + m3u8Content);
+      }
+      bridgeLog('🎯 Đang bắn m3u8 cho native');
+      SnifferBridge.playM3u8Content(m3u8Content, JSON.stringify({"Origin":"https://phim.nguonc.com","Referer":"${referer}"}));
+    } catch(e) {
+      bridgeLog('❌ [DISPATCH ERROR]: ' + e.message);
+    }
+  }
+
+  // 4. HOOK TRỰC TIẾP VÀO WEB CRYPTO API (crypto.subtle.decrypt)
+  try {
+    if (window.crypto && window.crypto.subtle && window.crypto.subtle.decrypt) {
+      const originalDecrypt = window.crypto.subtle.decrypt;
+
+      window.crypto.subtle.decrypt = async function() {
+        // Thực thi hàm giải mã gốc của trình duyệt
+        const decryptedBuffer = await originalDecrypt.apply(this, arguments);
+
+        if (isFinished === 0 && decryptedBuffer) {
+          try {
+            // Chuyển kết quả vừa giải mã từ ArrayBuffer sang chuỗi Text
+            const textDecoder = new TextDecoder("utf-8");
+            const decodedText = textDecoder.decode(decryptedBuffer);
+
+            // Kiểm tra xem dữ liệu sau khi giải mã có phải là file M3U8 không
+            if (isValidM3U8(decodedText)) {
+              dispatchM3u8ToApp(decodedText);
+            }
+          } catch (err) {
+            // Bỏ qua các dữ liệu giải mã không phải text (ví dụ giải mã mảng byte hình ảnh/audio)
+          }
+        }
+
+        return decryptedBuffer;
+      };
+
+      bridgeLog('🚀 [INIT] Hook Crypto.subtle.decrypt thành công!');
+    } else {
+      bridgeLog('❌ Web Crypto API không khả dụng trên WebView này!');
+    }
+  } catch (e) {
+    bridgeLog('❌ [HOOK ERROR]: ' + e.message);
+  }
+
+})();
+  `;
 }
 
 
@@ -728,13 +741,8 @@ function parseCategoriesResponse(apiResponseJson) {
     return JSON.stringify(menulist);
 }
 
-function parseCountriesResponse(html) {
-    return "[]";
-}
-
-function parseYearsResponse(html) {
-    return "[]";
-}
+function parseCountriesResponse(html) { return "[]"; }
+function parseYearsResponse(html) { return "[]"; }
 // https://k8s.onflixcdn.com/api/movies?sort=year_desc&limit=24&category=chien-tranh
 function getLISTmenu() {
     return `
@@ -806,466 +814,5 @@ function getLISTmenu() {
 `
 }
 
-function buildMenu(listurl) {
-    let menulist = [];
-    if (!listurl) return menulist;
-    let lines = listurl.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-        let line = lines[i].trim();
-        if (!line || line.indexOf('@@') === -1) continue;
-        let parts = line.split('@@');
-        let link = parts[0] ? parts[0].trim() : "";
-        let name = parts[1] ? parts[1].trim() : "";
-        let check = parts[2] ? parts[2].trim() : undefined;
-        if (!link || !name) continue;
-        let item = {};
-        if (check === "false") {
-            item = {
-                "slug": link,
-                "title": name,
-                "type": "Horizontal"
-            };
-        } else if (check === "true") {
-            item = {
-                "slug": link,
-                "title": name,
-                "type": "Grid"
-            };
-        } else {
-            item = {
-                "slug": link,
-                "name": name
-            };
-        }
-        menulist.push(item);
-    }
-    return menulist;
-}
-
-function _$(htmlOrBlock) {
-    if (htmlOrBlock && typeof htmlOrBlock === 'object' && htmlOrBlock.elements) {
-        return htmlOrBlock;
-    }
-    var instance = {
-        sourceHtml: typeof htmlOrBlock === 'string' ? htmlOrBlock : '',
-        elements: Array.isArray(htmlOrBlock) ? htmlOrBlock : (htmlOrBlock ? [htmlOrBlock] : []),
-        find: function(selector) {
-            if (selector.indexOf(',') !== -1) {
-                var results = [];
-                var selectors = selector.split(',').map(function(s) {
-                    return s.trim();
-                });
-                for (var s = 0; s < selectors.length; s++) {
-                    if (selectors[s] === "") continue;
-                    var subInstance = this.find(selectors[s]);
-                    for (var r = 0; r < subInstance.elements.length; r++) {
-                        var element = subInstance.elements[r];
-                        if (results.indexOf(element) === -1) {
-                            results.push(element);
-                        }
-                    }
-                }
-                var multiInstance = _$(results);
-                multiInstance.sourceHtml = this.sourceHtml;
-                return multiInstance;
-            }
-            var results = [];
-            var contentFilter = "";
-            if (selector.indexOf(":content(") !== -1) {
-                var contentMatch = selector.match(/:content\((?:"([^"]*)"|'([^']*)'|([^)]*))\)/);
-                if (contentMatch) {
-                    contentFilter = contentMatch[1] || contentMatch[2] || contentMatch[3] || "";
-                    selector = selector.replace(/:content\((?:"[^"]*"|'[^']*'|[^)]*)\)/, "");
-                }
-            }
-            var attrNameFilter = "";
-            var attrValueFilter = "";
-            var attrOperator = "=";
-            var hasAttrFilter = false;
-            var attrMatch = selector.match(/\[([a-zA-Z0-9_-]+)\s*([*^$]?=)\s*(?:"([^"]*)"|'([^']*)'|([^\]"']*))\]/);
-            if (attrMatch) {
-                hasAttrFilter = true;
-                attrNameFilter = attrMatch[1];
-                attrOperator = attrMatch[2];
-                attrValueFilter = attrMatch[3] || attrMatch[4] || attrMatch[5] || "";
-                selector = selector.replace(/\[.*?\]/, "");
-            }
-            var notSelector = "";
-            if (selector.indexOf(":not(") !== -1) {
-                var notMatch = selector.match(/:not\(([^)]+)\)/);
-                if (notMatch) {
-                    notSelector = notMatch[1];
-                    selector = selector.replace(/:not\([^)]+\)/, "");
-                }
-            }
-            var isFirstFilter = selector.indexOf(":first") !== -1;
-            var isLastFilter = selector.indexOf(":last") !== -1;
-            selector = selector.replace(/:first|:last/g, "");
-            var targetTagName = "";
-            var targetId = "";
-            var targetClasses = [];
-            var selectorToParse = selector.trim();
-            if (selectorToParse !== "") {
-                var idIndex = selectorToParse.indexOf('#');
-                if (idIndex !== -1) {
-                    var afterId = selectorToParse.substring(idIndex + 1);
-                    var nextDot = afterId.indexOf('.');
-                    targetId = nextDot === -1 ? afterId : afterId.substring(0, nextDot);
-                    selectorToParse = selectorToParse.substring(0, idIndex) + (nextDot === -1 ? "" : "." + afterId.substring(nextDot + 1));
-                }
-                var classParts = selectorToParse.split('.');
-                var possibleTag = classParts.shift();
-                if (possibleTag) {
-                    targetTagName = possibleTag.toLowerCase();
-                }
-                targetClasses = classParts.filter(function(c) {
-                    return c.length > 0;
-                });
-            }
-            var isAttrOnly = (selector === "" && hasAttrFilter);
-            for (var i = 0; i < this.elements.length; i++) {
-                var currentHtml = this.elements[i];
-                var pos = 0;
-                var subResults = [];
-                while ((pos = currentHtml.indexOf('<', pos)) !== -1) {
-                    if (currentHtml.charAt(pos + 1) === '/' || currentHtml.charAt(pos + 1) === '!') {
-                        pos++;
-                        continue;
-                    }
-                    var endOpenTag = currentHtml.indexOf('>', pos);
-                    if (endOpenTag === -1) break;
-                    var fullOpenTag = currentHtml.substring(pos, endOpenTag + 1);
-                    var spacePos = fullOpenTag.indexOf(' ');
-                    var currentTagName = "";
-                    if (spacePos === -1) {
-                        currentTagName = fullOpenTag.substring(1, fullOpenTag.length - 1).toLowerCase();
-                    } else {
-                        currentTagName = fullOpenTag.substring(1, spacePos).toLowerCase();
-                    }
-                    var isMatched = true;
-                    if (targetTagName && targetTagName !== currentTagName) {
-                        isMatched = false;
-                    }
-                    if (isMatched && targetId) {
-                        var idMatchStr = "";
-                        var idPos = fullOpenTag.indexOf('id="');
-                        if (idPos !== -1) {
-                            var startQuote = idPos + 4;
-                            idMatchStr = fullOpenTag.substring(startQuote, fullOpenTag.indexOf('"', startQuote));
-                        } else {
-                            idPos = fullOpenTag.indexOf("id='");
-                            if (idPos !== -1) {
-                                var startQuote = idPos + 4;
-                                idMatchStr = fullOpenTag.substring(startQuote, fullOpenTag.indexOf("'", startQuote));
-                            }
-                        }
-                        if (idMatchStr !== targetId) {
-                            isMatched = false;
-                        }
-                    }
-                    if (isMatched && targetClasses.length > 0) {
-                        var classMatchStr = "";
-                        var classPos = fullOpenTag.indexOf('class="');
-                        if (classPos !== -1) {
-                            var startQuote = classPos + 7;
-                            classMatchStr = fullOpenTag.substring(startQuote, fullOpenTag.indexOf('"', startQuote));
-                        } else {
-                            classPos = fullOpenTag.indexOf("class='");
-                            if (classPos !== -1) {
-                                var startQuote = classPos + 7;
-                                classMatchStr = fullOpenTag.substring(startQuote, fullOpenTag.indexOf("'", startQuote));
-                            }
-                        }
-                        if (classMatchStr) {
-                            var currentClasses = classMatchStr.trim().split(/\s+/);
-                            for (var c = 0; c < targetClasses.length; c++) {
-                                if (currentClasses.indexOf(targetClasses[c]) === -1) {
-                                    isMatched = false;
-                                    break;
-                                }
-                            }
-                        } else {
-                            isMatched = false;
-                        }
-                    }
-                    if (isMatched && hasAttrFilter) {
-                        var actualValue = "";
-                        var attrPos = fullOpenTag.indexOf(attrNameFilter + '="');
-                        if (attrPos !== -1) {
-                            var startQuote = attrPos + attrNameFilter.length + 2;
-                            actualValue = fullOpenTag.substring(startQuote, fullOpenTag.indexOf('"', startQuote));
-                        } else {
-                            attrPos = fullOpenTag.indexOf(attrNameFilter + "='");
-                            if (attrPos !== -1) {
-                                var startQuote = attrPos + attrNameFilter.length + 2;
-                                actualValue = fullOpenTag.substring(startQuote, fullOpenTag.indexOf("'", startQuote));
-                            }
-                        }
-                        if (attrPos === -1) {
-                            isMatched = false;
-                        } else {
-                            if (attrOperator === "=") {
-                                if (attrNameFilter === "class") {
-                                    var classes = actualValue.trim().split(/\s+/);
-                                    if (classes.indexOf(attrValueFilter) === -1) isMatched = false;
-                                } else if (actualValue !== attrValueFilter) {
-                                    isMatched = false;
-                                }
-                            } else if (attrOperator === "*=") {
-                                if (actualValue.indexOf(attrValueFilter) === -1) isMatched = false;
-                            } else if (attrOperator === "^=") {
-                                if (actualValue.indexOf(attrValueFilter) !== 0) isMatched = false;
-                            } else if (attrOperator === "$=") {
-                                if (actualValue.slice(-attrValueFilter.length) !== attrValueFilter) isMatched = false;
-                            }
-                        }
-                    }
-                    if (isMatched) {
-                        var startTagPos = pos;
-                        var endTagPos = endOpenTag + 1;
-                        var selfClosingTags = ['img', 'source', 'input', 'br', 'hr', 'link', 'meta'];
-                        if (selfClosingTags.indexOf(currentTagName) === -1 && fullOpenTag.indexOf('/>') === -1) {
-                            var depth = 1;
-                            var scanPos = endOpenTag + 1;
-                            var openStr = '<' + currentTagName;
-                            var closeStr = '</' + currentTagName + '>';
-                            while (depth > 0 && scanPos < currentHtml.length) {
-                                var nextOpen = currentHtml.indexOf(openStr, scanPos);
-                                var nextClose = currentHtml.indexOf(closeStr, scanPos);
-                                if (nextClose === -1) {
-                                    scanPos = currentHtml.length;
-                                    break;
-                                }
-                                if (nextOpen !== -1 && nextOpen < nextClose) {
-                                    depth++;
-                                    scanPos = nextOpen + openStr.length;
-                                } else {
-                                    depth--;
-                                    scanPos = nextClose + closeStr.length;
-                                    if (depth === 0) endTagPos = nextClose + closeStr.length;
-                                }
-                            }
-                        }
-                        var foundBlock = currentHtml.substring(startTagPos, endTagPos);
-                        if (contentFilter) {
-                            var pureText = foundBlock.replace(/<[^>]+>/g, "").trim();
-                            if (pureText.indexOf(contentFilter) === -1) {
-                                pos = endTagPos;
-                                continue;
-                            }
-                        }
-                        if (notSelector) {
-                            var isNotClass = notSelector.indexOf('.') === 0;
-                            var isNotId = notSelector.indexOf('#') === 0;
-                            var notValue = notSelector.substring(1);
-                            var hasNot = false;
-                            if (isNotClass && fullOpenTag.indexOf('class="') !== -1 && fullOpenTag.indexOf(notValue) !== -1) hasNot = true;
-                            if (isNotId && fullOpenTag.indexOf('id="') !== -1 && fullOpenTag.indexOf(notValue) !== -1) hasNot = true;
-                            if (!hasNot) subResults.push(foundBlock);
-                        } else {
-                            subResults.push(foundBlock);
-                        }
-                        pos = endTagPos;
-                    } else {
-                        pos++;
-                    }
-                }
-                if (isFirstFilter && subResults.length > 0) subResults = [subResults[0]];
-                if (isLastFilter && subResults.length > 0) subResults = [subResults[subResults.length - 1]];
-                results = results.concat(subResults);
-            }
-            var newInstance = _$(results);
-            newInstance.sourceHtml = this.sourceHtml || currentHtml;
-            return newInstance;
-        },
-        each: function(callback) {
-            for (var i = 0; i < this.elements.length; i++) {
-                var childInstance = _$(this.elements[i]);
-                childInstance.sourceHtml = this.sourceHtml;
-                callback.call(childInstance, i, this.elements[i]);
-            }
-            return this;
-        },
-        eq: function(index) {
-            if (index < 0) index = this.elements.length + index;
-            var matchedElement = this.elements[index];
-            this.elements = matchedElement ? [matchedElement] : [];
-            return this;
-        },
-        attr: function(attrName) {
-            if (this.elements.length === 0) return "";
-            var elem = this.elements[0];
-            var searchStr = attrName + '="';
-            var pos = elem.indexOf(searchStr);
-            if (pos === -1) {
-                searchStr = attrName + "='";
-                pos = elem.indexOf(searchStr);
-            }
-            if (pos === -1) return "";
-            var start = pos + searchStr.length;
-            var quoteType = elem.charAt(start - 1);
-            var end = elem.indexOf(quoteType, start);
-            return end === -1 ? "" : elem.substring(start, end);
-        },
-        html: function() {
-            if (this.elements.length === 0) return "";
-            var elem = this.elements[0];
-            var start = elem.indexOf('>') + 1;
-            var end = elem.lastIndexOf('</');
-            if (start > 0 && end > start) return elem.substring(start, end);
-            return "";
-        },
-        text: function() {
-            if (this.elements.length === 0) return "";
-            var elem = this.elements[0];
-            var start = elem.indexOf('>') + 1;
-            var end = elem.lastIndexOf('</');
-            if (start > 0 && end > start) {
-                var content = elem.substring(start, end);
-                return content.replace(/<\/?[^>]+(>|$)/g, "").trim();
-            }
-            return "";
-        },
-        next: function() {
-            var results = [];
-            if (!this.sourceHtml) return this;
-            for (var i = 0; i < this.elements.length; i++) {
-                var elem = this.elements[i];
-                var idx = this.sourceHtml.indexOf(elem);
-                if (idx === -1) continue;
-                var scanPos = idx + elem.length;
-                var nextOpen = this.sourceHtml.indexOf('<', scanPos);
-                if (nextOpen !== -1) {
-                    if (this.sourceHtml.charAt(nextOpen + 1) === '/') continue;
-                    var endOpenTag = this.sourceHtml.indexOf('>', nextOpen);
-                    if (endOpenTag === -1) continue;
-                    var fullOpenTag = this.sourceHtml.substring(nextOpen, endOpenTag + 1);
-                    var spacePos = fullOpenTag.indexOf(' ');
-                    var currentTagName = (spacePos === -1) ? fullOpenTag.substring(1, fullOpenTag.length - 1).toLowerCase() : fullOpenTag.substring(1, spacePos).toLowerCase();
-                    var startTagPos = nextOpen;
-                    var endTagPos = endOpenTag + 1;
-                    var selfClosingTags = ['img', 'source', 'input', 'br', 'hr', 'link', 'meta'];
-                    if (selfClosingTags.indexOf(currentTagName) === -1 && fullOpenTag.indexOf('/>') === -1) {
-                        var depth = 1;
-                        var sPos = endOpenTag + 1;
-                        var openStr = '<' + currentTagName;
-                        var closeStr = '</' + currentTagName + '>';
-                        while (depth > 0 && sPos < this.sourceHtml.length) {
-                            var nOpen = this.sourceHtml.indexOf(openStr, sPos);
-                            var nClose = this.sourceHtml.indexOf(closeStr, sPos);
-                            if (nClose === -1) break;
-                            if (nOpen !== -1 && nOpen < nClose) {
-                                depth++;
-                                sPos = nOpen + openStr.length;
-                            } else {
-                                depth--;
-                                sPos = nClose + closeStr.length;
-                                if (depth === 0) endTagPos = nClose + closeStr.length;
-                            }
-                        }
-                    }
-                    results.push(this.sourceHtml.substring(startTagPos, endTagPos));
-                }
-            }
-            var nextInstance = _$(results);
-            nextInstance.sourceHtml = this.sourceHtml;
-            this.elements = results;
-            return this;
-        },
-        parent: function() {
-            var results = [];
-            if (!this.sourceHtml) return this;
-            for (var i = 0; i < this.elements.length; i++) {
-                var elem = this.elements[i];
-                var idx = this.sourceHtml.indexOf(elem);
-                if (idx <= 0) continue;
-                var scanPos = idx - 1;
-                while (scanPos >= 0) {
-                    var openTagPos = this.sourceHtml.lastIndexOf('<', scanPos);
-                    if (openTagPos === -1) break;
-                    if (this.sourceHtml.charAt(openTagPos + 1) !== '/' && this.sourceHtml.charAt(openTagPos + 1) !== '!') {
-                        var endOpenTag = this.sourceHtml.indexOf('>', openTagPos);
-                        if (endOpenTag !== -1 && endOpenTag > openTagPos) {
-                            var fullOpenTag = this.sourceHtml.substring(openTagPos, endOpenTag + 1);
-                            var spacePos = fullOpenTag.indexOf(' ');
-                            var currentTagName = (spacePos === -1) ? fullOpenTag.substring(1, fullOpenTag.length - 1).toLowerCase() : fullOpenTag.substring(1, spacePos).toLowerCase();
-                            var endTagPos = endOpenTag + 1;
-                            var selfClosingTags = ['img', 'source', 'input', 'br', 'hr', 'link', 'meta'];
-                            if (selfClosingTags.indexOf(currentTagName) === -1 && fullOpenTag.indexOf('/>') === -1) {
-                                var depth = 1;
-                                var sPos = endOpenTag + 1;
-                                var openStr = '<' + currentTagName;
-                                var closeStr = '</' + currentTagName + '>';
-                                while (depth > 0 && sPos < this.sourceHtml.length) {
-                                    var nOpen = this.sourceHtml.indexOf(openStr, sPos);
-                                    var nClose = this.sourceHtml.indexOf(closeStr, sPos);
-                                    if (nClose === -1) break;
-                                    if (nOpen !== -1 && nOpen < nClose) {
-                                        depth++;
-                                        sPos = nOpen + openStr.length;
-                                    } else {
-                                        depth--;
-                                        sPos = nClose + closeStr.length;
-                                        if (depth === 0) endTagPos = nClose + closeStr.length;
-                                    }
-                                }
-                            }
-                            if (endTagPos >= idx + elem.length) {
-                                var parentBlock = this.sourceHtml.substring(openTagPos, endTagPos);
-                                if (results.indexOf(parentBlock) === -1) results.push(parentBlock);
-                                break;
-                            }
-                        }
-                    }
-                    scanPos = openTagPos - 1;
-                }
-            }
-            var parentInstance = _$(results);
-            parentInstance.sourceHtml = this.sourceHtml;
-            this.elements = results;
-            return this;
-        },
-        closest: function(selector) {
-            var results = [];
-            if (!this.sourceHtml || this.elements.length === 0) return _$([]);
-            for (var i = 0; i < this.elements.length; i++) {
-                var currentElem = this.elements[i];
-                var currentObj = _$(currentElem);
-                currentObj.sourceHtml = this.sourceHtml;
-                var selfCheck = _$(this.sourceHtml).find(selector);
-                var isSelfMatched = false;
-                for (var s = 0; s < selfCheck.elements.length; s++) {
-                    if (selfCheck.elements[s] === currentElem) {
-                        isSelfMatched = true;
-                        break;
-                    }
-                }
-                if (isSelfMatched) {
-                    if (results.indexOf(currentElem) === -1) results.push(currentElem);
-                    continue;
-                }
-                var parentObj = currentObj.parent();
-                while (parentObj.elements.length > 0) {
-                    var parentElem = parentObj.elements[0];
-                    var checkMatch = _$(this.sourceHtml).find(selector);
-                    var isMatched = false;
-                    for (var j = 0; j < checkMatch.elements.length; j++) {
-                        if (checkMatch.elements[j] === parentElem) {
-                            isMatched = true;
-                            break;
-                        }
-                    }
-                    if (isMatched) {
-                        if (results.indexOf(parentElem) === -1) results.push(parentElem);
-                        break;
-                    }
-                    parentObj = parentObj.parent();
-                }
-            }
-            var closestInstance = _$(results);
-            closestInstance.sourceHtml = this.sourceHtml;
-            return closestInstance;
-        }
-    };
-    return instance;
-};
+function buildMenu(listurl){let menulist=[];if (!listurl)return menulist;let lines=listurl.split('\n');for (let i=0;i < lines.length;i++){let line=lines[i].trim();if (!line||line.indexOf('@@')===-1)continue;let parts=line.split('@@');let link=parts[0]?parts[0].trim():"";let name=parts[1]?parts[1].trim():"";let check=parts[2]?parts[2].trim():undefined;if (!link||!name)continue;let item={};if (check==="false"){item={"slug":link,"title":name,"type":"Horizontal"};}else if (check==="true"){item={"slug":link,"title":name,"type":"Grid"};}else{item={"slug":link,"name":name};}menulist.push(item);}return menulist;}
+function _$(htmlOrBlock){if (htmlOrBlock && typeof htmlOrBlock === 'object' && htmlOrBlock.elements) {return htmlOrBlock;} var instance = {sourceHtml: typeof htmlOrBlock === 'string' ? htmlOrBlock : '',elements: Array.isArray(htmlOrBlock) ? htmlOrBlock : (htmlOrBlock ? [htmlOrBlock] : []),find: function (selector) {if (selector.indexOf(',') !== -1) {var results = [];var selectors = selector.split(',').map(function (s) {return s.trim();});for (var s = 0;s < selectors.length;s++) {if (selectors[s] === "") continue;var subInstance = this.find(selectors[s]);for (var r = 0;r < subInstance.elements.length;r++) {var element = subInstance.elements[r];if (results.indexOf(element) === -1) {results.push(element);}}} var multiInstance = _$(results);multiInstance.sourceHtml = this.sourceHtml;return multiInstance;} var results = [];var contentFilter = "";if (selector.indexOf(":content(") !== -1) {var contentMatch = selector.match( /:content\((?:"([^"]*)"|'([^']*)'|([^)]*))\)/);if (contentMatch) {contentFilter = contentMatch[1] || contentMatch[2] || contentMatch[ 3] || "";selector = selector.replace(/:content\((?:"[^"]*"|'[^']*'|[^)]*)\)/,"");}} var attrNameFilter = "";var attrValueFilter = "";var attrOperator = "=";var hasAttrFilter = false;var attrMatch = selector.match( /\[([a-zA-Z0-9_-]+)\s*([*^$]?=)\s*(?:"([^"]*)"|'([^']*)'|([^\]"']*))\]/ );if (attrMatch) {hasAttrFilter = true;attrNameFilter = attrMatch[1];attrOperator = attrMatch[2];attrValueFilter = attrMatch[3] || attrMatch[4] || attrMatch[5] || "";selector = selector.replace(/\[.*?\]/,"");} var notSelector = "";if (selector.indexOf(":not(") !== -1) {var notMatch = selector.match(/:not\(([^)]+)\)/);if (notMatch) {notSelector = notMatch[1];selector = selector.replace(/:not\([^)]+\)/,"");}} var isFirstFilter = selector.indexOf(":first") !== -1;var isLastFilter = selector.indexOf(":last") !== -1;selector = selector.replace(/:first|:last/g,"");var targetTagName = "";var targetId = "";var targetClasses = [];var selectorToParse = selector.trim();if (selectorToParse !== "") {var idIndex = selectorToParse.indexOf('#');if (idIndex !== -1) {var afterId = selectorToParse.substring(idIndex + 1);var nextDot = afterId.indexOf('.');targetId = nextDot === -1 ? afterId : afterId.substring(0,nextDot);selectorToParse = selectorToParse.substring(0,idIndex) + ( nextDot === -1 ? "" : "." + afterId.substring(nextDot + 1));} var classParts = selectorToParse.split('.');var possibleTag = classParts.shift();if (possibleTag) {targetTagName = possibleTag.toLowerCase();} targetClasses = classParts.filter(function (c) {return c.length > 0;});} var isAttrOnly = (selector === "" && hasAttrFilter);for (var i = 0;i < this.elements.length;i++) {var currentHtml = this.elements[i];var pos = 0;var subResults = [];while ((pos = currentHtml.indexOf('<',pos)) !== -1) {if (currentHtml.charAt(pos + 1) === '/' || currentHtml.charAt(pos + 1) === '!') {pos++;continue;} var endOpenTag = currentHtml.indexOf('>',pos);if (endOpenTag === -1) break;var fullOpenTag = currentHtml.substring(pos,endOpenTag + 1);var spacePos = fullOpenTag.indexOf(' ');var currentTagName = "";if (spacePos === -1) {currentTagName = fullOpenTag.substring(1,fullOpenTag.length - 1).toLowerCase();} else {currentTagName = fullOpenTag.substring(1,spacePos) .toLowerCase();} var isMatched = true;if (targetTagName && targetTagName !== currentTagName) {isMatched = false;} if (isMatched && targetId) {var idMatchStr = "";var idPos = fullOpenTag.indexOf('id="');if (idPos !== -1) {var startQuote = idPos + 4;idMatchStr = fullOpenTag.substring(startQuote,fullOpenTag .indexOf('"',startQuote));} else {idPos = fullOpenTag.indexOf("id='");if (idPos !== -1) {var startQuote = idPos + 4;idMatchStr = fullOpenTag.substring(startQuote,fullOpenTag.indexOf("'",startQuote));}} if (idMatchStr !== targetId) {isMatched = false;}} if (isMatched && targetClasses.length > 0) {var classMatchStr = "";var classPos = fullOpenTag.indexOf('class="');if (classPos !== -1) {var startQuote = classPos + 7;classMatchStr = fullOpenTag.substring(startQuote,fullOpenTag.indexOf('"',startQuote));} else {classPos = fullOpenTag.indexOf("class='");if (classPos !== -1) {var startQuote = classPos + 7;classMatchStr = fullOpenTag.substring(startQuote,fullOpenTag.indexOf("'",startQuote));}} if (classMatchStr) {var currentClasses = classMatchStr.trim().split(/\s+/);for (var c = 0;c < targetClasses.length;c++) {if (currentClasses.indexOf(targetClasses[c]) === -1) {isMatched = false;break;}}} else {isMatched = false;}} if (isMatched && hasAttrFilter) {var actualValue = "";var attrPos = fullOpenTag.indexOf(attrNameFilter + '="');if (attrPos !== -1) {var startQuote = attrPos + attrNameFilter.length + 2;actualValue = fullOpenTag.substring(startQuote,fullOpenTag.indexOf('"',startQuote));} else {attrPos = fullOpenTag.indexOf(attrNameFilter + "='");if (attrPos !== -1) {var startQuote = attrPos + attrNameFilter.length + 2;actualValue = fullOpenTag.substring(startQuote,fullOpenTag.indexOf("'",startQuote));}} if (attrPos === -1) {isMatched = false;} else {if (attrOperator === "=") {if (attrNameFilter === "class") {var classes = actualValue.trim().split(/\s+/);if (classes.indexOf(attrValueFilter) === -1) isMatched = false;} else if (actualValue !== attrValueFilter) {isMatched = false;}} else if (attrOperator === "*=") {if (actualValue.indexOf(attrValueFilter) === -1) isMatched = false;} else if (attrOperator === "^=") {if (actualValue.indexOf(attrValueFilter) !== 0) isMatched = false;} else if (attrOperator === "$=") {if (actualValue.slice(-attrValueFilter.length) !== attrValueFilter) isMatched = false;}}} if (isMatched) {var startTagPos = pos;var endTagPos = endOpenTag + 1;var selfClosingTags = ['img','source','input','br','hr','link','meta' ];if (selfClosingTags.indexOf(currentTagName) === -1 && fullOpenTag.indexOf('/>') === -1) {var depth = 1;var scanPos = endOpenTag + 1;var openStr = '<' + currentTagName;var closeStr = '</' + currentTagName + '>';while (depth > 0 && scanPos < currentHtml.length) {var nextOpen = currentHtml.indexOf(openStr,scanPos);var nextClose = currentHtml.indexOf(closeStr,scanPos);if (nextClose === -1) {scanPos = currentHtml.length;break;} if (nextOpen !== -1 && nextOpen < nextClose) {depth++;scanPos = nextOpen + openStr.length;} else {depth--;scanPos = nextClose + closeStr.length;if (depth === 0) endTagPos = nextClose + closeStr .length;}}} var foundBlock = currentHtml.substring(startTagPos,endTagPos);if (contentFilter) {var pureText = foundBlock.replace(/<[^>]+>/g,"").trim();if (pureText.indexOf(contentFilter) === -1) {pos = endTagPos;continue;}} if (notSelector) {var isNotClass = notSelector.indexOf('.') === 0;var isNotId = notSelector.indexOf('#') === 0;var notValue = notSelector.substring(1);var hasNot = false;if (isNotClass && fullOpenTag.indexOf('class="') !== -1 && fullOpenTag.indexOf(notValue) !== -1) hasNot = true;if (isNotId && fullOpenTag.indexOf('id="') !== -1 && fullOpenTag.indexOf(notValue) !== -1) hasNot = true;if (!hasNot) subResults.push(foundBlock);} else {subResults.push(foundBlock);} pos = endTagPos;} else {pos++;}} if (isFirstFilter && subResults.length > 0) subResults = [subResults[ 0]];if (isLastFilter && subResults.length > 0) subResults = [subResults[ subResults.length - 1]];results = results.concat(subResults);} var newInstance = _$(results);newInstance.sourceHtml = this.sourceHtml || currentHtml;return newInstance;},each: function (callback) {for (var i = 0;i < this.elements.length;i++) {var childInstance = _$(this.elements[i]);childInstance.sourceHtml = this.sourceHtml;callback.call(childInstance,i,this.elements[i]);} return this;},eq: function (index) {if (index < 0) index = this.elements.length + index;var matchedElement = this.elements[index];this.elements = matchedElement ? [matchedElement] : [];return this;},attr: function (attrName) {if (this.elements.length === 0) return "";var elem = this.elements[0];var searchStr = attrName + '="';var pos = elem.indexOf(searchStr);if (pos === -1) {searchStr = attrName + "='";pos = elem.indexOf(searchStr);} if (pos === -1) return "";var start = pos + searchStr.length;var quoteType = elem.charAt(start - 1);var end = elem.indexOf(quoteType,start);return end === -1 ? "" : elem.substring(start,end);},html: function () {if (this.elements.length === 0) return "";var elem = this.elements[0];var start = elem.indexOf('>') + 1;var end = elem.lastIndexOf('</');if (start > 0 && end > start) return elem.substring(start,end);return "";},text: function () {if (this.elements.length === 0) return "";var elem = this.elements[0];var start = elem.indexOf('>') + 1;var end = elem.lastIndexOf('</');if (start > 0 && end > start) {var content = elem.substring(start,end);return content.replace(/<\/?[^>]+(>|$)/g,"").trim();} return "";},next: function () {var results = [];if (!this.sourceHtml) return this;for (var i = 0;i < this.elements.length;i++) {var elem = this.elements[i];var idx = this.sourceHtml.indexOf(elem);if (idx === -1) continue;var scanPos = idx + elem.length;var nextOpen = this.sourceHtml.indexOf('<',scanPos);if (nextOpen !== -1) {if (this.sourceHtml.charAt(nextOpen + 1) === '/') continue;var endOpenTag = this.sourceHtml.indexOf('>',nextOpen);if (endOpenTag === -1) continue;var fullOpenTag = this.sourceHtml.substring(nextOpen,endOpenTag + 1);var spacePos = fullOpenTag.indexOf(' ');var currentTagName = (spacePos === -1) ? fullOpenTag.substring(1,fullOpenTag.length - 1).toLowerCase() : fullOpenTag .substring(1,spacePos).toLowerCase();var startTagPos = nextOpen;var endTagPos = endOpenTag + 1;var selfClosingTags = ['img','source','input','br','hr','link','meta' ];if (selfClosingTags.indexOf(currentTagName) === -1 && fullOpenTag .indexOf('/>') === -1) {var depth = 1;var sPos = endOpenTag + 1;var openStr = '<' + currentTagName;var closeStr = '</' + currentTagName + '>';while (depth > 0 && sPos < this.sourceHtml.length) {var nOpen = this.sourceHtml.indexOf(openStr,sPos);var nClose = this.sourceHtml.indexOf(closeStr,sPos);if (nClose === -1) break;if (nOpen !== -1 && nOpen < nClose) {depth++;sPos = nOpen + openStr.length;} else {depth--;sPos = nClose + closeStr.length;if (depth === 0) endTagPos = nClose + closeStr.length;}}} results.push(this.sourceHtml.substring(startTagPos,endTagPos));}} var nextInstance = _$(results);nextInstance.sourceHtml = this.sourceHtml;this.elements = results;return this;},parent: function () {var results = [];if (!this.sourceHtml) return this;for (var i = 0;i < this.elements.length;i++) {var elem = this.elements[i];var idx = this.sourceHtml.indexOf(elem);if (idx <= 0) continue;var scanPos = idx - 1;while (scanPos >= 0) {var openTagPos = this.sourceHtml.lastIndexOf('<',scanPos);if (openTagPos === -1) break;if (this.sourceHtml.charAt(openTagPos + 1) !== '/' && this .sourceHtml.charAt(openTagPos + 1) !== '!') {var endOpenTag = this.sourceHtml.indexOf('>',openTagPos);if (endOpenTag !== -1 && endOpenTag > openTagPos) {var fullOpenTag = this.sourceHtml.substring(openTagPos,endOpenTag + 1);var spacePos = fullOpenTag.indexOf(' ');var currentTagName = (spacePos === -1) ? fullOpenTag .substring(1,fullOpenTag.length - 1).toLowerCase() : fullOpenTag.substring(1,spacePos).toLowerCase();var endTagPos = endOpenTag + 1;var selfClosingTags = ['img','source','input','br','hr','link','meta' ];if (selfClosingTags.indexOf(currentTagName) === -1 && fullOpenTag.indexOf('/>') === -1) {var depth = 1;var sPos = endOpenTag + 1;var openStr = '<' + currentTagName;var closeStr = '</' + currentTagName + '>';while (depth > 0 && sPos < this.sourceHtml.length) {var nOpen = this.sourceHtml.indexOf(openStr,sPos);var nClose = this.sourceHtml.indexOf(closeStr,sPos);if (nClose === -1) break;if (nOpen !== -1 && nOpen < nClose) {depth++;sPos = nOpen + openStr.length;} else {depth--;sPos = nClose + closeStr.length;if (depth === 0) endTagPos = nClose + closeStr .length;}}} if (endTagPos >= idx + elem.length) {var parentBlock = this.sourceHtml.substring(openTagPos,endTagPos);if (results.indexOf(parentBlock) === -1) results.push( parentBlock);break;}}} scanPos = openTagPos - 1;}} var parentInstance = _$(results);parentInstance.sourceHtml = this.sourceHtml;this.elements = results;return this;},closest: function (selector) {var results = [];if (!this.sourceHtml || this.elements.length === 0) return _$([]);for (var i = 0;i < this.elements.length;i++) {var currentElem = this.elements[i];var currentObj = _$(currentElem);currentObj.sourceHtml = this.sourceHtml;var selfCheck = _$(this.sourceHtml).find(selector);var isSelfMatched = false;for (var s = 0;s < selfCheck.elements.length;s++) {if (selfCheck.elements[s] === currentElem) {isSelfMatched = true;break;}} if (isSelfMatched) {if (results.indexOf(currentElem) === -1) results.push(currentElem);continue;} var parentObj = currentObj.parent();while (parentObj.elements.length > 0) {var parentElem = parentObj.elements[0];var checkMatch = _$(this.sourceHtml).find(selector);var isMatched = false;for (var j = 0;j < checkMatch.elements.length;j++) {if (checkMatch.elements[j] === parentElem) {isMatched = true;break;}} if (isMatched) {if (results.indexOf(parentElem) === -1) results.push( parentElem);break;} parentObj = parentObj.parent();}} var closestInstance = _$(results);closestInstance.sourceHtml = this.sourceHtml;return closestInstance;}};return instance;};
