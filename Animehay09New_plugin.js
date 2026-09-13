@@ -3,7 +3,7 @@
 // =============================================================================
 
 // CHỈ CẦN THAY ĐỔI TÊN MIỀN Ở ĐÂY NẾU WEB ĐỔI ĐỊA CHỈ MỚI
-var DOMAIN = "https://animehay11.site";
+var DOMAIN = "https://animehay12.site";
 
 function getManifest() {
     return JSON.stringify({
