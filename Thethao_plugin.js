@@ -6,8 +6,8 @@ var BASEURL = "https://xoilacxba.tv";
 
 function getManifest() {
     return JSON.stringify({
-        "id": "xoilacxba",
-        "name": "Xôi Lạc TV",
+        "id": "ThethaoTV-Xoilac",
+        "name": "ThethaoTV-Xoilac",
         "version": "1.0.4",
         "baseUrl": BASEURL,
         "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
