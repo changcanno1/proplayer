@@ -30,6 +30,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vn2c.png"
     },
     {
+      "id": "PhimBom",
+      "name": "PhimBom",
+      "version": "2.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
+    },
+    {
       "id": "kkphim",
       "name": "KKPhim",
       "version": "1.0.9",
@@ -58,13 +65,6 @@
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
-      "id": "PhimBom",
-      "name": "PhimBom",
-      "version": "1.2.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
-    },
-     {
       "id": "bilutv",
       "name": "[MOVIE] Bilutv",
       "version": "1.5.6",
