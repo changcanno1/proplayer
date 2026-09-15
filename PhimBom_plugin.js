@@ -1,12 +1,15 @@
 var iddomain = "phimbom"
 BASEURL = "https://vkey.vn/" + iddomain;
 BASEURL = "https://phimbom.us";
+
+var popup_html = "";
+// https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
   try{
     return JSON.stringify({
       "id": "phimbom",
       "name": "[MOVIE] Phim Bom",
-      "version": "1.2.1",
+      "version": "2.0",
       "author": "Alokillgtv",
       "info": "",
       "baseUrl": BASEURL,
@@ -23,9 +26,10 @@ function getManifest() {
   catch(e){
     // VERTICAL
     return JSON.stringify({
-      "id": "phimbom",
-      "name": "[MOVIE] Phim Bom",
-      "version": "1.2.1",
+      "id": "loiapp",
+      "name": "Plugin bị lỗi cài đặt",
+      "version": "2.0",
+      "info": "Plugin đang bị lỗi: \n" + e,
       "baseUrl": "http://vkey.vn/",
       "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
       "isEnabled": true,
