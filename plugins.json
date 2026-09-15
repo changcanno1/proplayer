@@ -30,13 +30,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vn2c.png"
     },
     {
-      "id": "Vsmov",
-      "name": "PhimVsmov",
-      "version": "1.2.3",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
-      "iconUrl": "https://vsmov.com/VSmov.png"
-    },
-    {
       "id": "kkphim",
       "name": "KKPhim",
       "version": "1.0.9",
@@ -56,6 +49,13 @@
       "version": "1.2.3",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/OnflixHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
+    },
+    {
+      "id": "Vsmov",
+      "name": "PhimVsmov",
+      "version": "1.2.3",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
+      "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
       "id": "PhimBom",
