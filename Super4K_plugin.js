@@ -2,15 +2,17 @@ var BASEURL = "https://moviedb.alokillgtv.workers.dev";
 var BASEAPI = "https://moviedb.alokillgtv.workers.dev";
 var BASELINK = BASEURL;
 var BASESV = "novahd";
+var popup_html = "";
+// https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
   try{
     return JSON.stringify({
       "id": "supermv",
       "name": "[MOVIE] SuperMV",
-      "version": "1.6.7",
+      "version": "2.1",
       "author": "Alokillgtv",
       "headers":{
-          "X-VAX-YB": "vax_yb_token_2030_1990"
+          "X-VAX-YB": "deo_co_gi_de_coi"
       },
       "BASEURL": BASEURL,
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png",
@@ -19,7 +21,8 @@ function getManifest() {
       "adblock": false,
       "type": "MOVIE",
       "subtitleCat": false,
-       "playerType": "exoplayer"
+      popup_html: popup_html,
+      "playerType": "exoplayer"
     });
   }
   catch(e){
@@ -27,7 +30,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "loiapp",
       "name": "Plugin bị lỗi cài đặt",
-      "version": "1.0",
+      "version": "2.0",
       "info": "Plugin đang bị lỗi: \n" + e,
       "baseUrl": "http://vkey.vn/",
       "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
@@ -654,7 +657,8 @@ function parseDetailResponse(html, url) {
             url: subApiUrl,
             mimeType: "application/json",
             isEmbed: true,
-            headers: { "User-Agent": "Mozilla/5.0" },
+            headers: { "User-Agent": "Mozilla/5.0" ,"X-VAX-YB": "deo_co_gi_de_coi"
+                     },
             subtitles: []
         });
 
@@ -767,6 +771,7 @@ function parseEmbedResponse(html, url) {
             isEmbed: false,
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "X-VAX-YB": "deo_co_gi_de_coi",
                 "Referer": "",
                 "Origin": ""
             },
