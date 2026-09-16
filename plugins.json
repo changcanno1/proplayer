@@ -93,11 +93,11 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
     },
     {
-      "id": "novahd",
-      "name": "NOVAHD",
-      "version": "1.2.5",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NovaHDHT_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/novahd.png"
+      "id": "4kmovie",
+      "name": "[MOVIE] 4K Movie",
+      "version": "2.2.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/4KMovieHT_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/4kmovie.png"
     },
     {
       "id": "Rổ Phim",
