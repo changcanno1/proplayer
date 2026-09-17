@@ -2,48 +2,39 @@ var BASEURL = "https://www.rophim.ad";
 var BASEAPI = "https://rophim.alokillgtv.workers.dev";
 var BASELINK = BASEAPI;
 
-// https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
-  try{
+  try {
     return JSON.stringify({
       "id": "rophim",
       "name": "Nguồn RP Mới",
-      "version": "1.2.6",
+      "version": "1.2.7", // Đã tăng phiên bản
       "author": "Alokillgtv",
       "BASEURL": "https://www.rophim.ad",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png",
       "isEnabled": true,
       "isAdult": false,
-      "adblock": false,
+      "adblock": true, // Bật AdBlock để Sniffer bắt link sạch
       "type": "MOVIE",
       "subtitleCat": false,
-      "playerType": "embed"
+      "playerType": "embedtoexoplay" // Fix chạy ngầm player web giống phimngannet
     });
-  }
-  catch(e){
-    // VERTICAL
+  } catch(e) {
     return JSON.stringify({
       "id": "loiapp",
-      "name": "Plugin bị lỗi cài đặt",
+      "name": "Plugin bị lỗi",
       "version": "1.0",
-      "info": "Plugin đang bị lỗi: \n" + e,
+      "info": "Lỗi: \n" + e,
       "baseUrl": "http://vkey.vn/",
       "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
       "isEnabled": true,
-      
       "type": "MOVIE",
       "playerType": "exoplayer"
      });
   }
 }
 
-// https://api.rophim.stream/api/v1/movie/filterV2?q=&countries=&genres=&years=&custom_year=&quality=&type=&status=&is_shown_in_theater=1&exclude_status=Upcoming&versions=&rating=&networks=&productions=&sort=release_date
 // ===== HÀM MENU LIST BEGIN ======
 {
-// Tạo List phim ở menu Home
- // https://api.rophim.stream/api/v1/movie/filterV2?q=&countries=&genres=&years=&custom_year=&quality=&type=&status=&is_shown_in_theater=1&exclude_status=Upcoming&versions=&rating=&networks=&productions=&sort=release_date&page=1
-// https://api.rophim.stream/api/v1/movie/hot
-// https://api.rophim.stream/api/v1/movie/filterV2?q=&countries=&genres=&years=&custom_year=&quality=&type=&status=&is_shown_in_theater=1&exclude_status=Upcoming&versions=&rating=&networks=&productions=&sort=release_date&page=1
   function getHomeSections() {
       localStorage.clear();
       return JSON.stringify([
@@ -57,7 +48,6 @@ function getManifest() {
       ]);
   }
   
-  // Hàm khởi tạo thẻ chủ đề
   function getLISTmenu() {
     try{
       return `[
@@ -163,7 +153,7 @@ function getManifest() {
       ]`;
     }
   }
-} // getHomeSections(), getLISTmenu()
+} 
 // ===== HÀM MENU LIST END ======
 
 // ===== HÀM TẠO URL BEGIN ======
@@ -171,7 +161,6 @@ function getManifest() {
   function getUrlList(slug, filtersJson) {
       var paramPage = "&page=";
       try {
-          //log("getUrlList[url]: \n" + slug);
           if (slug && slug.indexOf("http") > -1) {
               return slug;
           }
@@ -238,32 +227,22 @@ function getManifest() {
           return BASEURL;
       }
   }
-} // getUrlList, getUrlSearch
-// http://vkey.vn/animevv
-// /quoc-gia/M%E1%BB%B9
-// /top
-//filtersJson = "{page:5}"
-//getUrlList("/top", filtersJson)
-//getUrlSearch("girl", filtersJson)
+} 
 // ===== HÀM TẠO URL END ======
 
 // ===== HÀM TẠO KHỐI LIST PHIM BEGIN ======
 function parseListResponse(html, $url) {
     console.log("listURL\n" + $url)
-    //console.log(html)
     try {
         var $data = JSON.parse(html)
         var items = [];
 
         $data.result.items.forEach(function(item) {
-            // https://www.rophim.ad/phim/star-wars-mandalorian-va-grogu.9W6jP8Wl
             var type = item.type;
             if(type == 2){
                 var id = BASEAPI + "/api/v1/movie/seasons?mId=" + item._id;
-              console.log("apiSeason\n" + id)
             }
             else{
-                
                 var id = BASEAPI + "/api/v1/movie/gallery/" + item._id;
             }
             var title = item.title;
@@ -272,10 +251,8 @@ function parseListResponse(html, $url) {
             var linkIMG = "";
             if (posterurl && posterurl[0]) {
                 linkIMG = "https://1testcode.alokillgtv.workers.dev/https://static.rophim.stream/vimg/400-0/" + posterurl[0].path;
-              // https://static.rophim.stream/vimg/400-0/v-c3RvcmFnZS9pbWFnZXMvdGFuLWJpbmgvYmFja2Ryb3BfdXJsLzI4NjA2OGFhNzU2M2FiYjVlMWQ3OTZjN2ZlOTEzZGYwLnBuZw.jpg
             }
             var poster = linkIMG;
-             console.log(poster)
             var backurl = item.images.backdrops;
             if (backurl && backurl[0]) {
                 linkIMG = "https://1testcode.alokillgtv.workers.dev/https://static.rophim.stream/vimg/400-0/" + backurl[0].path;
@@ -293,7 +270,6 @@ function parseListResponse(html, $url) {
               if(key == 4){
                   namelang += "/Thuyết Minh [MN]"
               }
-              
             }
             var background = linkIMG;
             var texteq = item.quality.toUpperCase()
@@ -328,7 +304,6 @@ function parseListResponse(html, $url) {
                 "totalPages": 9999
             }
         });
-        //console.log("Return 1:\n" + $return)
         return $return
     } catch (e) {
         log("parseListResponse[err]:\n " + e);
@@ -346,18 +321,10 @@ function parseListResponse(html, $url) {
         });
     }
 }
-
-//html = sourceHTML;
-//$data = parseJSDataIsolated(script);
 // ===== HÀM TẠO KHỐI LIST PHIM END ======
 
 // ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
 function parseMovieDetail(html, url, datasend) {
-    if(url.indexOf("season") > -1){
-      log("Movie Raw\n" + html);
-      log("datasend 1:\n" + datasend);
-    }
-    
     log("parseMovieDetail[url]: \n" + url);
     try {
         var item = JSON.parse(datasend);
@@ -408,11 +375,10 @@ function parseMovieDetail(html, url, datasend) {
                 if (key == 4) {
                     namesv = "Thuyết Minh [MN]";
                 }
-                // https://api.rophim.stream/player/embed?id=ezexbGWK&version=1&season=1&episode=1
                 episodes.push({
                     id: "https://api.rophim.stream/player/embed?id=" + item._id + "&ver=" + key,
                     name: namesv,
-                    slug: "full"
+                    slug: "full-" + key
                 });
             }
             servers.push({
@@ -442,7 +408,7 @@ function parseMovieDetail(html, url, datasend) {
                                 serverMap[type].push({
                                     id: link,
                                     name: "[Mùa " + sesa + "] Tập " + epi,
-                                    slug: "mua-" + sesa + "-tap-" + epi
+                                    slug: "mua-" + sesa + "-tap-" + epi + "-" + type
                                 });
                             });
                         });
@@ -486,7 +452,6 @@ function parseMovieDetail(html, url, datasend) {
             country: country || "",
             extra: extra || ""
         });
-       // log("Return 2\n" + $return);
         return $return;
     } catch (e) {
         log("parseMovieDetail[err]:\n " + e);
@@ -498,327 +463,88 @@ function parseMovieDetail(html, url, datasend) {
         });
     }
 }
-//var url = "https://novahd.cc/api/show/1413"
-//var url = "http://vkey.vn/novahd/api/show/1413"
-// https://novahd.cc/api/shows/1413
-//var html = sourceHTML;
-//JSON.parse(parseMovieDetail(sourceHTML, url))
 // ===== HÀM TẠO KHỐI CHI TIẾT PHIM END ======
 
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM BEGIN ======
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (NETWORK SNIFFER CHO EMBED) BEGIN ======
 {
   function parseDetailResponse(html, url) {
      console.log("parseDetailResponse dang xu ly: " + url);
     try {
-      // Mimetype application/x-mpegURL video/mp4
-      return JSON.stringify({
-        url: url,
-        isEmbed: false,
-        mimeType: "application/x-mpegURL",
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Referer": "https://api.rophim.stream/",
-          "Origin": "https://api.rophim.stream",
-          "Custom-Js": rawJS(url)
-        },
-        subtitles: [{
-          lang: "",
-          url: ""
-        }],
-        
-      });
-    } catch (e) {
-      console.log("parseDetailResponse[err]:\n " + e);
-      return JSON.stringify({ 
-        url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-        mimeType: "video/mp4", 
-        isEmbed: false, headers: {}, subtitles: [] 
-      });
-    }
-  }
-  
- 
-} // parseDetailResponse, parseEmbedResponse
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM END ======
+        // Dùng custom JS để bắt mạng trực tiếp như kiến trúc Phimngan.net
+        var customJsCode = `
+            (function() {
+                if (window._vaapp_sniffer_v2) return;
+                window._vaapp_sniffer_v2 = true;
+                
+                var hasSent = false;
 
-// ==== HÀM TẠO CUSTOM SCRIPT BEGIN ====
+                // Hàm đẩy url bắt được sang ExoPlayer
+                function sendToNativeBridge(playUrl) {
+                    if (hasSent || !playUrl || typeof playUrl !== 'string') return;
+                    var lowerUrl = playUrl.toLowerCase();
+                    
+                    // Chỉ bắt link .m3u8 hoặc .mp4 chuẩn (bỏ qua blob local gây lỗi trên webkit iOS)
+                    if (lowerUrl.indexOf('.m3u8') > -1 || (lowerUrl.indexOf('.mp4') > -1 && lowerUrl.indexOf('blob:') === -1)) {
+                        hasSent = true;
+                        var headers = JSON.stringify({
+                            "Referer": window.location.href,
+                            "User-Agent": navigator.userAgent
+                        });
+                        if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
+                            window.SnifferBridge.log("Đã bắt được luồng mạng m3u8/mp4: " + playUrl);
+                            window.SnifferBridge.play(playUrl, headers);
+                        }
+                    }
+                }
 
-function rawJS() {
-  return `
-function bridgeLog(msg) {
-    try {
-      if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
-        window.SnifferBridge.log(msg);
-      } else if (typeof console !== 'undefined' && console.log) {
-        console.log(msg);
-      }
-    } catch(e) {}
-}
+                // 1. Can thiệp hàm fetch
+                var rawFetch = window.fetch;
+                window.fetch = async function (...args) {
+                    var fetchUrl = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url ? args[0].url : '');
+                    sendToNativeBridge(fetchUrl);
+                    return rawFetch.apply(this, args);
+                };
 
-(function () {
-  'use strict';
+                // 2. Can thiệp hàm XHR
+                var rawXHROpen = XMLHttpRequest.prototype.open;
+                XMLHttpRequest.prototype.open = function (method, reqUrl) {
+                    sendToNativeBridge(reqUrl);
+                    return rawXHROpen.apply(this, arguments);
+                };
 
-  if (window.__SUB_SNIFFER_INIT__) return;
-  window.__SUB_SNIFFER_INIT__ = true;
-  window.__CAPTURED_SUB_URLS__ = window.__CAPTURED_SUB_URLS__ || new Set();
-  window.__CAPTURED_M3U8_URLS__ = window.__CAPTURED_M3U8_URLS__ || new Set();
+                // 3. Giám sát thẻ video trong DOM phòng hờ
+                var observer = new MutationObserver(function(mutations) {
+                    if(hasSent) return;
+                    var v = document.querySelector('video');
+                    if (v && v.src && v.src.indexOf('blob:') === -1) {
+                        sendToNativeBridge(v.src);
+                    }
+                });
+                observer.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        `;
 
-  bridgeLog('[Clean-Video] 🕵️ Tích hợp Network Interceptor (Đã lọc Thumbnails)...');
-
-  // Hàm kiểm tra xem URL có phải là file thumbnail preview hay không
-  function isThumbnailUrl(url) {
-    if (!url) return true;
-    const lower = url.toLowerCase();
-    return lower.includes('thumb') || lower.includes('.jpg') || lower.includes('.png') || lower.includes('sprite');
-  }
-
-  // Hàm kiểm tra và gửi link m3u8 sang SnifferBridge
-  function checkAndPlayM3u8(url) {
-    if (!url) return;
-    const lower = url.toLowerCase();
-    if ((lower.includes('.m3u8') || lower.includes('m3u8')) && !window.__CAPTURED_M3U8_URLS__.has(url)) {
-      window.__CAPTURED_M3U8_URLS__.add(url);
-      bridgeLog('[M3U8-Sniffer] 🎯 Hứng được link M3U8: ' + url);
-      try {
-        if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
-          window.SnifferBridge.play(url);
-          bridgeLog('[M3U8-Sniffer] 🚀 Đã gửi link tới SnifferBridge.play()');
-        }
-      } catch(e) {
-        bridgeLog('[M3U8-Sniffer] ❌ Lỗi khi gửi tới SnifferBridge: ' + e.message);
-      }
-    }
-  }
-
-  // 1. CAN THIỆP FETCH API
-  const originalFetch = window.fetch;
-  window.fetch = async function (...args) {
-    const url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url ? args[0].url : '');
-    if (url) {
-      checkAndPlayM3u8(url);
-      if (url.includes('.vtt') || url.includes('.srt') || url.includes('subtitle') || url.includes('caption')) {
-        if (!isThumbnailUrl(url) && !window.__CAPTURED_SUB_URLS__.has(url)) {
-          window.__CAPTURED_SUB_URLS__.add(url);
-          bridgeLog('[Sub-Sniffer] 🎯 Hứng được Subtitle URL chuẩn: ' + url);
-        }
-      }
-    }
-    return originalFetch.apply(this, args);
-  };
-
-  // 2. CAN THIỆP XHR
-  const originalXHROpen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function (method, url) {
-    if (typeof url === 'string') {
-      checkAndPlayM3u8(url);
-      if (url.includes('.vtt') || url.includes('.srt') || url.includes('subtitle') || url.includes('caption')) {
-        if (!isThumbnailUrl(url) && !window.__CAPTURED_SUB_URLS__.has(url)) {
-          window.__CAPTURED_SUB_URLS__.add(url);
-          bridgeLog('[Sub-Sniffer] 🎯 Hứng được Subtitle URL chuẩn (XHR): ' + url);
-        }
-      }
-    }
-    return originalXHROpen.apply(this, arguments);
-  };
-
-  // Tải & Nhúng Subtitle thực sự
-  async function loadAndAttachCapturedSubtitles(videoEl) {
-    const subUrls = Array.from(window.__CAPTURED_SUB_URLS__);
-    
-    // Vét lại cấu hình JWPlayer nếu XHR chưa bắt kịp
-    if (typeof window.jwplayer === 'function') {
-      try {
-        const inst = window.jwplayer();
-        const playlist = inst.getPlaylist?.() || [];
-        const item = playlist[0] || {};
-        
-        // Vét luôn file m3u8 từ JWPlayer playlist nếu có
-        if (item.file) {
-          checkAndPlayM3u8(item.file);
-        }
-        if (Array.isArray(item.sources)) {
-          item.sources.forEach(s => {
-            if (s.file) checkAndPlayM3u8(s.file);
-          });
-        }
-
-        const tracks = item.tracks || inst.getCaptionsList?.() || [];
-        tracks.forEach(t => {
-          const u = t.file || t.src || t.url;
-          if (u && t.kind !== 'thumbnails' && !isThumbnailUrl(u)) {
-            if (!subUrls.includes(u)) subUrls.push(u);
-          }
-        });
-      } catch(e) {}
-    }
-
-    bridgeLog('[Clean-Sub] 📊 Tổng số Subtitle hợp lệ tìm thấy: ' + subUrls.length);
-
-    let attachedCount = 0;
-    for (let i = 0; i < subUrls.length; i++) {
-      const subUrl = subUrls[i];
-      try {
-        const res = await fetch(subUrl);
-        if (!res.ok) continue;
-        const text = await res.text();
-
-        // LỌC NỘI DUNG: Nếu chứa tọa độ ảnh (#xywh=) hoặc đuôi .jpg -> Bỏ qua
-        if (text.includes('#xywh=') || text.includes('.jpg') || text.includes('.png')) {
-          bridgeLog('[Clean-Sub] ⚠️ Đã loại bỏ file Thumbnail VTT: ' + subUrl);
-          continue;
-        }
-
-        const preview = text.split('\\n').filter(l => l.trim() && !l.includes('-->')).slice(0, 3).join(' | ');
-        bridgeLog('[Clean-Sub] 📄 [Nội dung Sub Chuẩn]: ' + preview);
-
-        // Tạo Blob URL
-        const blob = new Blob([text], { type: 'text/vtt' });
-        const blobUrl = URL.createObjectURL(blob);
-
-        const trackEl = document.createElement('track');
-        trackEl.kind = 'subtitles';
-        trackEl.label = 'Tiếng Việt' + (attachedCount > 0 ? ' ' + (attachedCount + 1) : '');
-        trackEl.srclang = 'vi';
-        trackEl.src = blobUrl;
-        trackEl.default = attachedCount === 0;
-
-        videoEl.appendChild(trackEl);
-        attachedCount++;
-        bridgeLog('[Clean-Sub] ✅ Đã gắn thành công Track Phụ Đề Chữ!');
-      } catch (err) {
-        bridgeLog('[Clean-Sub] ❌ Lỗi fetch Sub: ' + err.message);
-      }
-    }
-  }
-
-  async function executeUnwrapAndRebuild(player) {
-    if (window.__IS_CLEAN_VIDEO_DONE__) return;
-
-    try {
-      const container = player.getContainer?.() || document.querySelector('.jwplayer');
-      const videoEl = container ? container.querySelector('video') : document.querySelector('video');
-
-      if (!videoEl) return;
-
-      window.__IS_CLEAN_VIDEO_DONE__ = true;
-      bridgeLog('[Clean-Video] 🎯 Đã xác định vị trí thẻ <video>!');
-
-      // Ép Quality Max
-      try {
-        const levels = player.getQualityLevels?.() || [];
-        if (levels.length > 0) {
-          let maxIdx = 0, maxH = -1;
-          levels.forEach((l, i) => {
-            if (l.height && l.height > maxH) { maxH = l.height; maxIdx = i; }
-          });
-          player.setCurrentQuality(maxIdx);
-          bridgeLog('[Clean-Video] 🔒 Ép Quality max: ' + maxH + 'p');
-        }
-      } catch(e) {}
-
-      // Tải phụ đề sạch
-      await loadAndAttachCapturedSubtitles(videoEl);
-
-      // Unwrap DOM
-      const rootPlayerNode = player.getContainer?.() || videoEl.closest('.jwplayer') || videoEl.parentElement;
-      const targetParent = rootPlayerNode.parentElement;
-
-      if (!targetParent) return;
-
-      const originalWidth = rootPlayerNode.offsetWidth || '100%';
-      const originalHeight = rootPlayerNode.offsetHeight || '100%';
-
-      videoEl.remove();
-      rootPlayerNode.remove();
-      bridgeLog('[Clean-Video] 🧹 Đã xóa sạch khung JWPlayer!');
-
-      const newWrapper = document.createElement('div');
-      newWrapper.id = 'pure-video-wrapper';
-      newWrapper.style.position = 'relative';
-      newWrapper.style.width = typeof originalWidth === 'number' ? originalWidth + 'px' : originalWidth;
-      newWrapper.style.height = typeof originalHeight === 'number' ? originalHeight + 'px' : originalHeight;
-      newWrapper.style.backgroundColor = '#000';
-      newWrapper.style.display = 'flex';
-      newWrapper.style.justifyContent = 'center';
-      newWrapper.style.alignItems = 'center';
-
-      videoEl.controls = true;
-      videoEl.autoplay = true;
-      videoEl.playsInline = true;
-      videoEl.style.width = '100%';
-      videoEl.style.height = '100%';
-      videoEl.style.objectFit = 'contain';
-
-      newWrapper.appendChild(videoEl);
-      targetParent.appendChild(newWrapper);
-
-      // Kích hoạt TextTrack
-      setTimeout(() => {
-        try {
-          if (videoEl.textTracks) {
-            for (let i = 0; i < videoEl.textTracks.length; i++) {
-              videoEl.textTracks[i].mode = 'showing';
+        return JSON.stringify({
+            "url": url,
+            "isEmbed": true,
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Referer": "https://api.rophim.stream/",
+                "Block-Ads": "true", // Bật tính năng chặn Ads để chặn popups khi chạy ngầm
+                "Custom-Js": customJsCode.replace(/\n/g, " ").trim()
             }
-            bridgeLog('[Clean-Video] ✅ ModeTextTrack = showing!');
-          }
-        } catch(e) {}
-      }, 300);
-
-      bridgeLog('[Clean-Video] 🎉 HOÀN TẤT!');
-
-      if (videoEl.paused) {
-        videoEl.play().catch(e => {});
-      }
-
+        });
     } catch (e) {
-      bridgeLog('[Clean-Video] ❌ Lỗi: ' + e.message);
+        console.log("parseDetailResponse[err]:\n " + e);
+        return JSON.stringify({ 
+            url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+            mimeType: "video/mp4", 
+            isEmbed: false, headers: {}, subtitles: [] 
+        });
     }
   }
-
-  function setupHooks(inst) {
-    inst.on('firstFrame', function() {
-      bridgeLog('[Clean-Video] 🎬 Bắt được firstFrame!');
-      setTimeout(() => executeUnwrapAndRebuild(inst), 200);
-    });
-
-    inst.on('play', function() {
-      setTimeout(() => executeUnwrapAndRebuild(inst), 500);
-    });
-  }
-
-  const watcher = setInterval(() => {
-    if (window.__IS_CLEAN_VIDEO_DONE__) {
-      clearInterval(watcher);
-      return;
-    }
-
-    if (typeof window.jwplayer === 'function') {
-      try {
-        const inst = window.jwplayer();
-        if (inst && typeof inst.on === 'function') {
-          setupHooks(inst);
-          clearInterval(watcher);
-        }
-      } catch (e) {}
-    }
-  }, 250);
-
-})();
-  `;
 }
-
-
-
-
-
-
-
-
-
-
-
-// ==== HÀM TẠO CUSTOM SCRIPT END ====
-
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM END ======
 
 // ==== HIDEMENU ====
 {
@@ -1493,124 +1219,5 @@ BASE64 = {
     }
   }
 };
-
-  function checkRaw(scriptStr, returnFixed) {
-    try {
-      if (!scriptStr || typeof scriptStr !== "string") {
-        console.log(
-          "[Lỗi escape runJS]\r\n\t Dữ liệu đầu vào không phải là chuỗi hợp lệ!",
-        );
-        return scriptStr || "";
-      }
-  
-      var lines = scriptStr.split("\n");
-      var fixedLines = [];
-      var hasError = false;
-  
-      for (var i = 0; i < lines.length; i++) {
-        var currentLine = lines[i];
-        var lineNum = i + 1;
-        var lineErrorFound = false; // 1. Kiểm tra lỗi escape newline/tab nguy hiểm nằm trần trong chuỗi quote
-        // Trường hợp chưa được escape dạng '\\n' hoặc '\\t' trong chuỗi ghép
-  
-        if (/([^\\]|^)(\r\n|\r|\n)/.test(currentLine)) {
-          console.log(
-            "[Lỗi escape runJS]\r\n\t Phát hiện xuống dòng chưa escape ở Dòng " +
-              lineNum +
-              ": " +
-              currentLine.trim(),
-          );
-          lineErrorFound = true;
-        } // 2. Kiểm tra lỗi quên escape ký tự Tab trần không hợp lệ
-  
-        if (/\t/.test(currentLine) && !/\\t/.test(currentLine)) {
-          console.log(
-            "[Lỗi escape runJS]\r\n\t Phát hiện ký tự Tab trần ở Dòng " +
-              lineNum +
-              ": " +
-              currentLine.trim(),
-          );
-          lineErrorFound = true;
-        } // 3. Kiểm tra dấu xược ngược single trailing backlash ở cuối dòng (dễ làm gãy chuỗi)
-  
-        if (/([^\\])\\$/.test(currentLine)) {
-          console.log(
-            "[Lỗi escape runJS]\r\n\t Dấu Backslash (\\) cô đơn ở cuối Dòng " +
-              lineNum +
-              ": " +
-              currentLine.trim(),
-          );
-          lineErrorFound = true;
-        }
-  
-        if (lineErrorFound) {
-          hasError = true;
-        } // Tiến hành SỬA LỖI tự động nếu tham số returnFixed = true
-  
-        var fixedLine = currentLine;
-        if (returnFixed) {
-          // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
-          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
-        }
-  
-        fixedLines.push(fixedLine);
-      } // 4. Kiểm tra cú pháp nhanh xem toàn bộ chuỗi có parse được JS không
-  
-      try {
-        new Function(scriptStr);
-      } catch (syntaxErr) {
-        hasError = true;
-        console.log(
-          "[Lỗi escape runJS]\r\n\t 💥 LỖI CÚ PHÁP (SyntaxError) toàn cục: " +
-            syntaxErr.message,
-        );
-      }
-  
-      if (!hasError) {
-        console.log("[checkRaw] 🟢 Chuỗi Raw JS hoàn toàn sạch lỗi!");
-      } // Trả về bản đã fix hoặc bản gốc theo tham số returnFixed
-  
-      return returnFixed ? fixedLines.join("\n") : scriptStr;
-    } catch (e) {
-      console.log(
-        "[Lỗi escape runJS]\r\n\t Lỗi ngoại lệ trong hàm checkRaw: " + e.message,
-      );
-      return scriptStr; // Luôn an toàn: Fallback trả về chuỗi gốc chứ không làm sập script
-    }
-  }
-  function decodeHTMLtext(str) {
-      try {
-          if (!str) return "";
-          return str.replace(/&#(\d+);|&#x([0-9a-fA-F]+);/g, (match, dec, hex) => {
-              if (dec) {
-                  return String.fromCharCode(parseInt(dec, 10));
-              }
-              if (hex) {
-                  return String.fromCharCode(parseInt(hex, 16));
-              }
-              return match;
-          });
-      } catch (e) {
-          log("decodeHTMLEntities[err]:\n " + e);
-      }
-  }
-  function clearJS(func) {
-      if (typeof func !== "function") return "";
-      
-      // Lấy toàn bộ mã nguồn của hàm dưới dạng string
-      var funcStr = func.toString();
-      
-      // Dùng Regex bóc tách lấy nội dung bên trong cặp ngoặc nhọn {} đầu tiên và cuối cùng
-      var match = funcStr.match(/\{([\s\S]*)\}/);
-      if (!match) return "";
-      
-      var innerCode = match[1].trim();
-      
-      // (Tùy chọn) Bạn có thể tận dụng luôn hàm checkRaw sẵn có trong template của bạn 
-      // để nó tự động rà soát và fix các ký tự xuống dòng/tab nguy hiểm cho an toàn tuyệt đối:
-      var safeCode = checkRaw(innerCode, true);
-      
-      return safeCode;
-  }
 }
 // ==== HIDEMENU ====
