@@ -23,7 +23,7 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
     {
-      "id": "Rổ Phim",
+      "id": "rophim",
       "name": "Rổ Phim",
       "version": "1.2.7",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
