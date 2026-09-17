@@ -6,8 +6,8 @@ var popup_html = "";
 function getManifest() {
   try{
     return JSON.stringify({
-      "id": "hdvnn",
-      "name": "[MOVIE] HDVNN",
+      "id": "HDVNN-wait 10s",
+      "name": "[MOVIE] HDVNN-wait 10s",
       "version": "2.2",
       "author": "Alokillgtv",
       "baseUrl": BASEURL,
