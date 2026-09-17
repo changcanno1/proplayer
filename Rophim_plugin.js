@@ -6,7 +6,7 @@ function getManifest() {
   try {
     return JSON.stringify({
       "id": "rophim",
-      "name": "Nguồn RP Mới",
+      "name": "Rổ Phim-No Zoom",
       "version": "1.2.7", // Đã tăng phiên bản
       "author": "Alokillgtv",
       "BASEURL": "https://www.rophim.ad",
