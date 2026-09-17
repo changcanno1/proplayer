@@ -7,7 +7,7 @@ var popup_html = "";
 function getManifest() {
   try{
     return JSON.stringify({
-      "id": "phimbom",
+      "id": "PhimBom",
       "name": "[MOVIE] Phim Bom",
       "version": "2.0",
       "author": "Alokillgtv",
