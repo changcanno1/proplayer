@@ -24,7 +24,7 @@
     },
     {
       "id": "rophim",
-      "name": "Rổ Phim",
+      "name": "Rổ Phim-No Zoom",
       "version": "1.2.7",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
