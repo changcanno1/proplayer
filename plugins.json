@@ -85,6 +85,13 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
       "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
     },
+      {
+      "id": "novahd",
+      "name": "[MOVIE] Nova HD",
+      "version": "2.3.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Super4K_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
+    },
      {
       "id": "HDVNN-wait 10s",
       "name": "HDVNN-wait 10s",
@@ -92,13 +99,7 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HDVNN_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hdvnn.png"
     },
-    {
-      "id": "novahd",
-      "name": "[MOVIE] Nova HD",
-      "version": "2.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Super4K_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
-    },
+  
     {
       "id": "4kmovie",
       "name": "[MOVIE] 4K Movie",
