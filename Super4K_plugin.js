@@ -6,7 +6,7 @@ var popup_html = "";
 function getManifest() {
   return JSON.stringify({
     id: "novahd",
-    name: "Nguồn NovaHD",
+    name: "[MOVIE] Nova HD",
     description: "Nguồn phim NovaHD",
     "version": "2.3",
     "author": "Alokillgtv",
