@@ -4,7 +4,7 @@ var BASELINK = BASEURL;
 var popup_html = "";
 
 function getManifest() {
-  try{
+  try {
     return JSON.stringify({
       "id": "hdvnn",
       "name": "[MOVIE] HDVNN",
@@ -20,8 +20,7 @@ function getManifest() {
       "popup_html": popup_html,
       "playerType": "auto"
     });
-  }
-  catch(e){
+  } catch (e) {
     return JSON.stringify({
       "id": "loiapp",
       "name": "Plugin bị lỗi cài đặt",
@@ -37,12 +36,7 @@ function getManifest() {
 }
 
 // ===== HÀM MENU LIST BEGIN ======
-// Tạo List phim ở menu Home
 function getHomeSections() {
-    try {
-        localStorage.clear();
-    } catch(e) {}
-    
     return JSON.stringify([
         {"slug": "/loc-phim/W1tdLFtdLFsxXSxbXV0=","title": "Phim Lẻ","type": "Horizontal"},
         {"slug": "/loc-phim/W1tdLFtdLFsyXSxbXV0=","title": "Phim Bộ","type": "Horizontal"},
@@ -51,13 +45,12 @@ function getHomeSections() {
     ]);
 }
 
-// Hàm khởi tạo thẻ chủ đề
 function getLISTmenu() {
-  try{
-    return `[{"link":"/phim-moi-cap-nhap.html","name":"Phim Mới"},{"link":"/the-loai/phim-han-quoc.html","name":"Phim Hàn Quốc"},{"link":"/the-loai/phim-trung-quoc.html","name":"Phim Trung Quốc"},{"link":"/the-loai/phim-chau-a.html","name":"Phim Châu Á"},{"link":"/the-loai/phim-au-my.html","name":"Phim Âu-Mỹ"},{"link":"/the-loai/hh-trung-quoc.html","name":"HH Trung Quốc"},{"link":"/the-loai/anime-nhat-ban.html","name":"Anime Nhật Bản"},{"link":"/the-loai/phim-chieu-rap.html","name":"Phim Chiếu Rạp"},{"link":"/loc-phim/W1tdLFtdLFsxXSxbXV0=","name":"Phim Lẻ"},{"link":"/loc-phim/W1tdLFtdLFsyXSxbXV0=","name":"Phim Bộ"}]`;
-  } catch(e){
-    log("getLISTmenu[err]:\n " + e);
-    return `[{"link":"/","name":"Đang lỗi getLISTmenu()"}]`;
+  try {
+    // Đã đổi dấu backtick (`) thành nháy đơn (') chuẩn ES5
+    return '[{"link":"/phim-moi-cap-nhap.html","name":"Phim Mới"},{"link":"/the-loai/phim-han-quoc.html","name":"Phim Hàn Quốc"},{"link":"/the-loai/phim-trung-quoc.html","name":"Phim Trung Quốc"},{"link":"/the-loai/phim-chau-a.html","name":"Phim Châu Á"},{"link":"/the-loai/phim-au-my.html","name":"Phim Âu-Mỹ"},{"link":"/the-loai/hh-trung-quoc.html","name":"HH Trung Quốc"},{"link":"/the-loai/anime-nhat-ban.html","name":"Anime Nhật Bản"},{"link":"/the-loai/phim-chieu-rap.html","name":"Phim Chiếu Rạp"},{"link":"/loc-phim/W1tdLFtdLFsxXSxbXV0=","name":"Phim Lẻ"},{"link":"/loc-phim/W1tdLFtdLFsyXSxbXV0=","name":"Phim Bộ"}]';
+  } catch (e) {
+    return '[{"link":"/","name":"Đang lỗi getLISTmenu()"}]';
   }
 }
 // ===== HÀM MENU LIST END ======
@@ -85,7 +78,7 @@ function getUrlList(slug, filtersJson) {
                         path = filters.category;
                     }
                 }
-            } catch (e) {log("getUrlList():\n" + e)}
+            } catch (e) {}
         }
         var resultUrl = BASELINK;
         if (path) {
@@ -97,7 +90,6 @@ function getUrlList(slug, filtersJson) {
         var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
         return finalUrl;
     } catch (e) {
-        log("getUrlList[err]:\n " + e);
         return BASEURL;
     }
 }
@@ -113,29 +105,22 @@ function getUrlSearch(keyword, filtersJson) {
             try {
                 var filters = JSON.parse(fixedJson);
                 page = parseInt(filters.page) || 1;
-            } catch (e) {log("getUrlList():\n" + e)}
+            } catch (e) {}
         }
         var encodedKeyword = encodeURIComponent(keyword || "");
-        
         var resultUrl = BASELINK + paramSearch + encodedKeyword + ".html";
         if (page > 1) {
             resultUrl += paramPage + page;
         }
-
-        var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
-        
-        log("getUrlSearch[url]: \n" + finalUrl);
-        return finalUrl;
-
+        return resultUrl.replace(/([^:]\/)\/+/g, "$1");
     } catch (e) {
-        log("getUrlSearch[err]:\n " + e);
         return BASEURL;
     }
 }
 // ===== HÀM TẠO URL END ======
 
 // ===== HÀM TẠO KHỐI LIST PHIM BEGIN ======
-function parseListResponse(html, $url) {
+function parseListResponse(html, url) {
     try {
       var $doc = _$(html);
       var items = [];
@@ -146,9 +131,8 @@ function parseListResponse(html, $url) {
           var background = poster;
           var quality = this.find(".score").text();
           var episode_current = this.find(".episode-latest").text();
-          var year = "";
-          var lang = "";
-          if (title.length > 1 && poster.length > 5) {
+          
+          if (title && title.length > 1 && poster && poster.length > 5) {
               items.push({
                   "id": id || "",
                   "title": title || "",
@@ -156,25 +140,22 @@ function parseListResponse(html, $url) {
                   "episode_current": episode_current || "",
                   "posterUrl": poster || "",
                   "backdropUrl": background || "",
-                  "year": year || "",
-                  "lang": lang || ""
+                  "year": "",
+                  "lang": ""
               });
           }
-      })
-      var $return = JSON.stringify({
+      });
+      return JSON.stringify({
           "items": items,
           "pagination": {
               "currentPage": 1,
               "totalPages": 9999
           }
       });
-      console.log("Return List:\n" + $return)
-      return $return
     } catch (e) {
-        log("parseListResponse[err]:\n " + e);
         return JSON.stringify({
             "items": [{
-                "id": $url || "error_url",
+                "id": url || "error_url",
                 "title": "Lỗi: " + e,
                 "posterUrl": "",
                 "backdropUrl": ""
@@ -190,7 +171,6 @@ function parseListResponse(html, $url) {
 
 // ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
 function parseMovieDetail(html, url) {
-    log("parseMovieDetail[url]: \n" + url);
     try {
         var $doc = _$(html);
         var id = url;
@@ -198,100 +178,84 @@ function parseMovieDetail(html, url) {
         var backdropUrl = posterUrl;
         var title = $doc.find(".name_other div:last").text();
         var originName = $doc.find("h1").text();
+        
+        // Thêm bắt lỗi phòng khi iOS (SwiftSoup) không hiểu lệnh `:content`
         var description = $doc.find("h2:content('Nội|dung')").closest(".desc").find("p:last").text();
-        var director = "";
-        var casts = "";
+        if (!description) {
+            description = $doc.find(".desc").text();
+        }
+
         var merge = [];
         $doc.find(".list_cate:content('Thể|loại:')").find("a").each(function() {
             merge.push("[" + this.text() + "](" + this.attr("href") + ")");
-        })
+        });
         var category = merge.join(", ");
-        var duration = "";
         var status = $doc.find(".status div:last").text();
         var episode_current = "Tập " + $doc.find(".duration:content('Thới|lượng') div:last").text();
         var year = $doc.find(".update_time div:last").text();
-        var quality = "";
         var lang = $doc.find(".duration:content('Ngôn|ngữ') div:last").text();
-        var rating = "";
-        var country = "";
-        var extra = "";
+        
         var servers = [];
         var episodes = [];
-        if($doc.find(".list-item-episode a").length == 1){
+        
+        if ($doc.find(".list-item-episode a").length === 1) {
           var link = $doc.find(".list-item-episode a").attr("href");
-          episodes.push({
-                id: link + "?server=1",
-                name: "Google",
-                slug: "full"
-          },{
-                id: link + "?server=2",
-                name: "Dự Phòng",
-                slug: "full"
-          },{
-                id: link + "?server=3",
-                name: "Embed",
-                slug: "full"
-          });
-          servers.push({
-                name: "Server",
-                episodes: episodes
-          })  
-        }
-        else {
+          episodes.push({ id: link + "?server=1", name: "Google", slug: "full" });
+          episodes.push({ id: link + "?server=2", name: "Dự Phòng", slug: "full" });
+          episodes.push({ id: link + "?server=3", name: "Embed", slug: "full" });
+          servers.push({ name: "Server", episodes: episodes });
+        } else {
           $doc.find(".list-item-episode a").each(function() {
             episodes.push({
                 id: this.attr("href") + "?server=1",
                 name: "Tập " + this.attr("title"),
                 slug: "tap-" + this.attr("title")
-            })
-          })
-          var episodes2 = episodes.map(function(item) {
-            return Object.assign({}, item, {
-                id: item.id.replace("server=1", "server=2")
             });
           });
-          var episodes3 = episodes.map(function(item) {
-            return Object.assign({}, item, {
-                id: item.id.replace("server=1", "server=3")
-            });
-          });
-            servers.push({
-                name: "Google",
-                episodes: episodes
-            }, {
-                name: "Dự Phòng",
-                episodes: episodes2
-            }, {
-                name: "Embed",
-                episodes: episodes3
-            });
-            servers = sortEpisodesByName(servers);
+          
+          // Chuyển Object.assign thành vòng lặp truyền thống cho an toàn
+          var episodes2 = [];
+          var episodes3 = [];
+          for (var i = 0; i < episodes.length; i++) {
+              episodes2.push({
+                  id: episodes[i].id.replace("server=1", "server=2"),
+                  name: episodes[i].name,
+                  slug: episodes[i].slug
+              });
+              episodes3.push({
+                  id: episodes[i].id.replace("server=1", "server=3"),
+                  name: episodes[i].name,
+                  slug: episodes[i].slug
+              });
+          }
+          
+          servers.push({ name: "Google", episodes: episodes });
+          servers.push({ name: "Dự Phòng", episodes: episodes2 });
+          servers.push({ name: "Embed", episodes: episodes3 });
+          servers = sortEpisodesByName(servers);
         }
         
-        var $return = JSON.stringify({
+        return JSON.stringify({
             id: url || "",
             title: title || "",
             originName: originName || "",
             posterUrl: posterUrl || "",
             backdropUrl: backdropUrl || "",
             description: description || "",
-            quality: quality || "",
+            quality: "",
             year: year || "",
-            rating: rating || "",
+            rating: "",
             status: status || "",
             category: category || "",
             episode_current: episode_current || "",
             servers: servers || "",
-            duration: duration || "",
-            casts: casts || "",
-            director: director || "",
-            country: country || "",
-            extra: extra || ""
+            duration: "",
+            casts: "",
+            director: "",
+            country: "",
+            extra: ""
         });
-        console.log("Return Movie:\n" + $return)
-        return $return
     } catch (e) {
-        log("parseMovieDetail[err]:\n " + e);
         return JSON.stringify({
             id: "error",
             title: "error",
@@ -305,7 +269,6 @@ function parseMovieDetail(html, url) {
 // TẦNG 1: BÓC DỮ LIỆU HTML -> BẢO APP POST LÊN /geturl
 // =========================================================
 function parseDetailResponse(html, url) {
-  console.log("parseDetailResponse [Tầng 1]: " + url);
   try {
     var $doc = _$(html);
     var movieID = $doc.find('input[name="movie_id"]').attr("value");
@@ -313,7 +276,7 @@ function parseDetailResponse(html, url) {
     var referer = url.replace(/([\s\S]*)\?server=\d/i, "$1");
     var server = url.replace(/[\s\S]*\?server=(\d)/i, "$1");
 
-    var $return = JSON.stringify({
+    return JSON.stringify({
       url: "https://hdvnn.xyz/server/ajax/player",
       isEmbed: true,
       postBody: "MovieID=" + movieID + "&EpisodeID=" + epID,
@@ -326,11 +289,7 @@ function parseDetailResponse(html, url) {
       },
       datasend: JSON.stringify({ run: 1, server: String(server) })
     });
-
-    console.log("Return parse\n" + $return);
-    return $return;
   } catch (e) {
-    console.log("[Lỗi parseDetailResponse]", e);
     return JSON.stringify({ 
       url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
       mimeType: "video/mp4", 
@@ -340,8 +299,6 @@ function parseDetailResponse(html, url) {
 }
 
 function parseEmbedResponse(html, url, datare) {
-  console.log("datasend:" + datare);
-  
   try {    
     var datasend = {};
     if (typeof datare === "string") {
@@ -353,16 +310,14 @@ function parseEmbedResponse(html, url, datare) {
       datasend = datare;
     }
 
-    // ==================== TẦNG 1 ====================
     if (datasend.run == 1 || datasend.run == "1") {
       var $data = typeof html === "string" ? JSON.parse(html) : (html || {});
 
-      // SERVER 1
       if (datasend.server == "1") {
         if ($data.src_pt \vert{}\vert{}$data.src_go) {
-          var embedUrl = $data.src_pt \vert{}\vert{}$data.src_go;
+          var embedUrl1 = $data.src_pt \vert{}\vert{}$data.src_go;
           return JSON.stringify({
-            url: embedUrl, 
+            url: embedUrl1, 
             mimeType: "video/mp4",
             isEmbed: false, 
             headers: {
@@ -373,8 +328,6 @@ function parseEmbedResponse(html, url, datare) {
           });
         }
       }
-
-      // SERVER 2
       if (datasend.server == "2") {
         if ($data.src_vnn_1 \vert{}\vert{}$data.src_vnn_2) {
           var link = $data.src_vnn_1 ? $data.src_vnn_1 :$data.src_vnn_2;
@@ -389,17 +342,15 @@ function parseEmbedResponse(html, url, datare) {
           });
         } 
       } 
-
-      // SERVER 3
       if (datasend.server == "3") {
-        var embedUrl =  $data.src_hy || $data.src_ok \vert{}\vert{}$data.src_vk;
-        if (embedUrl) {
-          if(embedUrl.indexOf("abyss") > -1){
-            var path =  embedUrl.replace("https://player.abyssplayer.com/","");
-            embedUrl = "https://abysscdn.com/?v=" + path;
+        var embedUrl3 =  $data.src_hy || $data.src_ok \vert{}\vert{}$data.src_vk;
+        if (embedUrl3) {
+          if (embedUrl3.indexOf("abyss") > -1) {
+            var path =  embedUrl3.replace("https://player.abyssplayer.com/","");
+            embedUrl3 = "https://abysscdn.com/?v=" + path;
           }
           return JSON.stringify({
-            url: embedUrl, 
+            url: embedUrl3, 
             mimeType: "video/mp4",
             isEmbed: false, 
             headers: {
@@ -412,10 +363,8 @@ function parseEmbedResponse(html, url, datare) {
       }
     }
 
-    // ==================== TẦNG 2 ====================
     if (datasend.run == 2 || datasend.run == "2") {
       var streamUrl = getLinkHTML(html);
-
       if (streamUrl) {
         return JSON.stringify({
           url: streamUrl, 
@@ -433,7 +382,6 @@ function parseEmbedResponse(html, url, datare) {
     return JSON.stringify({ url: "", isEmbed: false, headers: {} });
 
   } catch (e) {
-    console.log("[Lỗi parseEmbedResponse]", e);
     return JSON.stringify({ 
       url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
       mimeType: "video/mp4", 
@@ -448,7 +396,6 @@ function getLinkHTML(inputContent, domain) {
     }
     var code = inputContent;
 
-    // 1. Tự động Unpack
     var unpackRegex = /eval\s*\(\s*function\s*\([^\)]*\)\s*\{[\s\S]*?\}\s*\(\s*'((?:\\.|[^'])*)'\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*'((?:\\.|[^'])*)'\.split\('\Vert{}'\)/;
     var match = inputContent.match(unpackRegex);
     if (match) {
@@ -470,7 +417,6 @@ function getLinkHTML(inputContent, domain) {
         });
     }
 
-    // 2. Tìm label cao nhất
     var sourceRegex = /['"]?label['"]?\s*:\s*['"](\d+)p['"][\s\S]*?['"]?file['"]?\s*:\s*['"]([^'"]+)['"]/g;
     var sourceMatch;
     var maxRes = -1;
@@ -485,10 +431,7 @@ function getLinkHTML(inputContent, domain) {
     }
 
     if (!bestPath) return "";
-
-    // 3. Đổi /stream/360/ thành /stream/maxRes/
     bestPath = bestPath.replace(/\/stream\/\d+\//, '/stream/' + maxRes + '/');
-
     return domain + bestPath;
 }
 
@@ -502,19 +445,14 @@ function getUrlDetail(slug) {
     try {
         if (!slug) return "";
         if (slug.indexOf('http') === 0) return slug;
-        var detailUrl = BASEURL + "/" + slug;
-        return detailUrl;
-    } catch (e) {
-        return "";
-    }
+        return BASEURL + "/" + slug;
+    } catch (e) { return ""; }
 }
+
 function getUrlCategories() { 
-    try {
-        return BASEURL; 
-    } catch (e) {
-        return "";
-    }
+    try { return BASEURL; } catch (e) { return ""; }
 }
+
 function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; }
 
@@ -523,10 +461,9 @@ function parseCategoriesResponse(apiResponseJson) {
         var listurl = getLISTmenu();
         var menulist = buildMenu(listurl);
         return JSON.stringify(menulist);
-    } catch (e) {
-        return JSON.stringify([]);
-    }
+    } catch (e) { return JSON.stringify([]); }
 }
+
 function parseCountriesResponse(html) { return "[]"; }
 function parseYearsResponse(html) { return "[]"; }
 
@@ -543,9 +480,7 @@ function getPrimaryCategories() {
         var listurl = getLISTmenu();
         var menulist = buildMenu(listurl);
         return JSON.stringify(menulist);
-    } catch (e) {
-        return JSON.stringify([]);
-    }
+    } catch (e) { return JSON.stringify([]); }
 }
 
 function getFilterConfig() {
@@ -553,9 +488,7 @@ function getFilterConfig() {
         var listurl = getLISTmenu();
         var menulist = buildMenu(listurl);
         return JSON.stringify({ category: menulist });
-    } catch (e) {
-        return JSON.stringify({ category: [] });
-    }
+    } catch (e) { return JSON.stringify({ category: [] }); }
 }
 
 function buildMenu(menuStr, type) { 
@@ -586,7 +519,8 @@ function log(msg) { console.log(msg); }
   
 function sortEpisodesByName(data) {
     try {
-        data.forEach(function(server) {
+        for (var i = 0; i < data.length; i++) {
+            var server = data[i];
             if (server.episodes && Array.isArray(server.episodes)) {
                 server.episodes.sort(function(a, b) {
                     var matchA = a.name.match(/Tập\s*(\d+)/i);
@@ -596,9 +530,7 @@ function sortEpisodesByName(data) {
                     return numA - numB;
                 });
             }
-        });
+        }
         return data;
-    } catch (e) {
-        return data;
-    }
+    } catch (e) { return data; }
 }
