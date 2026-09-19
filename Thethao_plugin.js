@@ -1,5 +1,5 @@
 // =============================================================================
-// VAAPP Plugin: Xoilac TV (Fix chuẩn Web Player)
+// VAAPP Plugin: Xoilac TV (Chuẩn Web Play - Không bóc tách Iframe)
 // =============================================================================
 
 var BASEURL = "https://xoilaczzf.cc";
@@ -8,14 +8,14 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV-Xoilac",
         "name": "ThethaoTV-Xoilac",
-        "version": "1.0.8",
+        "version": "1.0.9",
         "baseUrl": BASEURL,
         "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
         "isEnabled": true,
         "isAdult": false,
         "type": "MOVIE",
         "layoutType": "HORIZONTAL",
-        "playerType": "web" // Ép sử dụng Web Player của App
+        "playerType": "web" // 1. BẮT BUỘC KHAI BÁO LÀ "web"
     });
 }
 
@@ -121,7 +121,7 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
             backdropUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-            description: "Đang phát trực tiếp bằng Web Player.",
+            description: "Phát trực tiếp (Web Player)",
             servers: [
                 {
                     name: "Phòng Live",
@@ -140,38 +140,21 @@ function parseMovieDetail(html, url) {
 }
 
 // =============================================================================
-// LOGIC WEB PLAY
+// LOGIC WEB PLAY ĐƠN GIẢN VÀ HIỆU QUẢ NHẤT
 // =============================================================================
 function parseDetailResponse(html, url) {
-    var playUrl = url;
-    
-    // Ưu tiên tìm iframe của player để giao diện khi mở webview sạch sẽ nhất có thể
-    var iframeMatch = html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
-    if (iframeMatch && iframeMatch[1]) {
-        var src = iframeMatch[1];
-        if (src.indexOf('//') === 0) src = 'https:' + src;
-        if (src.indexOf('http') === 0) {
-            playUrl = src;
-        }
-    }
-
-    var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .ads { display: none !important; }";
-
+    // 2. KHÔNG TÌM IFRAME, KHÔNG CAN THIỆP CSS Ở BƯỚC NÀY NỮA
+    // Chỉ trả về nguyên gốc URL trang chi tiết và đặt isEmbed = false
+    // App sẽ tự mở URL này lên trình duyệt nội bộ của nó.
     return JSON.stringify({
-        url: playUrl, // Trả về link iframe hoặc link trang gốc
-        isEmbed: true, // BẮT BUỘC TRUE: Để App nhúng link này vào Web Player
-        headers: {
-            "Block-Css": cssHide,
-            "Referer": BASEURL + "/",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        },
-        subtitles: []
+        url: url,
+        isEmbed: false
     });
 }
 
 function parseEmbedResponse(html, url) {
     return JSON.stringify({ 
         url: url, 
-        isEmbed: true 
+        isEmbed: false 
     });
 }
