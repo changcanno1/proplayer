@@ -1,5 +1,5 @@
 // =============================================================================
-// VAAPP Plugin: Xoilac TV (Fix chuẩn Web Play như phimngannet)
+// VAAPP Plugin: Xoilac TV (Fix chuẩn Web Player)
 // =============================================================================
 
 var BASEURL = "https://xoilaczzf.cc";
@@ -8,20 +8,17 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV-Xoilac",
         "name": "ThethaoTV-Xoilac",
-        "version": "1.0.7",
+        "version": "1.0.8",
         "baseUrl": BASEURL,
         "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
         "isEnabled": true,
         "isAdult": false,
         "type": "MOVIE",
         "layoutType": "HORIZONTAL",
-        "playerType": "web" // QUAN TRỌNG: Dùng "web" để ép app mở bằng Web Player
+        "playerType": "web" // Ép sử dụng Web Player của App
     });
 }
 
-// =============================================================================
-// MENU & GIAO DIỆN CHÍNH
-// =============================================================================
 function getHomeSections() {
     return JSON.stringify([
         { slug: 'football', title: 'Trận Đấu Đang Live', type: 'Grid', path: '' },
@@ -73,9 +70,6 @@ function getPipeData(apiUrl) {
     return s;
 }
 
-// =============================================================================
-// BÓC TÁCH DANH SÁCH THEO MÔN THỂ THAO
-// =============================================================================
 function parseListResponse(html, apiUrl) {
     try {
         var sportSlug = getPipeData(apiUrl) || "football";
@@ -146,17 +140,29 @@ function parseMovieDetail(html, url) {
 }
 
 // =============================================================================
-// CHẠY BẰNG WEB PLAY (KHÔNG BÓC TÁCH, TRẢ VỀ ĐÚNG URL)
+// LOGIC WEB PLAY
 // =============================================================================
 function parseDetailResponse(html, url) {
-    // Ẩn Header, Footer, Sidebar, Quảng Cáo... để chừa lại mỗi khung Video
-    var cssHide = "header, .site-header, footer, .site-footer, .sidebar, .chat-box, #chat-room, .banner-ads, .ads, iframe[src*='ads'] { display: none !important; }";
+    var playUrl = url;
     
+    // Ưu tiên tìm iframe của player để giao diện khi mở webview sạch sẽ nhất có thể
+    var iframeMatch = html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+    if (iframeMatch && iframeMatch[1]) {
+        var src = iframeMatch[1];
+        if (src.indexOf('//') === 0) src = 'https:' + src;
+        if (src.indexOf('http') === 0) {
+            playUrl = src;
+        }
+    }
+
+    var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .ads { display: none !important; }";
+
     return JSON.stringify({
-        url: url, // TRẢ VỀ CHÍNH LINK TRANG WEB
-        isEmbed: false, // QUAN TRỌNG: Đặt false để App không tiếp tục bóc tách iframe mà mở URL này trên Web Player luôn
+        url: playUrl, // Trả về link iframe hoặc link trang gốc
+        isEmbed: true, // BẮT BUỘC TRUE: Để App nhúng link này vào Web Player
         headers: {
-            "Block-Css": cssHide, // Xóa bớt rác trên giao diện web
+            "Block-Css": cssHide,
+            "Referer": BASEURL + "/",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         },
         subtitles: []
@@ -164,9 +170,8 @@ function parseDetailResponse(html, url) {
 }
 
 function parseEmbedResponse(html, url) {
-    // Với dạng Web Play, hàm này gần như không được gọi tới, nhưng vẫn giữ để dự phòng
     return JSON.stringify({ 
         url: url, 
-        isEmbed: false
+        isEmbed: true 
     });
 }
