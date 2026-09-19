@@ -1,46 +1,30 @@
 var BASEURL = "https://moviedb.alokillgtv.workers.dev";
 var BASEAPI = "https://moviedb.alokillgtv.workers.dev";
-var BASELINK = BASEURL;
 var BASESV = "novahd";
+var BASELINK = BASEURL;
 var popup_html = "";
-// https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
-  try{
-    return JSON.stringify({
-      "id": "supermv",
-      "name": "[MOVIE] SuperMV",
-      "version": "2.1",
-      "author": "Alokillgtv",
+  return JSON.stringify({
+    id: "novahd",
+    name: "Nguồn NovaHD",
+    description: "Nguồn phim NovaHD",
+    "version": "2.3",
+    "author": "Alokillgtv",
       "headers":{
           "X-VAX-YB": "deo_co_gi_de_coi"
       },
-      "BASEURL": BASEURL,
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png",
-      "isEnabled": true,
-      "isAdult": false,
-      "adblock": false,
-      "type": "MOVIE",
-      "subtitleCat": false,
-      popup_html: popup_html,
-      "playerType": "exoplayer"
-    });
-  }
-  catch(e){
-    // VERTICAL
-    return JSON.stringify({
-      "id": "loiapp",
-      "name": "Plugin bị lỗi cài đặt",
-      "version": "2.0",
-      "info": "Plugin đang bị lỗi: \n" + e,
-      "baseUrl": "http://vkey.vn/",
-      "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
-      "isEnabled": true,
-      "type": "MOVIE",
-      "playerType": "exoplayer"
-     });
-  }
+    info: "",
+    BASEURL: BASEURL,
+    iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/novahd.png",
+    isEnabled: true,
+    "adblock": false,
+    "author": "Alokillgtv",
+    type: "MOVIE",
+    "subtitleCat": false,
+    playerType: "exoplayer"
+  });
 }
-
+//     popup_html: popup_html,
 // ===== HÀM MENU LIST BEGIN ======
 {
 // Tạo List phim ở menu Home
@@ -205,7 +189,6 @@ function parseListResponse(html, $url) {
 
         if (Array.isArray(results)) {
             results.forEach(function(item) {
-               // console.log("itemMV\n" + JSON.stringify(item))
                 if (!item) return;
 
                 var idvd = item.id + "&server="+BASESV+"&getsv=true";
@@ -320,11 +303,242 @@ function getGenres(ids = [], baseUrl = '/api/themoviedb?endpoint=discover/movie&
 
 //console.log(result);
 
+
+
+// ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
+// ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
+// =========================================================
+// 1. HÀM PARSE MOVIE DETAIL (XỬ LÝ DỮ LIỆU TMDB & NOVAHD)
+// =========================================================
+function parseMovieDetail(html, url) {
+    try {
+        var errorServers = [{
+            name: "Đã có lỗi xảy ra",
+            episodes: [{ id: "", name: "Phim chưa chiếu hoặc bị lỗi.", slug: "" }]
+        }];
+
+        function getLangScore(lang) {
+            if (!lang) return 1;
+            var l = String(lang).toLowerCase();
+            if (l === "vi" || l.indexOf("viet") > -1) return 3;
+            if (l === "en" || l.indexOf("eng") > -1) return 2;
+            return 1;
+        }
+
+        function getQualityScore(quality) {
+            if (!quality) return 0;
+            var q = String(quality).toLowerCase();
+            if (q.indexOf("4k") > -1 || q.indexOf("2160") > -1) return 5;
+            if (q.indexOf("1080") > -1) return 4;
+            if (q.indexOf("720") > -1) return 3;
+            if (q.indexOf("480") > -1) return 2;
+            return 0;
+        }
+
+        function sortSources(sources) {
+            if (!Array.isArray(sources)) return sources;
+            return sources.slice().sort(function(a, b) {
+                var langA = getLangScore(a.language);
+                var langB = getLangScore(b.language);
+                if (langA !== langB) return langB - langA;
+                return getQualityScore(b.quality) - getQualityScore(a.quality);
+            });
+        }
+
+        var isExtraStep = url && (url.indexOf("novahd.cc") > -1 || url.indexOf("tmdbId=") > -1 || url.indexOf("tmdb_id=") > -1);
+
+        if (isExtraStep) {
+            var $data = null;
+            try { $data = (typeof html === "object") ? html : JSON.parse(html); } catch (e) {}
+
+            var rawStreams = ($data && Array.isArray($data.sources)) ? $data.sources : [];
+            var tmdbIdMatch = url.match(/tmdbId=(\d+)/) || url.match(/tmdb_id=(\d+)/);
+            var tmdbId = tmdbIdMatch ? tmdbIdMatch[1] : "";
+            var isTV = url.indexOf("type=show") > -1 || url.indexOf("seasons_data=") > -1;
+
+            var finalServers = [];
+
+            if (rawStreams.length === 0) {
+                finalServers = errorServers;
+            } else {
+                var sortedStreams = sortSources(rawStreams);
+
+                if (isTV) {
+                    var seasonsDataMatch = url.match(/seasons_data=([^&]+)/);
+                    var seasonsStr = seasonsDataMatch ? decodeURIComponent(seasonsDataMatch[1]) : "";
+                    var baseEpisodes = [];
+
+                    if (seasonsStr) {
+                        seasonsStr.split(',').forEach(function(pair) {
+                            var parts = pair.split(':');
+                            var sNum = parseInt(parts[0], 10);
+                            var epCount = parseInt(parts[1], 10);
+                            for (var ep = 1; ep <= epCount; ep++) {
+                                baseEpisodes.push({ season: sNum, episode: ep });
+                            }
+                        });
+                    }
+                    if (baseEpisodes.length === 0) baseEpisodes.push({ season: 1, episode: 1 });
+                    var serverEpisodes = baseEpisodes.map(function(ep) {
+    // Khai báo linkplay bên trong map để lấy ep.season và ep.episode của từng tập
+                    var linkplay = "https://novahd.cc/api/sources?type=show&tmdbId=" + tmdbId + "&season=" + ep.season + "&episode=" + ep.episode + "&source=all";
+                
+                    return {
+                        id: linkplay + "&server=1",
+                        name: "[Mùa " + ep.season + "] Tập " + ep.episode,
+                        slug: "mua-" + ep.season + "-tap-" + ep.episode,
+                        ids: [1, 2, 3, 4, 5].map(function(s) {
+                            return {
+                                url: linkplay + "&server=" + s,
+                                name: "Server " + s
+                            };
+                        })
+                    };
+                });
+                
+                finalServers.push({ name: "NovaHD Server", episodes: serverEpisodes });
+                } else {
+                    // PHIM LẺ: Đính kèm chỉ số server vào URL ID để parseDetailResponse nhận biết
+                    var movieEpisodes = sortedStreams.map(function(source, idx) {
+                        var provider = source.provider || ("Server " + (idx + 1));
+                        var quality = source.quality || "Auto";
+                        var type = source.type || "hls";
+                        var language = source.language ? source.language : "Khác";
+
+                        return {
+                            id: url + "&server=" + (idx + 1),
+                            name: provider + " [" + quality + "." + type + "] (" + language + ")",
+                            slug: "server-" + (idx + 1)
+                        };
+                    });
+
+                    finalServers.push({ name: "Server", episodes: movieEpisodes });
+                }
+            }
+
+            return JSON.stringify({
+                id: url,
+                title: ($data && $data.title) ? $data.title : "Chi tiết phim",
+                posterUrl: ($data && $data.poster_path) ? ("https://image.tmdb.org/t/p/w500" + $data.poster_path) : "",
+                backdropUrl: "",
+                description: ($data && $data.overview) ? $data.overview : "",
+                servers: finalServers,
+                extra: ""
+            });
+        }
+
+        // LƯỢT 1: DỮ LIỆU TMDB
+        var $data = (typeof html === "object") ? html : JSON.parse(html);
+        var tmdbId = $data.id || "";
+        var isTV = (url && url.indexOf("endpoint=tv/") > -1) || $data.first_air_date !== undefined;
+        var extraUrl = "";
+
+        if (tmdbId) {
+            if (isTV && $data.seasons && Array.isArray($data.seasons)) {
+                var seasonsList = [];
+                $data.seasons.forEach(function(item) {
+                    var seasonNum = item.season_number !== undefined ? item.season_number : item.seasonNumber;
+                    if (seasonNum === 0) return;
+                    var totalEpisodes = item.episode_count || (item.episodes ? item.episodes.length : 0);
+                    if (totalEpisodes > 0) seasonsList.push(seasonNum + ":" + totalEpisodes);
+                });
+                extraUrl = "https://novahd.cc/api/sources?type=show&tmdbId=" + tmdbId + "&season=1&episode=1&source=all&seasons_data=" + encodeURIComponent(seasonsList.join(','));
+            } else {
+                extraUrl = "https://novahd.cc/api/sources?type=movie&tmdbId=" + tmdbId;
+            }
+        }
+
+        return JSON.stringify({
+            id: url || "",
+            title: $data.title || $data.name || "",
+            posterUrl: $data.poster_path ? ("https://image.tmdb.org/t/p/w500" + $data.poster_path) : "",
+            backdropUrl: $data.backdrop_path ? ("https://image.tmdb.org/t/p/w780" + $data.backdrop_path) : "",
+            description: $data.overview || "",
+            servers: [],
+            extra: extraUrl
+        });
+
+    } catch (e) {
+        return JSON.stringify({ id: url || "", title: "Lỗi", description: String(e), servers: [], extra: "" });
+    }
+}
+
+//var url = "https://novahd.cc/api/show/1413"
+//var url = "http://vkey.vn/novahd/api/show/1413"
+// https://novahd.cc/api/shows/1413
+//var html = sourceHTML;
+//JSON.parse(parseMovieDetail(sourceHTML, url))
+// ===== HÀM TẠO KHỐI CHI TIẾT PHIM END ======
+
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM BEGIN ======
+
+{
+  
+function parseDetailResponse(html, url) {
+  try {
+    console.log("parseDetail: \n" + url);
+    if (!html) throw new Error("Dữ liệu rỗng");
+
+    var $data = (typeof html === "object") ? html : JSON.parse(html);
+    var sources = $data.sources || [];
+
+    if (!Array.isArray(sources) || sources.length === 0) {
+      throw new Error("Không có sources từ NovaHD");
+    }
+
+    var serverMatch = url.match(/[?&]server=(\d+)/i);
+    var serverIdx = serverMatch ? (parseInt(serverMatch[1], 10) - 1) : 0;
+    
+    if (serverIdx < 0 || serverIdx >= sources.length) serverIdx = 0;
+
+    var selectedSource = sources[serverIdx];
+    var rawStreamUrl = selectedSource.url || "";
+    var rawFormat = selectedSource.type || selectedSource.format || "hls";
+
+    if (!rawStreamUrl) throw new Error("Stream URL không hợp lệ");
+
+    var streamDataStr = rawFormat + "|" + rawStreamUrl;
+    var encodedStream = BASE64.encode(streamDataStr);
+
+    var tmdbMatch = url.match(/[?&](?:tmdb|tmdb_id|tmdbId)=(\d+)/i);
+    var seasonMatch = url.match(/[?&]season=(\d+)/i);
+    var epMatch = url.match(/[?&]episode=(\d+)/i);
+
+    var tmdbId = tmdbMatch ? tmdbMatch[1] : "";
+    var season = seasonMatch ? seasonMatch[1] : "1";
+    var episode = epMatch ? epMatch[1] : "1";
+
+    var isTV = (url.indexOf("type=show") > -1) || (seasonMatch && epMatch);
+    var subApiUrl = "";
+
+    if (isTV) {
+      subApiUrl = "https://getsubtitle.alokillgtv.workers.dev/?type=tv&tmdb=" + tmdbId + "&season=" + season + "&episode=" + episode + "&stream=" + encodeURIComponent(encodedStream);
+    } else {
+      subApiUrl = "https://getsubtitle.alokillgtv.workers.dev/?type=movie&tmdb=" + tmdbId + "&stream=" + encodeURIComponent(encodedStream);
+    }
+    console.log("parseDetail subtile: \n" + subApiUrl);
+    return JSON.stringify({
+      url: subApiUrl,
+      mimeType: "application/json",
+      isEmbed: true,
+      headers: { "User-Agent": "Mozilla/5.0" ,"X-VAX-YB": "deo_co_gi_de_coi"},
+      subtitles: []
+    });
+
+  } catch (e) {
+    return JSON.stringify({ 
+      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+      mimeType: "video/mp4", 
+      isEmbed: false, headers: {}, subtitles: [] 
+    });
+  }
+}
+
 function getParam(url) {
     var params = {
         type: "",
         id: "",
-        imdb: "",
+        imdb_id: "",
         ttid: "",
         title: "",
         season: "",
@@ -367,311 +581,10 @@ function getParam(url) {
 
     return params;
 }
-
-// ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
-// ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
+  
 // =========================================================
-// 1. HÀM PARSE MOVIE DETAIL (XỬ LÝ DỮ LIỆU TMDB & NOVAHD)
+// 3. PARSE EMBED RESPONSE (GIỮ NGUYÊN CODE CỦA BẠN)
 // =========================================================
-function parseMovieDetail(html, url) {
-    try {
-        console.log("MVDT\n" + url);
-        console.log("MVDT RAW\n" + html);
-        var linkEX = "https://hdhub.alokillgtv.workers.dev/";
-        
-        var errorServers = [{
-            name: "Đã có lỗi xảy ra",
-            episodes: [{ id: "", name: "Phim chưa chiếu hoặc bị lỗi.", slug: "" }]
-        }];
-
-        var $data = null;
-        try { 
-            $data = (typeof html === "object" && html !== null) ? html : JSON.parse(html); 
-        } catch (e) {}
-
-        // Kiểm tra Lượt 2: Chỉ khi nhận mảng stream hoặc URL chứa tham số từ linkEX (tmdb= & type=)
-        var isExtraStep = false;
-        if (Array.isArray($data)) {
-            isExtraStep = true;
-        } else if ($data && Array.isArray($data.result)) {
-            isExtraStep = true;
-        } else if (url && url.indexOf("hdhub.alokillgtv.workers.dev") > -1) {
-            isExtraStep = true;
-        } else if (url && url.indexOf("tmdb=") > -1 && (url.indexOf("type=movie") > -1 || url.indexOf("type=tv") > -1)) {
-            isExtraStep = true;
-        }
-
-        if (isExtraStep) {
-            var rawStreams = Array.isArray($data) ? $data : (($data && Array.isArray($data.result)) ? $data.result : []);
-            var finalServers = [];
-
-            if (rawStreams.length === 0) {
-                finalServers = errorServers;
-            } else {
-                var firstItem = rawStreams[0] || {};
-                var imdb = firstItem.imdb || (url && (url.match(/[?&]imdb=([^&]+)/i) || [])[1]) || "";
-                var tmdb = firstItem.tmdb || (url && (url.match(/[?&]tmdb=([^&]+)/i) || [])[1]) || "";
-                var seasonsStr = firstItem.seasons_data || (url && (url.match(/[?&]seasons_data=([^&]+)/i) || [])[1]) || "";
-                
-                if (seasonsStr && seasonsStr.indexOf("%") > -1) {
-                    try { seasonsStr = decodeURIComponent(seasonsStr); } catch(e) {}
-                }
-
-                var isTV = (firstItem.mediaType === "tv") || Boolean(seasonsStr) || (url && url.indexOf("type=tv") > -1);
-
-                if (isTV) {
-                    var baseEpisodes = [];
-                    if (seasonsStr) {
-                        seasonsStr.split(',').forEach(function(pair) {
-                            var parts = pair.split(':');
-                            var sNum = parseInt(parts[0], 10);
-                            var epCount = parseInt(parts[1], 10);
-                            for (var ep = 1; ep <= epCount; ep++) {
-                                baseEpisodes.push({ season: sNum, episode: ep });
-                            }
-                        });
-                    }
-                    if (baseEpisodes.length === 0) baseEpisodes.push({ season: 1, episode: 1 });
-
-                    // Tạo từng tab Server dựa theo danh sách server trong mảng
-                    var maxServers = Math.min(rawStreams.length, 1);
-
-                      for (var idx = 0; idx < maxServers; idx++) {
-                          var serverItem = rawStreams[idx];
-                          var serverIndex = serverItem.server || (idx + 1);
-                          var serverName = "Server " + serverIndex;
-                              // "&server=" + serverIndex;
-                              var serverEpisodes = baseEpisodes.map(function(ep) {
-                              var proxyEpUrl = linkEX + "?tmdb=" + tmdb + "&season=" + ep.season + "&episode=" + ep.episode + "&type=tv&imdb=" + imdb
-                      
-                              return {
-                                  id: proxyEpUrl + "&server=1",
-                                  name: "[Mùa " + ep.season + "] Tập " + ep.episode,
-                                  slug: "mua-" + ep.season + "-tap-" + ep.episode,
-                                  ids: [{
-                                    url: proxyEpUrl + "&server=1",
-                                    name: "Server 1"
-                                  },{
-                                    url: proxyEpUrl + "&server=2",
-                                    name: "Server 2"
-                                  },{
-                                    url: proxyEpUrl + "&server=3",
-                                    name: "Server 3"
-                                  },{
-                                    url: proxyEpUrl + "&server=4",
-                                    name: "Server 4"
-                                  },{
-                                    url: proxyEpUrl + "&server=5",
-                                    name: "Server 5"
-                                  }]
-                              };
-                          });
-                      
-                          
-                      }
-                      finalServers.push({
-                         name: serverName,
-                        episodes: serverEpisodes
-                      });
-
-                } else {
-                    // PHIM LẺ
-                    var movieEpisodes = rawStreams.map(function(source, idx) {
-                        var serverIndex = source.server || (idx + 1);
-                        var serverName = source.name || ("Server " + serverIndex);
-                        var proxyMovieUrl = linkEX + "?tmdb=" + tmdb + "&type=movie&imdb=" + imdb + "&server=" + serverIndex;
-
-                        return {
-                            id: proxyMovieUrl,
-                            name: serverName,
-                            slug: "server-" + serverIndex
-                        };
-                    });
-
-                    finalServers.push({ name: "Server", episodes: movieEpisodes });
-                }
-            }
-
-            return JSON.stringify({
-                id: url,
-                title: ($data && $data.title) ? $data.title : "Chi tiết phim",
-                posterUrl: ($data && $data.poster_path) ? ("https://image.tmdb.org/t/p/w500" + $data.poster_path) : "",
-                backdropUrl: "",
-                description: ($data && $data.overview) ? $data.overview : "",
-                servers: finalServers,
-                extra: ""
-            });
-        }
-
-        // LƯỢT 1: DỮ LIỆU TMDB
-        var imdb = "";
-        if ($data) {
-            imdb = $data.raw_imdb_id || $data.imdb_id || ($data.external_ids ? $data.external_ids.imdb_id : "") || "";
-        }
-        
-        var tmdbId = ($data && $data.id) ? String($data.id) : "";
-        var isTV = false;
-        if (url && url.indexOf("endpoint=tv/") > -1) {
-            isTV = true;
-        } else if ($data && typeof $data.first_air_date !== "undefined" && $data.first_air_date !== null) {
-            isTV = true;
-        }
-
-        var extraUrl = "";
-        if (imdb || tmdbId) {
-            if (isTV && $data && Array.isArray($data.seasons)) {
-                var seasonsList = [];
-                $data.seasons.forEach(function(item) {
-                    if (!item) return;
-                    var seasonNum = (typeof item.season_number !== "undefined") ? item.season_number : item.seasonNumber;
-                    if (seasonNum === 0) return;
-                    var totalEpisodes = item.episode_count || (item.episodes ? item.episodes.length : 0);
-                    if (totalEpisodes > 0) seasonsList.push(seasonNum + ":" + totalEpisodes);
-                });
-                extraUrl = linkEX + "?tmdb=" + tmdbId + "&season=1&episode=1&type=tv&imdb=" + imdb + "&seasons_data=" + encodeURIComponent(seasonsList.join(','));
-            } else {
-                extraUrl = linkEX + "?tmdb=" + tmdbId + "&type=movie&imdb=" + imdb;
-            }
-        }
-
-        console.log("Extra:\n" + extraUrl);
-
-        return JSON.stringify({
-            id: url || "",
-            title: ($data && ($data.title || $data.name)) || "",
-            posterUrl: ($data && $data.poster_path) ? ("https://image.tmdb.org/t/p/w500" + $data.poster_path) : "",
-            backdropUrl: ($data && $data.backdrop_path) ? ("https://image.tmdb.org/t/p/w780" + $data.backdrop_path) : "",
-            description: ($data && $data.overview) || "",
-            servers: [],
-            extra: extraUrl
-        });
-
-    } catch (e) {
-        console.log("ERR MVDT: " + e.message);
-        return JSON.stringify({ id: url || "", title: "Lỗi", description: String(e), servers: [], extra: "" });
-    }
-}
-
-// Hàm hỗ trợ xác định MimeType Video chính xác
-function getMediaMimeType(format, streamUrl) {
-    var fmt = (format || "").toLowerCase();
-    var urlStr = (streamUrl || "").split('?')[0].toLowerCase();
-
-    if (fmt.indexOf("mp4") > -1 || urlStr.endsWith(".mp4")) {
-        return "video/mp4";
-    }
-    if (fmt.indexOf("m3u8") > -1 || fmt.indexOf("hls") > -1 || urlStr.endsWith(".m3u8")) {
-        return "application/x-mpegURL";
-    }
-    if (fmt.indexOf("mkv") > -1 || fmt.indexOf("matroska") > -1 || urlStr.endsWith(".mkv")) {
-        return "video/x-matroska";
-    }
-    if (fmt.indexOf("ts") > -1 || urlStr.endsWith(".ts")) {
-        return "video/mp2t";
-    }
-    if (fmt.indexOf("webm") > -1 || urlStr.endsWith(".webm")) {
-        return "video/webm";
-    }
-    if (fmt.indexOf("mpd") > -1 || urlStr.endsWith(".mpd")) {
-        return "application/dash+xml";
-    }
-    return "application/x-mpegURL"; // Mặc định nếu không nhận diện được
-}
-
-function parseDetailResponse(html, url) {
-    try {
-        console.log("parseDetail: \n" + url);
-        console.log("parseDetailRaw: \n" + html);
-        if (!html) throw new Error("Dữ liệu rỗng");
-
-        var $data = (typeof html === "object") ? html : JSON.parse(html);
-        
-        var sources = [];
-        if (Array.isArray($data)) {
-            sources = $data;
-        } else if ($data && Array.isArray($data.result)) {
-            sources = $data.result;
-        } else if ($data && Array.isArray($data.sources)) {
-            sources = $data.sources;
-        }
-
-        if (!Array.isArray(sources) || sources.length === 0) {
-            throw new Error("Không tìm thấy danh sách nguồn phát");
-        }
-
-        var serverMatch = url.match(/[?&]server=(\d+)/i);
-        var serverIdx = serverMatch ? (parseInt(serverMatch[1], 10) - 1) : 0;
-        
-        if (sources.length === 1 || serverIdx < 0 || serverIdx >= sources.length) {
-            serverIdx = 0;
-        }
-
-        var selectedSource = sources[serverIdx];
-        var rawStreamUrl = selectedSource.url || "";
-        
-        if (!rawStreamUrl) throw new Error("Stream URL không hợp lệ");
-
-        var rawType = (selectedSource.type || "").toLowerCase();
-        var rawFormat = "hls";
-        if (rawType.indexOf("mpegurl") > -1 || rawType.indexOf("m3u8") > -1 || rawStreamUrl.indexOf(".m3u8") > -1) {
-            rawFormat = "hls";
-        } else if (rawType.indexOf("mp4") > -1 || rawStreamUrl.indexOf(".mp4") > -1) {
-            rawFormat = "mp4";
-        } else if (rawType.indexOf("matroska") > -1 || rawType.indexOf("mkv") > -1 || rawStreamUrl.indexOf(".mkv") > -1) {
-            rawFormat = "mkv";
-        } else if (rawType.indexOf("ts") > -1 || rawStreamUrl.indexOf(".ts") > -1) {
-            rawFormat = "ts";
-        } else if (selectedSource.format) {
-            rawFormat = selectedSource.format;
-        }
-
-        var streamDataStr = rawFormat + "|" + rawStreamUrl;
-        var encodedStream = BASE64.encode(streamDataStr);
-
-        // Trích xuất thông tin từ URL
-        var tmdbMatch = url.match(/[?&](?:tmdb|tmdb_id|tmdbId)=([^&]+)/i);
-        var seasonMatch = url.match(/[?&]season=(\d+)/i);
-        var epMatch = url.match(/[?&]episode=(\d+)/i);
-
-        var tmdbId = (tmdbMatch ? tmdbMatch[1] : "") || selectedSource.tmdb || "";
-        var season = selectedSource.season || (seasonMatch ? seasonMatch[1] : "1");
-        var episode = selectedSource.episode || (epMatch ? epMatch[1] : "1");
-
-        var isTV = (selectedSource.mediaType === "tv") || 
-                   (url.indexOf("type=tv") > -1) || 
-                   (url.indexOf("type=show") > -1) || 
-                   (seasonMatch && epMatch);
-
-        var idParam = "imdb_id="+selectedSource.imdb+"&tmdb=" + tmdbId;
-
-        var subApiUrl = "";
-        if (isTV) {
-            subApiUrl = "https://getsubtitle.alokillgtv.workers.dev/?type=tv&" + idParam + "&season=" + season + "&episode=" + episode + "&stream=" + encodeURIComponent(encodedStream);
-        } else {
-            subApiUrl = "https://getsubtitle.alokillgtv.workers.dev/?type=movie&" + idParam + "&stream=" + encodeURIComponent(encodedStream);
-        }
-
-        console.log("parseDetail subtitle: \n" + subApiUrl);
-
-        return JSON.stringify({
-            url: subApiUrl,
-            mimeType: "application/json",
-            isEmbed: true,
-            headers: { "User-Agent": "Mozilla/5.0" ,"X-VAX-YB": "deo_co_gi_de_coi"
-                     },
-            subtitles: []
-        });
-
-    } catch (e) {
-        console.log("parseDetailError: " + e.message);
-        return JSON.stringify({ 
-          url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-          mimeType: "video/mp4", 
-          isEmbed: false, headers: {}, subtitles: [] 
-        });
-    }
-}
-
 function parseEmbedResponse(html, url) {
     console.log("parseEmbedResponse [url]: " + url);
     try {
@@ -679,14 +592,14 @@ function parseEmbedResponse(html, url) {
             throw new Error("Dữ liệu Subtitle html/JSON rỗng");
         }
 
-        // 1. Giải mã Stream URL từ parameter ?stream=
+        // 1. Trích xuất và Decode Base64 stream từ URL
         var streamMatch = url.match(/[?&]stream=([^&]+)/i);
         var streamUrl = "";
         var streamFormat = "";
 
         if (streamMatch) {
             var encodedStream = decodeURIComponent(streamMatch[1]);
-            var decodedData = BASE64.decode(encodedStream);
+            var decodedData = BASE64.decode(encodedStream); // Trả về dạng "FORMAT|URL"
             
             var pipeIdx = decodedData.indexOf('|');
             if (pipeIdx > -1) {
@@ -697,10 +610,24 @@ function parseEmbedResponse(html, url) {
             }
         }
 
-        var mimeType = getMediaMimeType(streamFormat, streamUrl);
+        // 2. Nhận diện MimeType từ Format / Link Stream
+        var mimeType = "application/x-mpegURL";
+        var fmtUpper = String(streamFormat).toUpperCase();
+
+        if (fmtUpper.indexOf("MP4") > -1) {
+            mimeType = "video/mp4";
+        } else if (fmtUpper.indexOf("HLS") > -1 || fmtUpper.indexOf("M3U8") > -1) {
+            mimeType = "application/x-mpegURL";
+        } else if (streamUrl) {
+            var cleanUrl = streamUrl.split('?')[0].toLowerCase();
+            if (cleanUrl.endsWith(".mp4")) {
+                mimeType = "video/mp4";
+            }
+        }
+
         console.log("▶ Format gốc: " + streamFormat + " | MimeType: " + mimeType + " | Link Stream decoded: " + streamUrl);
 
-        // 2. Parse dữ liệu trả về từ Worker
+        // 3. Parse dữ liệu trả về từ Worker (Worker đã đảm nhận việc lọc và decode)
         var rawParsed = null;
         try {
             rawParsed = (typeof html === "object") ? html : JSON.parse(html);
@@ -717,20 +644,27 @@ function parseEmbedResponse(html, url) {
             subtitlesData = rawParsed.subs;
         }
 
-        // 3. Map danh sách phụ đề từ Worker
+        // 4. Map danh sách phụ đề trực tiếp từ Worker
         var subtitleList = [];
         subtitlesData.forEach(function(item) {
             var itemUrl = item.url || item.file || item.src || "";
             if (!itemUrl) return;
-
+            var sname = item.name || item.display || item.label || "Subtitle";
+            if (!itemUrl) return;
+            if (sname.match(/english|eng/i)){
+              itemUrl = "https://trans.alokillgtv02.workers.dev/?sub_url="+BASE64.encode(itemUrl)+"&sl=auto&tl=vi&cache=false";
+              item.mimetype = "text/vtt"
+              console.log("dịch subeng:\n" + itemUrl);
+              sname = "[4. AI] Vietsub"
+            }
             subtitleList.push({
-                lang: item.name || item.display || item.label || "Subtitle",
+                lang: sname,
                 url: itemUrl,
                 mimeType: item.mimetype || item.mimeType || "text/vtt"
             });
         });
 
-        // 4. Hàm xác định thứ tự ưu tiên
+        // 5. Hàm sắp xếp thứ tự ưu tiên phụ đề
         function getSubtitlePriority(langName) {
             var str = String(langName || "").toUpperCase();
 
@@ -740,27 +674,27 @@ function parseEmbedResponse(html, url) {
             // 2. Vietsub [WYZIE]
             if (str.indexOf("WYZIE") > -1 && str.indexOf("ENGLISH") === -1) return 2;
 
-            // 3. Vietsub [OPENSUB] (Người dịch)
-            if (str.indexOf("OPENSUB") > -1 && str.indexOf("AI") === -1 && str.indexOf("ENGLISH") === -1) return 3;
+            // 3. Vietsub [OPENSUB] / [SHEGUST] (Người dịch)
+            if ((str.indexOf("OPENSUB") > -1 || str.indexOf("SHEGUST") > -1) && str.indexOf("AI") === -1 && str.indexOf("ENGLISH") === -1) return 3;
 
             // 4. AI Dịch [OPENSUB]
             if (str.indexOf("AI") > -1) return 4;
 
-            // 5. English
+            // 5. English Subtitle
             if (str.indexOf("ENGLISH") > -1 || str.indexOf("ENG") > -1) return 5;
 
-            // Mặc định cho các loại còn lại
+            // Còn lại
             return 6;
         }
 
-        // 5. Sắp xếp danh sách theo đúng thứ tự ưu tiên
+        // Sắp xếp mảng theo thứ tự ưu tiên
         subtitleList.sort(function(a, b) {
             return getSubtitlePriority(a.lang) - getSubtitlePriority(b.lang);
         });
 
-        console.log("▶ Đã lấy và sắp xếp " + subtitleList.length + " phụ đề.");
+        console.log("▶ Đã nhận và sắp xếp " + subtitleList.length + " phụ đề từ Worker.");
 
-        // 6. Proxy M3U8 nếu có liên kết đặc thù
+        // 6. Proxy M3U8 nếu gặp link đặc thù
         if (streamUrl.indexOf("resolve/cj/tmdb") > -1) {
             streamUrl = "https://proxym3u8.alokillgtv.workers.dev/?url=" + encodeURIComponent(streamUrl);
         }
@@ -771,9 +705,9 @@ function parseEmbedResponse(html, url) {
             isEmbed: false,
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "X-VAX-YB": "deo_co_gi_de_coi",
-                "Referer": "",
-                "Origin": ""
+                "Referer": "https://novahd.cc/",
+              "X-VAX-YB": "deo_co_gi_de_coi",
+                "Origin": "https://novahd.cc"
             },
             skipTimes: [
                 { start: 0, end: 32, type: "ad" }
@@ -781,25 +715,43 @@ function parseEmbedResponse(html, url) {
             subtitles: subtitleList
         });
 
-        console.log("streamdata:\n" + $return);
+        //console.log("streamdata:\n" + $return);
         return $return;
 
     } catch (e) {
         console.log("[Lỗi parseEmbedResponse]", e);
         return JSON.stringify({ 
-          url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-          mimeType: "video/mp4", 
-          isEmbed: false, headers: {}, subtitles: [] 
+            url: "", 
+            mimeType: "",
+            isEmbed: false, 
+            headers: {}, 
+            subtitles: [] 
         });
     }
 }
 
-
-// parseDetailResponse, parseEmbedResponse
+} // parseDetailResponse, parseEmbedResponse
 // ===== HÀM TẠO XỬ LÝ STREAM PHIM END ======
 
 // ==== HÀM TẠO CUSTOM SCRIPT BEGIN ====
-
+function rawJS(){
+ function LOG(msg, check) {
+    var logMsg = msg;
+    if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
+      window.SnifferBridge.log(logMsg);
+      if (check === true) {
+        window.SnifferBridge.toast(logMsg, 1000);
+      }
+    } else if (typeof console !== 'undefined' && console.log) {
+      console.log(logMsg);
+    }
+  }
+  try{
+    LOG("Test");
+  } catch(e){
+    LOG("Lỗi CUSTOMJS: \n" + e);
+  }
+}
 // ==== HÀM TẠO CUSTOM SCRIPT END ====
 
 
