@@ -2,7 +2,7 @@
 // VAAPP Plugin: Xoilac TV (Cập nhật giao diện Đa thể thao)
 // =============================================================================
 
-var BASEURL = "https://xoilacxba.tv";
+var BASEURL = "https://xoilacxth.tv";
 
 function getManifest() {
     return JSON.stringify({
