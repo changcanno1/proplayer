@@ -1,5 +1,5 @@
 // =============================================================================
-// VAAPP Plugin: Xoilac TV (Fix lỗi không play được trận đấu)
+// VAAPP Plugin: Xoilac TV (Fix chuẩn Web Play như phimngannet)
 // =============================================================================
 
 var BASEURL = "https://xoilaczzf.cc";
@@ -8,14 +8,14 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV-Xoilac",
         "name": "ThethaoTV-Xoilac",
-        "version": "1.0.6",
+        "version": "1.0.7",
         "baseUrl": BASEURL,
         "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
         "isEnabled": true,
         "isAdult": false,
         "type": "MOVIE",
         "layoutType": "HORIZONTAL",
-        "playerType": "embed" 
+        "playerType": "web" // QUAN TRỌNG: Dùng "web" để ép app mở bằng Web Player
     });
 }
 
@@ -127,7 +127,7 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
             backdropUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-            description: "Đang phát trực tiếp trên hệ thống Xôi Lạc TV.",
+            description: "Đang phát trực tiếp bằng Web Player.",
             servers: [
                 {
                     name: "Phòng Live",
@@ -146,71 +146,27 @@ function parseMovieDetail(html, url) {
 }
 
 // =============================================================================
-// BẮT LINK CHUẨN: TÌM M3U8 -> TÌM IFRAME -> WEBVIEW
+// CHẠY BẰNG WEB PLAY (KHÔNG BÓC TÁCH, TRẢ VỀ ĐÚNG URL)
 // =============================================================================
 function parseDetailResponse(html, url) {
-    var playUrl = url;
-    var userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    
-    // 1. Thử quét tìm trực tiếp luồng stream (.m3u8) trong mã nguồn
-    // Xoilac thường xuyên giấu link luồng trực tiếp vào các biến JavaScript
-    var m3u8Match = html.match(/(https?:\/\/[^"']+\.m3u8[^"']*)/i);
-    if (m3u8Match && m3u8Match[1]) {
-        return JSON.stringify({
-            url: m3u8Match[1],
-            isEmbed: false, // Phát thẳng luôn bằng Native Player, siêu mượt
-            headers: {
-                "Referer": BASEURL + "/",
-                "User-Agent": userAgent
-            },
-            subtitles: []
-        });
-    }
-
-    // 2. Nếu không có m3u8, thử tìm iframe nhúng (player bên thứ 3)
-    var iframeMatch = html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
-    var isIframe = false;
-    
-    if (iframeMatch && iframeMatch[1]) {
-        var src = iframeMatch[1];
-        if (src.indexOf('//') === 0) src = 'https:' + src;
-        if (src.indexOf('http') === 0) {
-            playUrl = src;
-            isIframe = true;
-        }
-    }
-
-    // 3. Fallback: Phát bằng WebView (Trang web Xoilac / iframe)
-    // ĐÃ FIX: Chỉ ẩn quảng cáo, header, footer. KHÔNG ẨN CÁC THẺ MÙ QUÁNG để tránh ẩn luôn khung video
-    var cssHide = ".header, #header, .footer, #footer, .sidebar, .chat-box, #chat-room, .banner-ads, .ads { display: none !important; }";
+    // Ẩn Header, Footer, Sidebar, Quảng Cáo... để chừa lại mỗi khung Video
+    var cssHide = "header, .site-header, footer, .site-footer, .sidebar, .chat-box, #chat-room, .banner-ads, .ads, iframe[src*='ads'] { display: none !important; }";
     
     return JSON.stringify({
-        url: playUrl,
-        isEmbed: true,
+        url: url, // TRẢ VỀ CHÍNH LINK TRANG WEB
+        isEmbed: false, // QUAN TRỌNG: Đặt false để App không tiếp tục bóc tách iframe mà mở URL này trên Web Player luôn
         headers: {
-            "Referer": BASEURL + "/",
-            "User-Agent": userAgent,
-            "Block-Css": isIframe ? "" : cssHide // Chỉ chèn CSS nếu mở cả trang
+            "Block-Css": cssHide, // Xóa bớt rác trên giao diện web
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         },
         subtitles: []
     });
 }
 
 function parseEmbedResponse(html, url) {
-    // Nếu App chuyển tiếp link iframe qua hàm này, quét lại m3u8 một lần nữa
-    var m3u8Match = html.match(/(https?:\/\/[^"']+\.m3u8[^"']*)/i);
-    if (m3u8Match && m3u8Match[1]) {
-        return JSON.stringify({
-            url: m3u8Match[1],
-            isEmbed: false,
-            headers: { "Referer": BASEURL + "/" }
-        });
-    }
-    
-    // Nếu vẫn không có m3u8, bắt buộc chạy dạng embed
+    // Với dạng Web Play, hàm này gần như không được gọi tới, nhưng vẫn giữ để dự phòng
     return JSON.stringify({ 
         url: url, 
-        isEmbed: true,
-        headers: { "Referer": BASEURL + "/" }
+        isEmbed: false
     });
 }
