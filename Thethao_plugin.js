@@ -1,5 +1,5 @@
 // =============================================================================
-// VAAPP Plugin: Xoilac TV (Bắt link Iframe Video + Ép phát WebView)
+// VAAPP Plugin: Xoilac TV (Chuẩn phong cách Rophim - Thuần WebView 100%)
 // =============================================================================
 
 var BASEURL = "https://xoilaczzb.cc";
@@ -8,14 +8,14 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV-Xoilac",
         "name": "ThethaoTV-Xoilac",
-        "version": "1.1.2",
+        "version": "1.1.3",
         "baseUrl": BASEURL,
         "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
         "isEnabled": true,
         "isAdult": false,
         "type": "MOVIE",
         "layoutType": "HORIZONTAL",
-        "playerType": "embed" // Luôn để embed để dùng WebView
+        "playerType": "embed" // Ép sử dụng WebView Player
     });
 }
 
@@ -71,7 +71,7 @@ function getPipeData(apiUrl) {
 }
 
 // =============================================================================
-// BÓC TÁCH DANH SÁCH
+// BÓC TÁCH DANH SÁCH (Giữ nguyên)
 // =============================================================================
 function parseListResponse(html, apiUrl) {
     try {
@@ -116,9 +116,9 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
             backdropUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-            description: "Chế độ: Bắt Iframe Video + Trình diễn Webview thuần.",
+            description: "Chế độ WebView Thuần: Giữ nguyên luồng trực tiếp, tự động ẩn rác.",
             servers: [{
-                name: "Phòng Live Chính",
+                name: "Phòng Live",
                 episodes: [{ id: url, name: "Xem Trực Tiếp", slug: "live-1" }]
             }],
             quality: "LIVE",
@@ -131,80 +131,40 @@ function parseMovieDetail(html, url) {
 }
 
 // =============================================================================
-// BƯỚC 1: BẮT LINK - LỌC VÀ LẤY CHÍNH XÁC IFRAME TRÌNH PHÁT VIDEO
+// BƯỚC 1: TRUYỀN THẲNG TRANG WEB VÀO WEBVIEW (KHÔNG BÓC TÁCH)
 // =============================================================================
 function parseDetailResponse(html, url) {
-    var iframeUrl = "";
+    // 1. CSS Hủy diệt: Ẩn tất cả mọi thứ rườm rà trên giao diện
+    var cssHide = "header, footer, nav, aside, .sidebar, .chat-box, .comments, .banner, .ads, .footer-menu, .match-detail-top, .matches-section, iframe[src*='sbobet'], iframe[src*='vnsport'], iframe[src*='7m'], iframe[src*='score'] { display: none !important; opacity: 0 !important; visibility: hidden !important; width: 0 !important; height: 0 !important; }";
     
-    // Tìm toàn bộ thẻ iframe trong trang
-    var iframes = html.match(/<iframe[^>]+(?:src|data-src)\s*=\s*["']([^"']+)["'][^>]*>/gi);
-    
-    if (iframes) {
-        for (var i = 0; i < iframes.length; i++) {
-            var iframeTag = iframes[i];
-            var srcMatch = iframeTag.match(/(?:src|data-src)\s*=\s*["']([^"']+)["']/i);
-            
-            if (srcMatch && srcMatch[1]) {
-                var src = srcMatch[1].toLowerCase();
-                
-                // BỘ LỌC TỪ KHÓA: Né ngay lập tức các iframe bảng tỷ số và quảng cáo
-                if (src.indexOf('sbobet') > -1 || 
-                    src.indexOf('vnsport') > -1 || 
-                    src.indexOf('bongdainfo') > -1 || 
-                    src.indexOf('score') > -1 || 
-                    src.indexOf('7m') > -1 || 
-                    src.indexOf('nowgoal') > -1 || 
-                    src.indexOf('bet') > -1 || 
-                    src.indexOf('ads') > -1 || 
-                    src.indexOf('chat') > -1) {
-                    continue; // Bỏ qua, xét iframe tiếp theo
-                }
-                
-                // Iframe đầu tiên vượt qua được bộ lọc trên chính là Iframe Video
-                iframeUrl = srcMatch[1];
-                break; 
-            }
-        }
-    }
+    // 2. JS Hỗ trợ: Ép bảng tỷ số (Sbobet) bay màu ngay lập tức nếu nó load sau, đồng thời tự động bấm Play video
+    var jsAction = "setInterval(function(){ " +
+                   "  document.querySelectorAll('iframe').forEach(function(f){ " +
+                   "    if(f.src.match(/sbobet|vnsport|bongdainfo|score|7m|bet/i)) { f.remove(); } " +
+                   "  }); " +
+                   "  var v = document.querySelector('video'); " +
+                   "  if(v && v.paused) { v.play(); } " +
+                   "}, 1000);";
 
-    // Nếu bắt được link iframe video, trả về để App tiếp tục xử lý
-    if (iframeUrl) {
-        if (iframeUrl.indexOf('//') === 0) iframeUrl = "https:" + iframeUrl;
-        else if (iframeUrl.indexOf('/') === 0) iframeUrl = BASEURL + iframeUrl;
-        else if (iframeUrl.indexOf('http') !== 0) iframeUrl = BASEURL + "/" + iframeUrl;
-        
-        return JSON.stringify({
-            url: iframeUrl,
-            isEmbed: true // Chuyển luồng sang hàm parseEmbedResponse
-        });
-    }
-    
-    // Nếu trang mã hóa quá kỹ không tìm thấy iframe, truyền nguyên URL trang web
-    return JSON.stringify({ url: url, isEmbed: true });
+    // 3. Truyền đúng URL của trang chi tiết vào WebView
+    return JSON.stringify({
+        url: url,
+        isEmbed: true, // Kích hoạt Webview
+        headers: {
+            "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+            "Block-Css": cssHide,
+            "Inject-Js": jsAction
+        }
+    });
 }
 
 // =============================================================================
-// BƯỚC 2: WEBVIEW - ÉP MỞ LINK IFRAME TRONG TRÌNH DUYỆT CỦA APP
+// BƯỚC 2: BỎ QUA BÓC TÁCH NHÚNG
 // =============================================================================
 function parseEmbedResponse(html, url) {
-    // App sẽ ném đường link iframe bắt được ở Bước 1 vào biến `url` tại đây.
-    // Chúng ta KHÔNG bóc tiếp m3u8 để tránh mất token, mà BÁO APP MỞ LUÔN WEBVIEW (isEmbed: true)
-    
-    // CSS ẩn đi những thành phần rác (nếu link bị lỗi lọt vào nguyên trang)
-    var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .ads, .match-detail-top, iframe[src*='sbobet'] { display: none !important; }";
-    
-    // JS phụ trợ: Tự động click play (nếu video bị pause do chính sách trình duyệt)
-    var jsAutoPlay = "setTimeout(function(){ var v = document.querySelector('video'); if(v) { v.play(); } }, 2000);";
-
+    // Chỉ đơn giản là nhận URL từ Bước 1 và yêu cầu App mở nó bằng WebView
     return JSON.stringify({
-        url: url, // Chính là link của Iframe trình phát sạch sẽ
-        isEmbed: true, // Báo app sử dụng WebView
-        headers: {
-            "Referer": BASEURL + "/",
-            "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-            "Block-Ads": "true",
-            "Block-Css": cssHide,
-            "Inject-Js": jsAutoPlay
-        }
+        url: url,
+        isEmbed: true
     });
 }
