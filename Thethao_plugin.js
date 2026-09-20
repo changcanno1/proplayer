@@ -20,29 +20,27 @@ function getManifest() {
 
 function getHomeSections() {
   return JSON.stringify([
-    { slug: "chuoi-chien-tv", title: "Chuối Chiên TV", type: "Horizontal", path: "" },
     { slug: "gio-vang-tv", title: "Giờ Vàng TV", type: "Horizontal", path: "" },
-    { slug: "socolive-tv", title: "Socolive TV", type: "Horizontal", path: "" },
     { slug: "khan-dai-tv", title: "Khán Đài TV", type: "Horizontal", path: "" },
     { slug: "s8-tv", title: "S8 TV", type: "Horizontal", path: "" },
+    { slug: "pha-lang-tv", title: "Phá Làng TV", type: "Horizontal", path: "" },
     { slug: "sao-ke-tv", title: "Sao Kê TV", type: "Horizontal", path: "" },
     { slug: "sut-bong-tv", title: "Sút Bóng TV", type: "Horizontal", path: "" },
     { slug: "ga-vang-tv", title: "Gà Vàng TV", type: "Horizontal", path: "" },
-    { slug: "pha-lang-tv", title: "Phá Làng TV", type: "Horizontal", path: "" }
+    { slug: "socolive-tv", title: "Socolive TV", type: "Horizontal", path: "" }
   ]);
 }
 
 function getPrimaryCategories() {
   return JSON.stringify([
-    { name: "Chuối Chiên TV", slug: "chuoi-chien-tv" },
     { name: "Giờ Vàng TV", slug: "gio-vang-tv" },
-    { name: "Socolive TV", slug: "socolive-tv" },
     { name: "Khán Đài TV", slug: "khan-dai-tv" },
     { name: "S8 TV", slug: "s8-tv" },
+    { name: "Phá Làng TV", slug: "pha-lang-tv" },
     { name: "Sao Kê TV", slug: "sao-ke-tv" },
     { name: "Sút Bóng TV", slug: "sut-bong-tv" },
     { name: "Gà Vàng TV", slug: "ga-vang-tv" },
-    { name: "Phá Làng TV", slug: "pha-lang-tv" }
+    { name: "Socolive TV", slug: "socolive-tv" }
   ]);
 }
 
@@ -209,7 +207,6 @@ const FALLBACK_POSTER_URL = "https://i.ibb.co/rKHf363x/fallback-thumbnail.webp";
 let channelList = [];
 // Use GROUP_MAP to rename and merge the channel into tvg-group.
 const GROUP_MAP = {
-  "chuối chiên tv": "Chuối Chiên TV",
   "giờ vàng tv": "Giờ Vàng TV",
   "socolive tv": "Socolive TV",
   "khán đài tv": "Khán Đài TV",
@@ -222,7 +219,6 @@ const GROUP_MAP = {
 
 // Use CATEGORY_MAP to convert the slug to tvg-group.
 const CATEGORY_MAP = {
-  "chuoi-chien-tv": "Chuối Chiên TV",
   "gio-vang-tv": "Giờ Vàng TV",
   "socolive-tv": "Socolive TV",
   "khan-dai-tv": "Khán Đài TV",
