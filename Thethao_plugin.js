@@ -1,5 +1,5 @@
 // =============================================================================
-// VAAPP Plugin: Xoilac TV (Fix dứt điểm lỗi không chạy & lỗi 15s)
+// VAAPP Plugin: Xoilac TV (Bắt link m3u8 trực tiếp - Phong cách HH3D)
 // =============================================================================
 
 var BASEURL = "https://xoilaczzb.cc";
@@ -8,14 +8,14 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV-Xoilac",
         "name": "ThethaoTV-Xoilac",
-        "version": "1.0.7",
+        "version": "1.0.8",
         "baseUrl": BASEURL,
         "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
         "isEnabled": true,
         "isAdult": false,
         "type": "MOVIE",
         "layoutType": "HORIZONTAL",
-        "playerType": "embed"
+        "playerType": "embed" // Kích hoạt chuỗi bóc tách iframe
     });
 }
 
@@ -51,7 +51,6 @@ function getFilterConfig() {
 // =============================================================================
 // URL GENERATION
 // =============================================================================
-
 function getUrlList(slug, filtersJson) {
     if (slug && slug.indexOf('http') === 0) return slug;
     var targetSlug = (slug === '/' || !slug) ? 'football' : slug;
@@ -125,9 +124,6 @@ function parseSearchResponse(html, url) {
     return parseListResponse(html, url);
 }
 
-// =============================================================================
-// BÓC TÁCH TRANG CHI TIẾT
-// =============================================================================
 function parseMovieDetail(html, url) {
     try {
         var $doc = _$(html);
@@ -138,12 +134,12 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
             backdropUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-            description: "Đang phát trực tiếp trên WebView (Bản fix ngắt 15s).",
+            description: "Live Xoilac. Sử dụng thuật toán bắt link trực tiếp m3u8 (Anti 15s).",
             servers: [
                 {
                     name: "Phòng Live Chính",
                     episodes: [
-                        { id: url, name: "Xem Trực Tiếp (Ổn Định)", slug: "live-1" }
+                        { id: url, name: "Xem Trực Tiếp", slug: "live-1" }
                     ]
                 }
             ],
@@ -157,33 +153,96 @@ function parseMovieDetail(html, url) {
 }
 
 // =============================================================================
-// BẮT LINK VÀ ÉP TOÀN BỘ VÀO WEBVIEW (GIỮ NGUYÊN TRANG GỐC ĐỂ KHÔNG MẤT TOKEN)
+// BƯỚC 1: BẮT LINK IFRAME TỪ TRANG CHI TIẾT (Giống cách làm của web HH3D)
 // =============================================================================
 function parseDetailResponse(html, url) {
-    // Ẩn toàn bộ rác (header, footer, chat, quảng cáo...) chỉ để lại duy nhất khung video
-    var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .footer-menu, iframe[src*='ads'] { display: none !important; } .match-detail { padding-top: 0 !important; }";
+    var iframeUrl = "";
+    
+    // Dùng Cheerio để bắt iframe (data-src hoặc src)
+    try {
+        var $doc = _$(html);
+        iframeUrl = $doc.find("iframe").attr("src") || $doc.find("iframe").attr("data-src") || "";
+    } catch(e) {}
 
-    // Truyền thẳng url gốc, KHÔNG bóc iframe nữa
+    // Fallback: Dùng Regex quét toàn bộ HTML nếu Cheerio trượt
+    if (!iframeUrl) {
+        var match = html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+        if (match && match[1]) {
+            iframeUrl = match[1];
+        }
+    }
+
+    if (iframeUrl) {
+        // Chuẩn hóa đường dẫn
+        if (iframeUrl.indexOf('//') === 0) {
+            iframeUrl = "https:" + iframeUrl;
+        } else if (iframeUrl.indexOf('/') === 0) {
+            iframeUrl = BASEURL + iframeUrl;
+        }
+
+        // Báo isEmbed: true để app tiếp tục nhảy sang hàm parseEmbedResponse
+        return JSON.stringify({
+            url: iframeUrl,
+            isEmbed: true
+        });
+    }
+
+    // Nếu không tìm thấy iframe nào, gửi thẳng url web gốc vào chế độ WebView
     return JSON.stringify({
-        url: url, 
-        isEmbed: true, // Ép mở bằng trình duyệt WebView của App
-        headers: {
-            "Referer": BASEURL + "/",
-            // Giả lập Mobile để trình phát không bị lỗi giao diện
-            "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.230 Mobile Safari/537.36",
-            "Block-Ads": "false", // Để false tránh block nhầm script WebRTC/HLS của luồng live
-            "Block-Css": cssHide
-        },
-        subtitles: []
+        url: url,
+        isEmbed: true 
     });
 }
 
 // =============================================================================
-// PARSE EMBED: Trả về chính URL đó và tiếp tục báo isEmbed: true
+// BƯỚC 2: BÓC LINK M3U8 TỪ TRONG IFRAME VÀ CHÈN HEADER (Sửa lỗi ngắt 15s)
 // =============================================================================
 function parseEmbedResponse(html, url) {
-    return JSON.stringify({ 
-        url: url, 
-        isEmbed: true 
+    var playUrl = "";
+
+    // 1. Quét tìm trực tiếp link có đuôi .m3u8 (kèm theo token phía sau nếu có)
+    var m3u8Match = html.match(/(https?:\/\/[^"'\s]+\.m3u8[^"'\s]*)/i);
+    if (m3u8Match) {
+        playUrl = m3u8Match[1];
+    }
+
+    // 2. Nếu không thấy m3u8, tìm các file config (file: "...", source: "...")
+    if (!playUrl) {
+        var fileMatch = html.match(/file\s*:\s*["'](https?:\/\/[^"']+)["']/i) || 
+                        html.match(/source\s*:\s*["'](https?:\/\/[^"']+)["']/i);
+        if (fileMatch) {
+            playUrl = fileMatch[1];
+        }
+    }
+
+    // NẾU TÌM THẤY LINK VIDEO M3U8/MP4 TRỰC TIẾP:
+    if (playUrl) {
+        // Lấy domain gốc của iframe để làm Origin
+        var domainOrigin = url.split('/').slice(0, 3).join('/');
+        
+        return JSON.stringify({
+            url: playUrl,
+            isEmbed: false, // Báo false để app phát bằng Trình phát Video mượt mà, không dùng WebView nữa
+            headers: {
+                "Referer": url, // QUAN TRỌNG: Phải trỏ Referer về cái iframe thì mới không bị ngắt 15s
+                "Origin": domainOrigin,
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+        });
+    }
+
+    // ==========================================
+    // FALLBACK: NẾU BỊ MÃ HOÁ QUÁ MẠNH KHÔNG TÌM THẤY M3U8
+    // Ép iframe chạy WebView, ẩn rác để chống cháy
+    // ==========================================
+    var cssHide = "header, footer, nav, .chat-box, .banner, .ads { display: none !important; }";
+    return JSON.stringify({
+        url: url,
+        isEmbed: true, 
+        headers: {
+            "Referer": BASEURL + "/",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+            "Block-Css": cssHide
+        }
     });
 }
