@@ -1,5 +1,5 @@
 // =============================================================================
-// VAAPP Plugin: Xoilac TV (Siêu bắt link HLS + Giải mã Base64 + Fallback WebView)
+// VAAPP Plugin: Xoilac TV (Bản fix lỗi bắt nhầm Iframe tỷ số/Sbobet)
 // =============================================================================
 
 var BASEURL = "https://xoilaczzb.cc";
@@ -8,7 +8,7 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV-Xoilac",
         "name": "ThethaoTV-Xoilac",
-        "version": "1.0.9",
+        "version": "1.1.0",
         "baseUrl": BASEURL,
         "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
         "isEnabled": true,
@@ -19,9 +19,6 @@ function getManifest() {
     });
 }
 
-// =============================================================================
-// MENU & GIAO DIỆN CHÍNH
-// =============================================================================
 function getHomeSections() {
     return JSON.stringify([
         { slug: 'football', title: 'Trận Đấu Đang Live', type: 'Grid', path: '' },
@@ -74,7 +71,7 @@ function getPipeData(apiUrl) {
 }
 
 // =============================================================================
-// BÓC TÁCH DANH SÁCH (Sử dụng _$ an toàn)
+// BÓC TÁCH DANH SÁCH
 // =============================================================================
 function parseListResponse(html, apiUrl) {
     try {
@@ -119,7 +116,7 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
             backdropUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-            description: "Hệ thống tự động giải mã m3u8 và chống ngắt 15s. (Bản cực mạnh)",
+            description: "Đã sửa lỗi bắt nhầm bảng tỷ số (Sbobet).",
             servers: [{
                 name: "Phòng Live Chính",
                 episodes: [{ id: url, name: "Xem Trực Tiếp", slug: "live-1" }]
@@ -133,9 +130,6 @@ function parseMovieDetail(html, url) {
     }
 }
 
-// =============================================================================
-// HELPER: BỘ GIẢI MÃ BASE64 THUẦN (Cứu nguy khi link bị mã hoá)
-// =============================================================================
 function decodeB64(str) {
     try { if (typeof window !== 'undefined' && window.atob) return window.atob(str); } catch(e) {}
     var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
@@ -148,49 +142,76 @@ function decodeB64(str) {
 }
 
 // =============================================================================
-// LUỒNG BẮT LINK CỐT LÕI (Không dùng _$, dùng Regex quét toàn bộ Text)
+// BƯỚC 1: BẮT LINK IFRAME - NÉ CÁC BẢNG TỶ SỐ VÀ QUẢNG CÁO
 // =============================================================================
-
 function parseDetailResponse(html, url) {
-    // 1. Quét thẳng trang chủ xem link có nằm phơi bày không
-    var directCheck = JSON.parse(parseEmbedResponse(html, url));
-    if (directCheck.url && directCheck.isEmbed === false) {
-        return JSON.stringify(directCheck); // Tìm thấy m3u8 => Trả về luôn!
+    var iframeUrl = "";
+    
+    // Tìm toàn bộ thẻ iframe trong trang
+    var iframes = html.match(/<iframe[^>]+>/gi);
+    
+    if (iframes) {
+        for (var i = 0; i < iframes.length; i++) {
+            var srcMatch = iframes[i].match(/(?:src|data-src)\s*=\s*["']([^"']+)["']/i);
+            if (srcMatch && srcMatch[1]) {
+                var src = srcMatch[1].toLowerCase();
+                
+                // LỌC RÁC: Nếu link iframe chứa các từ khóa này thì bỏ qua ngay lập tức
+                if (src.indexOf('sbobet') > -1 || 
+                    src.indexOf('bet') > -1 || 
+                    src.indexOf('score') > -1 || 
+                    src.indexOf('7m') > -1 || 
+                    src.indexOf('nowgoal') > -1 || 
+                    src.indexOf('ads') > -1 || 
+                    src.indexOf('chat') > -1) {
+                    continue;
+                }
+                
+                // Nếu vượt qua bộ lọc, đây chính là Iframe của Video Player
+                iframeUrl = srcMatch[1];
+                break; 
+            }
+        }
     }
 
-    // 2. Nếu không có, săn lùng Iframe
-    var iframeUrl = "";
-    var iframeMatch = html.match(/<iframe[^>]+(?:src|data-src)\s*=\s*["']([^"']+)["']/i);
-    
-    if (iframeMatch && iframeMatch[1]) {
-        iframeUrl = iframeMatch[1];
+    if (iframeUrl) {
         if (iframeUrl.indexOf('//') === 0) iframeUrl = "https:" + iframeUrl;
         else if (iframeUrl.indexOf('/') === 0) iframeUrl = BASEURL + iframeUrl;
         else if (iframeUrl.indexOf('http') !== 0) iframeUrl = BASEURL + "/" + iframeUrl;
         
         return JSON.stringify({
             url: iframeUrl,
-            isEmbed: true // Báo App vào iframe lấy link m3u8
+            isEmbed: true 
         });
     }
     
-    // 3. Fallback an toàn tuyệt đối về WebView nếu chống cào 100%
-    return JSON.stringify(directCheck);
+    // Nếu không tìm thấy Iframe nào hợp lệ, ép phát thẳng trang web bằng WebView 
+    // và dùng CSS giấu bảng tỷ số đi.
+    var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .ads, .footer-menu, .match-detail-top, iframe[src*='sbobet'], iframe[src*='score'] { display: none !important; }";
+    return JSON.stringify({
+        url: url,
+        isEmbed: true,
+        headers: {
+            "Referer": BASEURL + "/",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+            "Block-Ads": "true",
+            "Block-Css": cssHide
+        }
+    });
 }
 
+// =============================================================================
+// BƯỚC 2: GIẢI MÃ M3U8 TỪ IFRAME PLAYER
+// =============================================================================
 function parseEmbedResponse(html, url) {
     var playUrl = "";
-    
-    // Xoá ký tự nháy / gạch chéo rối của JSON/JS
     var cleanHtml = html.replace(/\\/g, "").replace(/u0026/g, "&");
 
-    // Case 1: Tóm trực tiếp link m3u8
     var m3u8Match = cleanHtml.match(/(https?:\/\/[^"'\s<>]*\.m3u8[^"'\s<>]*)/i);
     if (m3u8Match) {
         playUrl = m3u8Match[1];
     }
 
-    // Case 2: Tìm link ẩn trong chuỗi Base64 (Thường bắt đầu bằng aHR0cHM6...)
     if (!playUrl) {
         var b64Tokens = cleanHtml.match(/["'](aHR0cHM6[A-Za-z0-9+/=]+)["']/gi);
         if (b64Tokens) {
@@ -204,7 +225,6 @@ function parseEmbedResponse(html, url) {
         }
     }
 
-    // Case 3: Quét biến JS mồ côi
     if (!playUrl) {
         var srcMatch = cleanHtml.match(/(?:file|source|url|src)["']?\s*[:=]\s*["'](https?:\/\/[^"'\s<>]+)["']/i);
         if (srcMatch && srcMatch[1].indexOf(".m3u8") !== -1) {
@@ -212,29 +232,26 @@ function parseEmbedResponse(html, url) {
         }
     }
 
-    // NẾU THÀNH CÔNG -> PLAY NATIVE (Xử lý vụ 15s)
     if (playUrl) {
         var domainOrigin = url.split('/').slice(0, 3).join('/');
         return JSON.stringify({
             url: playUrl,
-            isEmbed: false, // Báo app dùng Trình phát video chuẩn để phát
+            isEmbed: false, 
             headers: {
-                "Referer": url, // VŨ KHÍ BÍ MẬT: Nhét Referer của iframe để lừa Server
+                "Referer": url, 
                 "Origin": domainOrigin,
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             }
         });
     }
 
-    // FALLBACK -> ÉP PHÁT BẰNG WEBVIEW GÓC (Nếu bóc tách thất bại)
-    var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .ads, .footer-menu, .match-detail-top { display: none !important; }";
+    var cssHide = "header, footer, nav, .chat-box, .banner, .ads { display: none !important; }";
     return JSON.stringify({
         url: url,
         isEmbed: true, 
         headers: {
             "Referer": BASEURL + "/",
             "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-            "Block-Ads": "true",
             "Block-Css": cssHide
         }
     });
