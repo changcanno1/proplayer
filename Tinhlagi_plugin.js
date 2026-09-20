@@ -4,49 +4,63 @@
 
 function getManifest() {
   return JSON.stringify({
-    id: "tinhlagisports",
-    name: "TinhLaGiSports",
-    version: "1.0.1",
-    baseUrl: BASE_URL,
-    iconUrl: "https://i.ibb.co/FPQzZM1/tinhlagi-logo.jpg",
+    id: "rockystream",
+    name: "[SPORT] RockyStream",
+    version: "1.0.0",
+    baseUrl: BASE_DOMAIN,
+    iconUrl: "https://i.ibb.co/PZFwWKKg/rockystream-logo.jpg",
     isEnabled: true,
     isAdult: false,
-    type: "IPTV",
+    type: "MOVIE",
     layoutType: "HORIZONTAL",
-    playerType: "exoplayer",
+    playerType: "embedtoexoplay",
     debug: true
   });
 }
 
 function getHomeSections() {
   return JSON.stringify([
-    { slug: "tam-diem-dang-live", title: "🔥 Tâm Điểm Đang Live", type: "Horizontal", path: "" },
-    { slug: "cola-tv", title: "🔴 Cola TV", type: "Horizontal", path: "" },
-    { slug: "chuoi-chien-tv", title: "🔴 Chuối Chiên TV", type: "Horizontal", path: "" },
-    { slug: "vua-san-co-tv", title: "🔴 Vua Sân Cỏ TV", type: "Horizontal", path: "" },
-    { slug: "xoi-lac-z-tv", title: "🔴 Xôi Lạc Z TV", type: "Horizontal", path: "" },
-    { slug: "bia-om-tv", title: "🔴 Bia Ôm TV", type: "Horizontal", path: "" },
-    { slug: "socolive-tv", title: "🔴 Socolive TV", type: "Horizontal", path: "" },
-    { slug: "gio-vang-tv", title: "🔴 Giờ Vàng TV", type: "Horizontal", path: "" },
-    { slug: "nau-xoi-tv", title: "🔴 Nấu Xôi TV", type: "Horizontal", path: "" },
-    { slug: "phao-hoa-tv", title: "🔴 Pháo Hoa TV", type: "Horizontal", path: "" },
-    { slug: "sp-tv-china", title: "🔴 SP TV (CHINA)", type: "Horizontal", path: "" },
+    { slug: "live", title: "🔴 LIVE", type: "Horizontal", path: "" },
+    { slug: "football", title: "Football ⚽", type: "Horizontal", path: "" },
+    { slug: "fight", title: "Fight 🥊", type: "Horizontal", path: "" },
+    { slug: "baseball", title: "Baseball ⚾", type: "Horizontal", path: "" },
+    {
+      slug: "basketball",
+      title: "Basketball 🏀",
+      type: "Horizontal",
+      path: ""
+    },
+    { slug: "motor", title: "Motor 🏎️", type: "Horizontal", path: "" },
+    { slug: "tennis", title: "Tennis 🎾", type: "Horizontal", path: "" },
+    {
+      slug: "american-football",
+      title: "American Football 🏈",
+      type: "Horizontal",
+      path: ""
+    },
+    {
+      slug: "australian-football",
+      title: "Australian Football 🏈",
+      type: "Horizontal",
+      path: ""
+    },
+    { slug: "hockey", title: "Hockey 🏒", type: "Horizontal", path: "" },
+    { slug: "other", title: "Other 🎯", type: "Grid", path: "" }
   ]);
 }
 
 function getPrimaryCategories() {
   return JSON.stringify([
-    { name: "🔥 Tâm Điểm Đang Live", slug: "tam-diem-dang-live" },
-    { name: "Cola TV", slug: "cola-tv" },
-    { name: "Chuối Chiên TV", slug: "chuoi-chien-tv" },
-    { name: "Vua Sân Cỏ TV", slug: "vua-san-co-tv" },
-    { name: "Xôi Lạc Z TV", slug: "xoi-lac-z-tv" },
-    { name: "Bia Ôm TV", slug: "bia-om-tv" },
-    { name: "Socolive TV", slug: "socolive-tv" },
-    { name: "Giờ Vàng TV", slug: "gio-vang-tv" },
-    { name: "Nấu Xôi TV", slug: "nau-xoi-tv" },
-    { name: "Pháo Hoa TV", slug: "phao-hoa-tv" },
-    { name: "SP TV (CHINA)", slug: "sp-tv-china" },
+    { name: "Football", slug: "football" },
+    { name: "Fight", slug: "fight" },
+    { name: "Baseball", slug: "baseball" },
+    { name: "Basketball", slug: "basketball" },
+    { name: "Motor", slug: "motor" },
+    { name: "Tennis", slug: "tennis" },
+    { name: "American Football", slug: "american-football" },
+    { name: "Australian Football", slug: "australian-football" },
+    { name: "Hockey", slug: "hockey" },
+    { name: "Other", slug: "other" }
   ]);
 }
 
@@ -59,17 +73,18 @@ function getFilterConfig() {
 // =============================================================================
 
 function getUrlList(slug, filtersJson) {
-  return `${BASE_URL}?category=${slug}`;
+  return `${BASE_API_URL}?category=${encodeURIComponent(slug)}`;
 }
 
 function getUrlSearch(keyword = "", filtersJson) {
-  return `${BASE_URL}?search=${encodeURIComponent(keyword?.trim())}`;
+  keyword = keyword?.trim() || "";
+  return `${BASE_API_URL}?search=${encodeURIComponent(keyword.trim())}`;
 }
 
 function getUrlDetail(path) {
   if (!path) return "";
   if (path.indexOf("http") === 0) return path;
-  return `${BASE_URL}${path}`;
+  return `${BASE_API_URL}${path}`;
 }
 
 function getUrlCategories() {
@@ -88,28 +103,29 @@ function getUrlYears() {
 
 function parseListResponse(html, apiUrl) {
   try {
+    const data = JSON.parse(html);
+    let streams = data?.matches || [];
+    console.log("1: ", streams);
     const items = [];
-    let channels = [];
-
-    if (channelList.length === 0) channelList = parseM3U(html);
     const category = extractParamFromUrl(apiUrl, "category");
     const keyword = extractParamFromUrl(apiUrl, "search");
 
-    if (category)
-      channels = filterChannels(channelList, ["category", category]);
-    else if (keyword)
-      channels = filterChannels(channelList, ["search", keyword]);
+    if (category) streams = filterStreams(streams, ["category", category]);
+    if (keyword) streams = filterStreams(streams, ["search", keyword]);
+    console.log("2: ", streams);
 
-    channels.forEach((channel) => {
-      const matchInfo = parseChannelName(channel.name);
+    streams.forEach((stream) => {
       items.push({
-        id: "?channelId=" + channel.channelId,
-        title: matchInfo.title ? matchInfo.title : channel.name,
-        description: `Channel "${channel.name}" is hosted on server TinhLaGiSports.`,
-        posterUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
-        backdropUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
-        quality: isLive(matchInfo.dateTime) ? "LIVE" : matchInfo.dateTime,
-        episode_current: channel.url.includes(".m3u8") ? "HLS" : "OTHER"
+        id: "?id=" + encodeURIComponent(stream.id),
+        quality:
+          Number(stream.ts_et) <= Math.floor(Date.now() / 1000)
+            ? "LIVE"
+            : formatDateTime(stream.ts_et),
+        title: stream.title,
+        posterUrl: FALLBACK_POSTER_URL,
+        backdropUrl: FALLBACK_POSTER_URL,
+        episode_current: capitalize(stream.league),
+        lang: `${stream.category.toUpperCase()}`
       });
     });
 
@@ -118,10 +134,7 @@ function parseListResponse(html, apiUrl) {
       pagination: { currentPage: 1, totalPages: 1 }
     });
   } catch (error) {
-    console.error(
-      "⛔ [parseDetailResponse in tinhlagisports_plugin.js] ERROR MESSAGE: ",
-      error
-    );
+    console.error("⛔ [parseListResponse in rockystream_plugin.js] ERROR MESSAGE: ", error);
     return JSON.stringify({
       items: [],
       pagination: { currentPage: 1, totalPages: 1 }
@@ -133,56 +146,66 @@ function parseSearchResponse(html, apiUrl) {
   return parseListResponse(html, apiUrl);
 }
 
-function parseDetailResponse(html, apiUrl) {
+function parseMovieDetail(html, apiUrl) {
   try {
-    if (apiUrl.indexOf("|") > 0) apiUrl = apiUrl.split("|")[0];
-    const channelId = extractParamFromUrl(apiUrl, "channelId");
-    const {
-      url,
-      name,
-      props: {
-        "http-user-agent": userAgent,
-        "http-referrer": referrer,
-        "http-origin": origin
-      }
-    } = getChannel(channelList, channelId);
+    const data = JSON.parse(html);
+    let streams = data?.matches || [];
+    // filter streams by category
+    const episodes = [];
+    // get stream by param id
+    const streamId = extractParamFromUrl(apiUrl, "id");
+    const stream = getStream(streams, streamId);
 
-    console.log("ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] Name: ", name);
-    
-    // Mặc dù đã ẩn FLV ở ngoài list, vẫn giữ logic parse này đề phòng cache hoặc search
-    if (url.includes(".flv")) {
-      console.log(`ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] Manifest type FLV`);
-      console.log("ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] URL:", url);
-      return JSON.stringify({
-       isEmbed: false,
-        url: url,
-        mimeType: "video/x-flv",
-        headers: {
-          "User-Agent": userAgent || "Dalvik/2.1.0",
-          Referer: referrer || url,
-          Origin: origin || url
-        }
+    if (stream?.streams?.length === 0) return EMPTY_MOVIE_DETAIL;
+    stream.streams.forEach((item) => {
+      episodes.push({
+        id: item.link,
+        name: `Channel HD-${item.hd}`,
+        slug: item.link
       });
-    } else {
-      // HLS (m3u8)
-      console.log(`ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] Manifest type HLS (M3U8)`);
-      console.log("ℹ️ [parseDetailResponse in tinhlagisports_plugin.js] URL:", url);
-      return JSON.stringify({
-        isEmbed: false,
-        url: url,
-        mimeType: "application/x-mpegURL",
-        headers: {
-          "User-Agent": userAgent || "Dalvik/2.1.0",
-          Referer: referrer || url,
-          Origin: origin || url
-        }
-      });
-    }
+    });
+
+    return JSON.stringify({
+      id: getQueryString(apiUrl, `?id=`),
+      title: stream.title,
+      posterUrl: FALLBACK_POSTER_URL,
+      backdropUrl: FALLBACK_POSTER_URL,
+      episode_current: capitalize(stream.league),
+      description: `Event "${stream.title}" is hosted on server RockyStream`,
+      lang: stream.category,
+      servers: [{ name: "ADMIN", episodes: episodes }],
+      quality:
+        Number(stream.ts_et) <= Math.floor(Date.now() / 1000)
+          ? "LIVE"
+          : formatDateTime(stream.ts_et)
+    });
   } catch (error) {
-    console.error(
-      "⛔ [parseDetailResponse in tinhlagisports_plugin.js] ERROR MESSAGE: ",
-      error
-    );
+    console.error("⛔ [parseMovieDetail in rockystream_plugin.js] ERROR MESSAGE: ", error);
+    return EMPTY_MOVIE_DETAIL;
+  }
+}
+
+function parseDetailResponse(html, embedUrl) {
+  try {
+    return JSON.stringify({
+      url: embedUrl,
+      headers: {
+        Referer: embedUrl,
+        Origin: embedUrl,
+        "User-Agent":
+          "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+        "Sec-Ch-Ua":
+          '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        "Sec-Ch-Ua-Mobile": "?1",
+        "Sec-Ch-Ua-Platform": '"Android"',
+        Accept: "*/*",
+        "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+        "X-Requested-With": "com.android.chrome"
+      },
+      isEmbed: true
+    });
+  } catch (error) {
+    console.error("⛔ [parseDetailResponse in rockystream_plugin.js] ERROR MESSAGE: ", error);
     return "{}";
   }
 }
@@ -205,38 +228,29 @@ function parseYearsResponse(html) {
 // VARIABLES
 // ======================================
 
-const BASE_URL = "https://tinhlagi.pro/s.m3u";
+const BASE_DOMAIN = "https://rockystream.st";
+const BASE_API_URL = "https://rockystream.st/api-event.php";
 const FALLBACK_POSTER_URL = "https://i.ibb.co/rKHf363x/fallback-thumbnail.webp";
-let channelList = [];
-const GROUP_MAP = {
-  "🔴 cola tv": "🔴 Cola TV",
-  "🔴 chuối chiên tv": "🔴 Chuối Chiên TV",
-  "🔴 vua sân cỏ tv": "🔴 Vua Sân Cỏ TV",
-  "🔴 xôi lạc z tv": "🔴 Xôi Lạc Z TV",
-  "🔴 bia ôm tv": "🔴 Bia Ôm TV",
-  "🔴 socolive tv": "🔴 Socolive TV",
-  "🔴 giờ vàng tv": "🔴 Giờ Vàng TV",
-  "🔴 nấu xôi tv": "🔴 Nấu Xôi TV",
-  "🔴 pháo hoa tv": "🔴 Pháo Hoa TV",
-  "🔴 sp tv (china)": "🔴 SP TV (CHINA)",
-};
-
-const CATEGORY_MAP = {
-  "cola-tv": "🔴 Cola TV",
-  "chuoi-chien-tv": "🔴 Chuối Chiên TV",
-  "vua-san-co-tv": "🔴 Vua Sân Cỏ TV",
-  "xoi-lac-z-tv": "🔴 Xôi Lạc Z TV",
-  "bia-om-tv": "🔴 Bia Ôm TV",
-  "socolive-tv": "🔴 Socolive TV",
-  "gio-vang-tv": "🔴 Giờ Vàng TV",
-  "nau-xoi-tv": "🔴 Nấu Xôi TV",
-  "phao-hoa-tv": "🔴 Pháo Hoa TV",
-  "sp-tv-china": "🔴 SP TV (CHINA)",
-};
+const EMPTY_MOVIE_DETAIL = JSON.stringify({
+  id: "",
+  title: "⚠️ Stream Link Not Found!",
+  posterUrl: FALLBACK_POSTER_URL,
+  backdropUrl: FALLBACK_POSTER_URL,
+  servers: []
+});
 
 // ======================================
 // FUNCTIONS
 // ======================================
+
+function capitalize(str) {
+  // Handle if the string is empty or undefined
+  if (!str) return "";
+  return str
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
 
 function extractParamFromUrl(url, param) {
   if (!url) return "";
@@ -244,233 +258,63 @@ function extractParamFromUrl(url, param) {
   return match ? decodeURIComponent(match[1]) : "";
 }
 
-function filterChannels(channels, [filterKey, filterValue]) {
-  // LỌC 1: BỎ TOÀN BỘ KÊNH CÓ LINK .flv
-  let validChannels = channels.filter(channel => {
-    return channel.url && !channel.url.toLowerCase().includes('.flv');
-  });
-
-  // LỌC 2: THEO THỂ LOẠI / TÌM KIẾM
-  if (filterValue && filterKey === "category") {
-    
-    // Nếu là mục Tâm Điểm Đang Live, lọc các trận đang diễn ra
-    if (filterValue === "tam-diem-dang-live") {
-      return validChannels.filter(channel => {
-        const matchInfo = parseChannelName(channel.name);
-        return isLive(matchInfo.dateTime);
-      });
-    }
-
-    // Các category bình thường
-    return validChannels.filter(
-      (channel) => CATEGORY_MAP[filterValue] === channel.tvgGroup
-    );
+function formatDateTime(timestamp) {
+  if (timestamp == null) return "";
+  if (timestamp < 1e12) {
+    timestamp *= 1000;
   }
 
-  if (filterValue && filterKey === "search") {
-    return validChannels.filter((channel) => {
-      const name = channel.name.toLowerCase();
-      filterValue = filterValue.toLowerCase();
-      return name.indexOf(filterValue) >= 0;
+  const date = new Date(timestamp);
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const MM = String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${hh}:${mm}-${dd}/${MM}`;
+}
+
+function getStream(streams, id) {
+  if (id)
+    return streams?.find((item) => {
+      return "" + item.id === id;
     });
-  }
-
-  return validChannels;
+  return {};
 }
 
-function getChannel(channels, channelId) {
-  if (channelId === undefined || channelId === null || channelId === "")
-    return {};
-  const numId = parseInt(channelId, 10);
-  return (
-    channels.find(
-      (channel) => String(channel.channelId) === String(channelId)
-    ) || {}
-  );
-}
+function filterStreams(streams, [filterKey, filterValue]) {
+  const result = [];
 
-function parseM3U(text) {
-  const lines = text.split("\n");
-  const channels = [];
-  let currentChannel = null;
-  let count = 0;
+  // filter streams by category
+  if (filterValue && filterKey === "category") {
+    if (filterValue === "live") {
+      // live
+      streams.forEach((item) => {
+        const isLive = Number(item.ts_et) <= Math.floor(Date.now() / 1000);
+        if (isLive) result.push(item);
+      });
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (line.toUpperCase().includes("EXTINF:")) {
-      currentChannel = {
-        name: "No Name",
-        tvgLogo: "",
-        tvgGroup: "No Group",
-        url: "",
-        tvgId: "",
-        channelId: count++,
-        props: {}
-      };
-
-      const commaIndex = line.lastIndexOf(`",`);
-      if (commaIndex !== -1)
-        currentChannel.name =
-          line.substring(commaIndex + 2).trim() || "No Name";
-
-      const logoMatch = line.match(/tvg-logo="([^"]+)"/i);
-      if (logoMatch && logoMatch[1]) currentChannel.tvgLogo = logoMatch[1];
-
-      const groupMatch = line.match(/group-title="([^"]+)"/i);
-      if (groupMatch && groupMatch[1])
-        currentChannel.tvgGroup = GROUP_MAP[groupMatch[1].toLowerCase()]
-          ? GROUP_MAP[groupMatch[1].toLowerCase()]
-          : groupMatch[1];
-
-      const idMatch = line.match(/tvg-id="([^"]+)"/i);
-      if (idMatch && idMatch[1]) currentChannel.tvgId = idMatch[1];
-
-      const catchupMatch = line.match(/catchup="([^"]+)"/i);
-      if (catchupMatch) currentChannel.props.catchup = catchupMatch[1];
-
-      const catchupDaysMatch = line.match(/catchup-days="([^"]+)"/i);
-      if (catchupDaysMatch)
-        currentChannel.props.catchupDays = catchupDaysMatch[1];
-
-      const catchupSourceMatch = line.match(/catchup-source="([^"]+)"/i);
-      if (catchupSourceMatch)
-        currentChannel.props.catchupSource = catchupSourceMatch[1];
-    } else if (line.toUpperCase().startsWith("#KODIPROP:")) {
-      if (currentChannel) {
-        const propLine = line.substring(10).trim();
-        const equalIdx = propLine.indexOf("=");
-        if (equalIdx !== -1) {
-          const key = propLine.substring(0, equalIdx).trim();
-          const val = propLine.substring(equalIdx + 1).trim();
-          currentChannel.props[key] = val;
-        }
-      }
-    } else if (line.toUpperCase().startsWith("#EXTVLCOPT:")) {
-      if (currentChannel) {
-        const optLine = line.substring(11).trim();
-        const equalIdx = optLine.indexOf("=");
-        if (equalIdx !== -1) {
-          const key = optLine.substring(0, equalIdx).trim();
-          const val = optLine.substring(equalIdx + 1).trim();
-          currentChannel.props[key] = val;
-        }
-      }
-    } else if (line !== "" && !line.startsWith("#")) {
-      if (currentChannel) {
-        currentChannel.url = line;
-        channels.push(currentChannel);
-        currentChannel = null;
-      } else {
-        channels.push({
-          name: line.split("/").pop().toUpperCase() || "No Name",
-          tvgLogo: "",
-          tvgGroup: "No Group",
-          url: line,
-          channelId: count++,
-          props: {}
-        });
-      }
-    }
-  }
-  return channels;
-}
-
-function base64ToHex(base64) {
-  if (!base64) return "";
-  let b64 = base64.replace(/-/g, "+").replace(/_/g, "/");
-  while (b64.length % 4 !== 0) b64 += "=";
-  try {
-    const raw = atob(b64);
-    let result = "";
-    for (let i = 0; i < raw.length; i++) {
-      const hex = raw.charCodeAt(i).toString(16);
-      result += hex.length === 2 ? hex : "0" + hex;
-    }
-    return result.toLowerCase();
-  } catch (e) {
-    console.error("Lỗi giải mã Base64:", e);
-    return "";
-  }
-}
-
-function atob(input) {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-  let str = String(input).replace(/[\t\n\f\r ]/g, "");
-
-  let output = "";
-  let buffer = 0;
-  let bits = 0;
-
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === "=") break;
-
-    const index = chars.indexOf(str[i]);
-    if (index === -1) {
-      throw new Error("Invalid base64 character");
+      return result;
     }
 
-    buffer = (buffer << 6) | index;
-    bits += 6;
-
-    if (bits >= 8) {
-      bits -= 8;
-      output += String.fromCharCode((buffer >> bits) & 0xff);
-    }
+    // normal
+    return streams.filter((item) => item.category === filterValue) || [];
   }
+  // filter streams by search
+  if (filterValue && filterKey === "search") {
+    streams.forEach((item) => {
+      filterValue = filterValue.toLowerCase();
+      const streamName = item.title.toLowerCase();
+      const isTrue = streamName.indexOf(filterValue) >= 0;
+      if (isTrue) result.push(item);
+    });
 
-  return output;
+    return result;
+  }
+  return streams;
 }
 
-function parseChannelName(channelName) {
-  const match = channelName.trim().match(
-    /^(?:🟢\s*)?(\d{1,2}:\d{2})\s+(\d{2}\/\d{2})\s+(.+)$/
-  );
-  if (!match) {
-    return {
-      dateTime: null,
-      title: channelName.trim(),
-    };
-  }
-  return {
-    dateTime: `${match[1]}-${match[2]}`,
-    title: match[3].trim(),
-  };
-}
-
-function isLive(dateTime) {
-  // dateTime format: "22:30-05/08" hoặc "3:30-05/08"
-  // Mặc định GMT+7
-  if (!dateTime) return false;
-  var match = /^(\d{1,2}):(\d{2})-(\d{2})\/(\d{2})$/.exec(dateTime);
-
-  if (!match) {
-    return false;
-  }
-  var hour = Number(match[1]);
-  var minute = Number(match[2]);
-  var day = Number(match[3]);
-  var month = Number(match[4]);
-
-  // Validate
-  if (
-    hour < 0 ||
-    hour > 23 ||
-    minute < 0 ||
-    minute > 59 ||
-    month < 1 ||
-    month > 12 ||
-    day < 1 ||
-    day > 31
-  ) {
-    return false;
-  }
-  // Lấy năm hiện tại theo UTC
-  var now = new Date();
-  var year = now.getUTCFullYear();
-  // GMT+7 -> UTC
-  var eventTimestamp = Date.UTC(year, month - 1, day, hour - 7, minute, 0, 0);
-
-  // So sánh timestamp hiện tại (UTC)
-  return eventTimestamp <= Date.now();
+function getQueryString(apiUrl, keyword) {
+  const index = apiUrl.indexOf(keyword);
+  if (!keyword || index === -1) return "";
+  return apiUrl.substring(index);
 }
