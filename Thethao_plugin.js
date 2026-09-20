@@ -1,22 +1,21 @@
 // =============================================================================
-// VAAPP Plugin: Xoilac TV (Bản sửa dứt điểm lỗi ngắt 10-15s)
+// VAAPP Plugin: Xoilac TV (Cập nhật giao diện Đa thể thao)
 // =============================================================================
 
 var BASEURL = "https://xoilaczzb.cc";
-var MOBILE_UA = "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.230 Mobile Safari/537.36";
 
 function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV-Xoilac",
         "name": "ThethaoTV-Xoilac",
-        "version": "1.0.6",
+        "version": "1.0.5",
         "baseUrl": BASEURL,
         "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
         "isEnabled": true,
         "isAdult": false,
         "type": "MOVIE",
         "layoutType": "HORIZONTAL",
-        "playerType": "embed"
+        "playerType": "embed" // Giữ nguyên embed để xử lý luồng FLV/WebRTC qua WebView
     });
 }
 
@@ -139,12 +138,12 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
             backdropUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-            description: "Đang phát trực tiếp trên Xôi Lạc TV.",
+            description: "Đang phát trực tiếp trên Xôi Lạc TV. (Đã ép luồng WebView chống ngắt kết nối)",
             servers: [
                 {
-                    name: "Phòng Live Chính",
+                    name: "Phòng Live",
                     episodes: [
-                        { id: url, name: "Xem Trực Tiếp (Full HD)", slug: "live-1" }
+                        { id: url, name: "Xem Trực Tiếp", slug: "live-1" }
                     ]
                 }
             ],
@@ -158,10 +157,9 @@ function parseMovieDetail(html, url) {
 }
 
 // =============================================================================
-// BẮT LINK VÀ ÉP TOÀN BỘ VÀO CHẾ ĐỘ NGUYÊN BẢN (KHÔNG CHẶN TOKEN)
+// BẮT LINK VÀ ÉP PHÁT BẰNG WEBVIEW (EMBED) - FIX LỖI 10-15s
 // =============================================================================
 function parseDetailResponse(html, url) {
-    // 1. Tìm iframe embed nếu có
     var iframeMatch = html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
     var playUrl = url;
     var isIframe = false;
@@ -171,36 +169,25 @@ function parseDetailResponse(html, url) {
         isIframe = true;
     }
 
-    // 2. CSS tối ưu: CHỈ ẩn khung thừa, TUYỆT ĐỐI KHÔNG display:none lên container của video
-    // (Vì nếu ẩn trúng container hoặc wrapper cha, WebView sẽ tự động suspend/ngắt luồng sau 15s)
-    var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .footer-menu { display: none !important; }";
-
-    // 3. Script giữ phiên (Keep-Alive): Tự động click play & bypass các popup tạm dừng
-    var jsKeepAlive = "setInterval(function(){ var v = document.querySelector('video'); if(v && v.paused) { v.play(); } }, 3000);";
-
+    var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .ads, iframe[src*='ads'], .matches-section, .footer-menu { display: none !important; }";
+    
     return JSON.stringify({
         url: playUrl,
-        // ÉP CHẠY THẲNG TRONG WEBVIEW (isEmbed = false để app không chạy tiếp vào parseEmbedResponse)
-        isEmbed: false,
+        // CHÚ Ý SỬA TẠI ĐÂY: Đổi isEmbed thành true để ép toàn bộ link vào WebView
+        isEmbed: true, 
         headers: {
             "Referer": BASEURL + "/",
-            "Origin": BASEURL,
-            "User-Agent": MOBILE_UA,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Block-Ads": "true",
-            "Block-Redirects": "false", // BẮT BUỘC ĐỂ FALSE: Nhiều link live cần redirect để cấp token
-            "Block-Css": isIframe ? "" : cssHide,
-            "Inject-Js": jsKeepAlive
+            "Block-Redirects": "true",
+            "Block-Css": isIframe ? "" : cssHide
         },
         subtitles: []
     });
 }
 
-// =============================================================================
-// PARSE EMBED: NẾU BỊ GỌI, LUÔN TRẢ VỀ RỖNG ĐỂ CHẶN APP KHÔNG GỌI LẶP LÀM SẬP PLAYER
-// =============================================================================
 function parseEmbedResponse(html, url) {
-    return JSON.stringify({ 
-        url: "", 
-        isEmbed: false 
-    });
+    // CHÚ Ý SỬA TẠI ĐÂY: Trả về chính url và tiếp tục khẳng định đây là Embed
+    // để trình phát không cố gắng bóc link mp4/m3u8 gây mất kết nối sau 10s.
+    return JSON.stringify({ url: url, isEmbed: true });
 }
