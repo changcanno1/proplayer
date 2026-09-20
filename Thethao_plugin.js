@@ -8,7 +8,7 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV-Xoilac",
         "name": "ThethaoTV-Xoilac",
-        "version": "1.0.4",
+        "version": "1.0.5",
         "baseUrl": BASEURL,
         "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
         "isEnabled": true,
@@ -23,7 +23,6 @@ function getManifest() {
 // MENU & GIAO DIỆN CHÍNH
 // =============================================================================
 function getHomeSections() {
-    // Đã sửa tên "Trực Tiếp Bóng Đá" thành "Trận Đấu Đang Live" và bổ sung các môn khác
     return JSON.stringify([
         { slug: 'football', title: 'Trận Đấu Đang Live', type: 'Grid', path: '' },
         { slug: 'basketball', title: 'Bóng Rổ', type: 'Horizontal', path: '' },
@@ -50,15 +49,12 @@ function getFilterConfig() {
 }
 
 // =============================================================================
-// URL GENERATION (BẢO TOÀN QUY TẮC DẤU |data:)
+// URL GENERATION
 // =============================================================================
 
 function getUrlList(slug, filtersJson) {
     if (slug && slug.indexOf('http') === 0) return slug;
     var targetSlug = (slug === '/' || !slug) ? 'football' : slug;
-    
-    // Luôn tuân thủ quy tắc truyền qua |data:
-    // Vì tất cả trận đấu nằm chung trang chủ nên ta fetch BASEURL và truyền slug để Parse
     return BASEURL + "/|data:" + targetSlug;
 }
 
@@ -75,7 +71,6 @@ function getUrlCategories() { return ""; }
 function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; }
 
-// Helper đọc dữ liệu nội bộ sau dấu |
 function getPipeData(apiUrl) {
     if (!apiUrl) return "";
     var i = apiUrl.indexOf("|");
@@ -86,7 +81,7 @@ function getPipeData(apiUrl) {
 }
 
 // =============================================================================
-// BÓC TÁCH DANH SÁCH THEO MÔN THỂ THAO
+// BÓC TÁCH DANH SÁCH
 // =============================================================================
 function parseListResponse(html, apiUrl) {
     try {
@@ -94,7 +89,6 @@ function parseListResponse(html, apiUrl) {
         var $doc = _$(html);
         var items = [];
         
-        // Target trực tiếp vào id của tab môn thể thao tương ứng (#football, #basketball,...)
         var tabSelector = "#" + sportSlug;
 
         $doc.find(tabSelector).find(".grid-matches__item").each(function() {
@@ -128,7 +122,7 @@ function parseListResponse(html, apiUrl) {
 }
 
 function parseSearchResponse(html, url) {
-    return parseListResponse(html, url); // Tái sử dụng logic trên
+    return parseListResponse(html, url);
 }
 
 // =============================================================================
@@ -144,7 +138,7 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
             backdropUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-            description: "Đang phát trực tiếp trên Xôi Lạc TV. (Phát bằng WebView chuyên dụng)",
+            description: "Đang phát trực tiếp trên Xôi Lạc TV. (Đã ép luồng WebView chống ngắt kết nối)",
             servers: [
                 {
                     name: "Phòng Live",
@@ -163,25 +157,24 @@ function parseMovieDetail(html, url) {
 }
 
 // =============================================================================
-// BẮT LINK VÀ PHÁT BẰNG WEBVIEW (EMBED)
+// BẮT LINK VÀ ÉP PHÁT BẰNG WEBVIEW (EMBED) - FIX LỖI 10-15s
 // =============================================================================
 function parseDetailResponse(html, url) {
     var iframeMatch = html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
     var playUrl = url;
     var isIframe = false;
 
-    // Ưu tiên ném thẳng iframe đích vào webview để sạch sẽ hơn
     if (iframeMatch && iframeMatch[1] && iframeMatch[1].indexOf('http') === 0) {
         playUrl = iframeMatch[1];
         isIframe = true;
     }
 
-    // Nếu không lấy được iframe, ta dùng css để ẩn gọn UI của web Xoilac
     var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .ads, iframe[src*='ads'], .matches-section, .footer-menu { display: none !important; }";
     
     return JSON.stringify({
         url: playUrl,
-        isEmbed: false, // Player mode WebView sẽ lo phần hiển thị thẳng
+        // CHÚ Ý SỬA TẠI ĐÂY: Đổi isEmbed thành true để ép toàn bộ link vào WebView
+        isEmbed: true, 
         headers: {
             "Referer": BASEURL + "/",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -194,5 +187,7 @@ function parseDetailResponse(html, url) {
 }
 
 function parseEmbedResponse(html, url) {
-    return JSON.stringify({ url: "", isEmbed: false });
+    // CHÚ Ý SỬA TẠI ĐÂY: Trả về chính url và tiếp tục khẳng định đây là Embed
+    // để trình phát không cố gắng bóc link mp4/m3u8 gây mất kết nối sau 10s.
+    return JSON.stringify({ url: url, isEmbed: true });
 }
