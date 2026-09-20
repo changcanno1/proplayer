@@ -192,6 +192,13 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/TruyenQQ_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/truyenqq.png"
     },
+      {
+      "id": "ThethaoTV",
+      "name": "[Sport] ThethaoTV",
+      "version": "1.0.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Thethao_plugin.js",
+      "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png"
+   },
      {
       "id": "SportEng",
       "name": "[SPORT] SportEng",
@@ -205,14 +212,6 @@
       "version": "1.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/rockystream_plugin.js",
       "iconUrl": "https://i.ibb.co/PZFwWKKg/rockystream-logo.jpg"
-    },
-    {
-      "id": "ThethaoTV-Xoilac",
-      "name": "ThethaoTV-Xoilac",
-      "version": "1.0.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Thethao_plugin.js",
-      "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png"
-   }
-   
+    } 
 ]
 }
