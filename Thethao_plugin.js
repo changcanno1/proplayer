@@ -1,198 +1,459 @@
 // =============================================================================
-// VAAPP Plugin: Xoilac TV (Cập nhật giao diện Đa thể thao)
+// NHÓM 1: CẤU HÌNH (Config & Metadata)
 // =============================================================================
-
-var BASEURL = "https://xoilaczzg.cc";
 
 function getManifest() {
-    return JSON.stringify({
-        "id": "ThethaoTV-Xoilac",
-        "name": "ThethaoTV-Xoilac",
-        "version": "1.0.4",
-        "baseUrl": BASEURL,
-        "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-        "isEnabled": true,
-        "isAdult": false,
-        "type": "MOVIE",
-        "layoutType": "HORIZONTAL",
-        "playerType": "embed" // Giữ nguyên embed để xử lý luồng FLV/WebRTC qua WebView
-    });
+  return JSON.stringify({
+    id: "ththethao",
+    name: "[SPORT] THTheThao",
+    version: "1.0.1",
+    baseUrl: BASE_URL,
+    iconUrl: "https://i.ibb.co/cSrQ5y7K/ththethao-logo.png",
+    isEnabled: true,
+    isAdult: false,
+    type: "IPTV",
+    layoutType: "HORIZONTAL",
+    playerType: "exoplayer",
+    debug: true
+  });
 }
 
-// =============================================================================
-// MENU & GIAO DIỆN CHÍNH
-// =============================================================================
 function getHomeSections() {
-    // Đã sửa tên "Trực Tiếp Bóng Đá" thành "Trận Đấu Đang Live" và bổ sung các môn khác
-    return JSON.stringify([
-        { slug: 'football', title: 'Trận Đấu Đang Live', type: 'Grid', path: '' },
-        { slug: 'basketball', title: 'Bóng Rổ', type: 'Horizontal', path: '' },
-        { slug: 'tennis', title: 'Tennis', type: 'Horizontal', path: '' },
-        { slug: 'badminton', title: 'Cầu Lông', type: 'Horizontal', path: '' },
-        { slug: 'volleyball', title: 'Bóng Chuyền', type: 'Horizontal', path: '' },
-        { slug: 'esports', title: 'Esports', type: 'Horizontal', path: '' }
-    ]);
+  return JSON.stringify([
+    { slug: "chuoi-chien-tv", title: "Chuối Chiên TV", type: "Horizontal", path: "" },
+    { slug: "gio-vang-tv", title: "Giờ Vàng TV", type: "Horizontal", path: "" },
+    { slug: "socolive-tv", title: "Socolive TV", type: "Horizontal", path: "" },
+    { slug: "khan-dai-tv", title: "Khán Đài TV", type: "Horizontal", path: "" },
+    { slug: "s8-tv", title: "S8 TV", type: "Horizontal", path: "" },
+    { slug: "sao-ke-tv", title: "Sao Kê TV", type: "Horizontal", path: "" },
+    { slug: "sut-bong-tv", title: "Sút Bóng TV", type: "Horizontal", path: "" },
+    { slug: "ga-vang-tv", title: "Gà Vàng TV", type: "Horizontal", path: "" },
+    { slug: "pha-lang-tv", title: "Phá Làng TV", type: "Horizontal", path: "" }
+  ]);
 }
 
 function getPrimaryCategories() {
-    return JSON.stringify([
-        { name: 'Trận Đấu Đang Live', slug: 'football' },
-        { name: 'Bóng Rổ', slug: 'basketball' },
-        { name: 'Tennis', slug: 'tennis' },
-        { name: 'Cầu Lông', slug: 'badminton' },
-        { name: 'Bóng Chuyền', slug: 'volleyball' },
-        { name: 'Esports', slug: 'esports' }
-    ]);
+  return JSON.stringify([
+    { name: "Chuối Chiên TV", slug: "chuoi-chien-tv" },
+    { name: "Giờ Vàng TV", slug: "gio-vang-tv" },
+    { name: "Socolive TV", slug: "socolive-tv" },
+    { name: "Khán Đài TV", slug: "khan-dai-tv" },
+    { name: "S8 TV", slug: "s8-tv" },
+    { name: "Sao Kê TV", slug: "sao-ke-tv" },
+    { name: "Sút Bóng TV", slug: "sut-bong-tv" },
+    { name: "Gà Vàng TV", slug: "ga-vang-tv" },
+    { name: "Phá Làng TV", slug: "pha-lang-tv" }
+  ]);
 }
 
 function getFilterConfig() {
-    return JSON.stringify({ sort: [], category: [] });
+  return JSON.stringify({ sort: [], category: [] });
 }
 
 // =============================================================================
-// URL GENERATION (BẢO TOÀN QUY TẮC DẤU |data:)
+// NHÓM 2: SINH URL (App gọi hàm → nhận URL → tự fetch HTTP)
 // =============================================================================
 
 function getUrlList(slug, filtersJson) {
-    if (slug && slug.indexOf('http') === 0) return slug;
-    var targetSlug = (slug === '/' || !slug) ? 'football' : slug;
-    
-    // Luôn tuân thủ quy tắc truyền qua |data:
-    // Vì tất cả trận đấu nằm chung trang chủ nên ta fetch BASEURL và truyền slug để Parse
-    return BASEURL + "/|data:" + targetSlug;
+  return `${BASE_URL}?category=${slug}`;
 }
 
-function getUrlSearch(keyword, filtersJson) {
-    return BASEURL + "/?s=" + encodeURIComponent(keyword);
+function getUrlSearch(keyword = "", filtersJson) {
+  return `${BASE_URL}?search=${encodeURIComponent(keyword?.trim())}`;
 }
 
-function getUrlDetail(slug) {
-    if (slug.indexOf('http') === 0) return slug;
-    return BASEURL + slug;
+function getUrlDetail(path) {
+  if (!path) return "";
+  if (path.indexOf("http") === 0) return path;
+  return `${BASE_URL}${path}`;
 }
 
-function getUrlCategories() { return ""; }
-function getUrlCountries() { return ""; }
-function getUrlYears() { return ""; }
-
-// Helper đọc dữ liệu nội bộ sau dấu |
-function getPipeData(apiUrl) {
-    if (!apiUrl) return "";
-    var i = apiUrl.indexOf("|");
-    if (i < 0) return "";
-    var s = apiUrl.substring(i + 1).replace(/^\s+/, "");
-    if (s.toLowerCase().indexOf("data:") === 0) s = s.substring(5);
-    return s;
+function getUrlCategories() {
+  return "";
+}
+function getUrlCountries() {
+  return "";
+}
+function getUrlYears() {
+  return "";
 }
 
 // =============================================================================
-// BÓC TÁCH DANH SÁCH THEO MÔN THỂ THAO
+// NHÓM 3: PARSER (App fetch URL xong → ném HTML/JSON thô vào đây → bạn parse)
 // =============================================================================
+
 function parseListResponse(html, apiUrl) {
-    try {
-        var sportSlug = getPipeData(apiUrl) || "football";
-        var $doc = _$(html);
-        var items = [];
-        
-        // Target trực tiếp vào id của tab môn thể thao tương ứng (#football, #basketball,...)
-        var tabSelector = "#" + sportSlug;
+  try {
+    const items = [];
+    let channels = [];
 
-        $doc.find(tabSelector).find(".grid-matches__item").each(function() {
-            var a = this.find("a.redirectPopup");
-            var href = a.attr("href");
-            var title = a.attr("title");
-            
-            var league = this.find(".gmd-match-league span.text-ellipsis").text();
-            var time = this.find(".time").attr("data-time") || "";
-            var homeLogo = this.find(".gmd-home_team img").attr("src");
-            
-            if (href && title) {
-                var fullHref = href.indexOf('http') === 0 ? href : BASEURL + href;
-                items.push({
-                    id: fullHref,
-                    title: title.trim(),
-                    posterUrl: homeLogo || "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-                    quality: time, 
-                    episode_current: league
-                });
-            }
-        });
-        
-        return JSON.stringify({
-            items: items,
-            pagination: { currentPage: 1, totalPages: 1 }
-        });
-    } catch (e) {
-        return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
-    }
-}
+    if (channelList.length === 0) channelList = parseM3U(html);
+    const category = extractParamFromUrl(apiUrl, "category");
+    const keyword = extractParamFromUrl(apiUrl, "search");
 
-function parseSearchResponse(html, url) {
-    return parseListResponse(html, url); // Tái sử dụng logic trên
-}
+    if (category)
+      channels = filterChannels(channelList, ["category", category]);
+    else if (keyword)
+      channels = filterChannels(channelList, ["search", keyword]);
 
-// =============================================================================
-// BÓC TÁCH TRANG CHI TIẾT
-// =============================================================================
-function parseMovieDetail(html, url) {
-    try {
-        var $doc = _$(html);
-        var title = $doc.find("title").text().split("-")[0].trim() || "Trực Tiếp Thể Thao";
-        
-        return JSON.stringify({
-            id: url,
-            title: title,
-            posterUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-            backdropUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-            description: "Đang phát trực tiếp trên Xôi Lạc TV. (Phát bằng WebView chuyên dụng)",
-            servers: [
-                {
-                    name: "Phòng Live",
-                    episodes: [
-                        { id: url, name: "Xem Trực Tiếp", slug: "live-1" }
-                    ]
-                }
-            ],
-            quality: "LIVE",
-            year: new Date().getFullYear(),
-            status: "Đang diễn ra"
-        });
-    } catch(e) {
-        return JSON.stringify({ id: url, title: "Lỗi", servers: [] });
-    }
-}
-
-// =============================================================================
-// BẮT LINK VÀ PHÁT BẰNG WEBVIEW (EMBED)
-// =============================================================================
-function parseDetailResponse(html, url) {
-    var iframeMatch = html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
-    var playUrl = url;
-    var isIframe = false;
-
-    // Ưu tiên ném thẳng iframe đích vào webview để sạch sẽ hơn
-    if (iframeMatch && iframeMatch[1] && iframeMatch[1].indexOf('http') === 0) {
-        playUrl = iframeMatch[1];
-        isIframe = true;
-    }
-
-    // Nếu không lấy được iframe, ta dùng css để ẩn gọn UI của web Xoilac
-    var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .ads, iframe[src*='ads'], .matches-section, .footer-menu { display: none !important; }";
-    
-    return JSON.stringify({
-        url: playUrl,
-        isEmbed: false, // Player mode WebView sẽ lo phần hiển thị thẳng
-        headers: {
-            "Referer": BASEURL + "/",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Block-Ads": "true",
-            "Block-Redirects": "true",
-            "Block-Css": isIframe ? "" : cssHide
-        },
-        subtitles: []
+    channels.forEach((channel) => {
+      const matchInfo = parseChannelName(channel.name);
+      items.push({
+        id: "?channelId=" + channel.channelId,
+        title: matchInfo.title ? matchInfo.title : channel.name,
+        description: `Channel "${channel.name}" is hosted on server THTheThao.`,
+        posterUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
+        backdropUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
+        quality: isLive(matchInfo.dateTime) ? "LIVE" : matchInfo.dateTime,
+        episode_current: channel.url.includes(".m3u8") ? "HSL" : "FLV"
+      });
     });
+
+    return JSON.stringify({
+      items: items,
+      pagination: { currentPage: 1, totalPages: 1 }
+    });
+  } catch (error) {
+    console.error(
+      "⛔ [parseDetailResponse in ththethao_plugin.js] ERROR MESSAGE: ",
+      error
+    );
+    return JSON.stringify({
+      items: [],
+      pagination: { currentPage: 1, totalPages: 1 }
+    });
+  }
 }
 
-function parseEmbedResponse(html, url) {
-    return JSON.stringify({ url: "", isEmbed: false });
+function parseSearchResponse(html, apiUrl) {
+  return parseListResponse(html, apiUrl);
+}
+
+function parseDetailResponse(html, apiUrl) {
+  try {
+    if (apiUrl.indexOf("|") > 0) apiUrl = apiUrl.split("|")[0];
+    const channelId = extractParamFromUrl(apiUrl, "channelId");
+    const {
+      url,
+      name,
+      props: {
+        "http-user-agent": userAgent,
+        "http-referrer": referrer,
+        "http-origin": origin
+      }
+    } = getChannel(channelList, channelId);
+
+    console.log("ℹ️ [parseDetailResponse in ththethao_plugin.js] Name: ", name);
+      if (url.includes(".flv")) {
+      // FLV (flv)
+      console.log(
+        `ℹ️ [parseDetailResponse in ththethao_plugin.js] Manifest type FLV`
+      );
+      console.log("ℹ️ [parseDetailResponse in ththethao_plugin.js] URL:", url);
+      return JSON.stringify({
+       isEmbed: false,
+        url: url,
+        mimeType: "video/x-flv",
+        headers: {
+          "User-Agent": userAgent || "Dalvik/2.1.0",
+          Referer: referrer || url,
+          Origin: origin || url
+        }
+      });
+    } else {
+      // HLS (m3u8)
+      console.log(
+        `ℹ️ [parseDetailResponse in ththethao_plugin.js] Manifest type HLS (M3U8)`
+      );
+      console.log("ℹ️ [parseDetailResponse in ththethao_plugin.js] URL:", url);
+      return JSON.stringify({
+        isEmbed: false,
+        url: url,
+        mimeType: "application/x-mpegURL",
+        headers: {
+          "User-Agent": userAgent || "Dalvik/2.1.0",
+          Referer: referrer || url,
+          Origin: origin || url
+        }
+      });
+    }
+  } catch (error) {
+    console.error(
+      "⛔ [parseDetailResponse in ththethao_plugin.js] ERROR MESSAGE: ",
+      error
+    );
+    return "{}";
+  }
+}
+
+function parseCategoriesResponse(html) {
+  return "[]";
+}
+function parseCountriesResponse(html) {
+  return "[]";
+}
+function parseYearsResponse(html) {
+  return "[]";
+}
+
+// =============================================================================
+// NHÓM 4: HELPERS
+// =============================================================================
+
+// ======================================
+// VARIABLES
+// ======================================
+
+const BASE_URL = "https://thcoban.github.io/thtt/tttt.m3u";
+const FALLBACK_POSTER_URL = "https://i.ibb.co/rKHf363x/fallback-thumbnail.webp";
+let channelList = [];
+// Use GROUP_MAP to rename and merge the channel into tvg-group.
+const GROUP_MAP = {
+  "chuối chiên tv": "Chuối Chiên TV",
+  "giờ vàng tv": "Giờ Vàng TV",
+  "socolive tv": "Socolive TV",
+  "khán đài tv": "Khán Đài TV",
+  "s8 tv": "S8 TV",
+  "sao kê tv": "Sao Kê TV",
+  "sút bóng tv": "Sút Bóng TV",
+  "gà vàng tv": "Gà Vàng TV",
+  "phá làng tv": "Phá Làng TV"
+};
+
+// Use CATEGORY_MAP to convert the slug to tvg-group.
+const CATEGORY_MAP = {
+  "chuoi-chien-tv": "Chuối Chiên TV",
+  "gio-vang-tv": "Giờ Vàng TV",
+  "socolive-tv": "Socolive TV",
+  "khan-dai-tv": "Khán Đài TV",
+  "s8-tv": "S8 TV",
+  "sao-ke-tv": "Sao Kê TV",
+  "sut-bong-tv": "Sút Bóng TV",
+  "ga-vang-tv": "Gà Vàng TV",
+  "pha-lang-tv": "Phá Làng TV"
+};
+
+// ======================================
+// FUNCTIONS
+// ======================================
+
+function extractParamFromUrl(url, param) {
+  if (!url) return "";
+  var match = url.match(new RegExp("[?&]" + param + "=([^&]+)"));
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function filterChannels(channels, [filterKey, filterValue]) {
+  // filter channels by category
+  if (filterValue && filterKey === "category") {
+    return channels.filter(
+      (channel) => CATEGORY_MAP[filterValue] === channel.tvgGroup
+    );
+  }
+  if (filterValue && filterKey === "search") {
+    return channels.filter((channel) => {
+      const name = channel.name.toLowerCase();
+      filterValue = filterValue.toLowerCase();
+      return name.indexOf(filterValue) >= 0;
+    });
+  }
+}
+
+function getChannel(channels, channelId) {
+  if (channelId === undefined || channelId === null || channelId === "")
+    return {};
+  const numId = parseInt(channelId, 10);
+  return (
+    channels.find(
+      (channel) => String(channel.channelId) === String(channelId)
+    ) || {}
+  );
+}
+
+function parseM3U(text) {
+  const lines = text.split("\n");
+  const channels = [];
+  let currentChannel = null;
+  let count = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.toUpperCase().includes("EXTINF:")) {
+      currentChannel = {
+        name: "No Name",
+        tvgLogo: "",
+        tvgGroup: "No Group",
+        url: "",
+        tvgId: "",
+        channelId: count++,
+        props: {}
+      };
+
+      const commaIndex = line.lastIndexOf(`,`);
+      if (commaIndex !== -1)
+        currentChannel.name =
+          line.substring(commaIndex + 2).trim() || "No Name";
+
+      const logoMatch = line.match(/tvg-logo="([^"]+)"/i);
+      if (logoMatch && logoMatch[1]) currentChannel.tvgLogo = logoMatch[1];
+
+      const groupMatch = line.match(/group-title="([^"]+)"/i);
+      if (groupMatch && groupMatch[1])
+        currentChannel.tvgGroup = GROUP_MAP[groupMatch[1].toLowerCase()]
+          ? GROUP_MAP[groupMatch[1].toLowerCase()]
+          : groupMatch[1];
+
+      const idMatch = line.match(/tvg-id="([^"]+)"/i);
+      if (idMatch && idMatch[1]) currentChannel.tvgId = idMatch[1];
+
+      // Capture all catchup attributes
+      const catchupMatch = line.match(/catchup="([^"]+)"/i);
+      if (catchupMatch) currentChannel.props.catchup = catchupMatch[1];
+
+      const catchupDaysMatch = line.match(/catchup-days="([^"]+)"/i);
+      if (catchupDaysMatch)
+        currentChannel.props.catchupDays = catchupDaysMatch[1];
+
+      const catchupSourceMatch = line.match(/catchup-source="([^"]+)"/i);
+      if (catchupSourceMatch)
+        currentChannel.props.catchupSource = catchupSourceMatch[1];
+    } else if (line.toUpperCase().startsWith("#KODIPROP:")) {
+      if (currentChannel) {
+        const propLine = line.substring(10).trim();
+        const equalIdx = propLine.indexOf("=");
+        if (equalIdx !== -1) {
+          const key = propLine.substring(0, equalIdx).trim();
+          const val = propLine.substring(equalIdx + 1).trim();
+          currentChannel.props[key] = val;
+        }
+      }
+    } else if (line.toUpperCase().startsWith("#EXTVLCOPT:")) {
+      if (currentChannel) {
+        const optLine = line.substring(11).trim();
+        const equalIdx = optLine.indexOf("=");
+        if (equalIdx !== -1) {
+          const key = optLine.substring(0, equalIdx).trim();
+          const val = optLine.substring(equalIdx + 1).trim();
+          currentChannel.props[key] = val;
+        }
+      }
+    } else if (line !== "" && !line.startsWith("#")) {
+      if (currentChannel) {
+        currentChannel.url = line;
+        channels.push(currentChannel);
+        currentChannel = null;
+      } else {
+        channels.push({
+          name: line.split("/").pop().toUpperCase() || "No Name",
+          tvgLogo: "",
+          tvgGroup: "No Group",
+          url: line,
+          channelId: count++,
+          props: {}
+        });
+      }
+    }
+  }
+  return channels;
+}
+
+// Convert Base64/Base64Url to Hex for ClearKey
+function base64ToHex(base64) {
+  if (!base64) return "";
+  let b64 = base64.replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4 !== 0) b64 += "=";
+  try {
+    const raw = atob(b64);
+    let result = "";
+    for (let i = 0; i < raw.length; i++) {
+      const hex = raw.charCodeAt(i).toString(16);
+      result += hex.length === 2 ? hex : "0" + hex;
+    }
+    return result.toLowerCase();
+  } catch (e) {
+    console.error("Lỗi giải mã Base64:", e);
+    return "";
+  }
+}
+
+// A handmade atob function for QuickJS
+function atob(input) {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  let str = String(input).replace(/[\t\n\f\r ]/g, "");
+
+  let output = "";
+  let buffer = 0;
+  let bits = 0;
+
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === "=") break;
+
+    const index = chars.indexOf(str[i]);
+    if (index === -1) {
+      throw new Error("Invalid base64 character");
+    }
+
+    buffer = (buffer << 6) | index;
+    bits += 6;
+
+    if (bits >= 8) {
+      bits -= 8;
+      output += String.fromCharCode((buffer >> bits) & 0xff);
+    }
+  }
+
+  return output;
+}
+
+function parseChannelName(channelName) {
+  const match = channelName.trim().match(
+    /^(?:🟢\s*)?(\d{2}:\d{2})\s+(\d{2}\/\d{2})\s+(.+)$/
+  );
+  if (!match) {
+    return {
+      dateTime: null,
+      title: channelName.trim(),
+    };
+  }
+  return {
+    dateTime: `${match[1]}-${match[2]}`,
+    title: match[3].trim(),
+  };
+}
+
+function isLive(dateTime) {
+  // dateTime format: "22:30-05/08" hoặc "3:30-05/08"
+  // Mặc định GMT+7
+  var match = /^(\d{1,2}):(\d{2})-(\d{2})\/(\d{2})$/.exec(dateTime);
+
+  if (!match) {
+    return false;
+  }
+  var hour = Number(match[1]);
+  var minute = Number(match[2]);
+  var day = Number(match[3]);
+  var month = Number(match[4]);
+
+  // Validate
+  if (
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59 ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return false;
+  }
+  // Lấy năm hiện tại theo UTC
+  var now = new Date();
+  var year = now.getUTCFullYear();
+  // GMT+7 -> UTC
+  var eventTimestamp = Date.UTC(year, month - 1, day, hour - 7, minute, 0, 0);
+
+  // So sánh timestamp hiện tại (UTC)
+  return eventTimestamp <= Date.now();
 }
