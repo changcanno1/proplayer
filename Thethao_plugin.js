@@ -1,5 +1,5 @@
 // =============================================================================
-// VAAPP Plugin: Xoilac TV (Bản fix lỗi bắt nhầm Iframe tỷ số/Sbobet)
+// VAAPP Plugin: Xoilac TV (Bản triệt tiêu bảng tỷ số VNSport/Sbobet)
 // =============================================================================
 
 var BASEURL = "https://xoilaczzb.cc";
@@ -8,7 +8,7 @@ function getManifest() {
     return JSON.stringify({
         "id": "ThethaoTV-Xoilac",
         "name": "ThethaoTV-Xoilac",
-        "version": "1.1.0",
+        "version": "1.1.1",
         "baseUrl": BASEURL,
         "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
         "isEnabled": true,
@@ -116,7 +116,7 @@ function parseMovieDetail(html, url) {
             title: title,
             posterUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
             backdropUrl: "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png",
-            description: "Đã sửa lỗi bắt nhầm bảng tỷ số (Sbobet).",
+            description: "Đã hủy diệt bảng tỷ số Sbobet/VNSport.",
             servers: [{
                 name: "Phòng Live Chính",
                 episodes: [{ id: url, name: "Xem Trực Tiếp", slug: "live-1" }]
@@ -142,37 +142,36 @@ function decodeB64(str) {
 }
 
 // =============================================================================
-// BƯỚC 1: BẮT LINK IFRAME - NÉ CÁC BẢNG TỶ SỐ VÀ QUẢNG CÁO
+// BƯỚC 1: BẮT ĐÚNG IFRAME PLAYER - NÉ BẢNG TỶ SỐ
 // =============================================================================
 function parseDetailResponse(html, url) {
     var iframeUrl = "";
     
-    // Tìm toàn bộ thẻ iframe trong trang
-    var iframes = html.match(/<iframe[^>]+>/gi);
-    
-    if (iframes) {
-        for (var i = 0; i < iframes.length; i++) {
-            var srcMatch = iframes[i].match(/(?:src|data-src)\s*=\s*["']([^"']+)["']/i);
-            if (srcMatch && srcMatch[1]) {
-                var src = srcMatch[1].toLowerCase();
+    try {
+        var $doc = _$(html);
+        
+        // CÁCH 1: Tìm đích danh iframe nằm trong khu vực player hoặc có allowfullscreen
+        var $playerIframe = $doc.find(".video-player iframe, .embed-responsive iframe, #player iframe, iframe[allowfullscreen]").first();
+        
+        if ($playerIframe.length > 0) {
+            iframeUrl = $playerIframe.attr("src") || $playerIframe.attr("data-src") || "";
+        } else {
+            // CÁCH 2: Nếu không có class, quét toàn bộ iframe và loại trừ mạnh tay
+            $doc.find("iframe").each(function() {
+                var src = _$(this).attr("src") || _$(this).attr("data-src") || "";
+                var s = src.toLowerCase();
                 
-                // LỌC RÁC: Nếu link iframe chứa các từ khóa này thì bỏ qua ngay lập tức
-                if (src.indexOf('sbobet') > -1 || 
-                    src.indexOf('bet') > -1 || 
-                    src.indexOf('score') > -1 || 
-                    src.indexOf('7m') > -1 || 
-                    src.indexOf('nowgoal') > -1 || 
-                    src.indexOf('ads') > -1 || 
-                    src.indexOf('chat') > -1) {
-                    continue;
+                // LỌC RÁC: Xóa sổ các iframe bảng tỷ số, Sbobet, Vnsport
+                if (s && s.indexOf('sbobet') === -1 && s.indexOf('vnsport') === -1 && 
+                    s.indexOf('bongdainfo') === -1 && s.indexOf('score') === -1 && 
+                    s.indexOf('7m') === -1 && s.indexOf('nowgoal') === -1 && 
+                    s.indexOf('bet') === -1 && s.indexOf('ads') === -1 && s.indexOf('chat') === -1) {
+                    iframeUrl = src;
+                    return false; // Thoát vòng lặp khi tìm thấy iframe sạch đầu tiên
                 }
-                
-                // Nếu vượt qua bộ lọc, đây chính là Iframe của Video Player
-                iframeUrl = srcMatch[1];
-                break; 
-            }
+            });
         }
-    }
+    } catch(e) {}
 
     if (iframeUrl) {
         if (iframeUrl.indexOf('//') === 0) iframeUrl = "https:" + iframeUrl;
@@ -185,9 +184,12 @@ function parseDetailResponse(html, url) {
         });
     }
     
-    // Nếu không tìm thấy Iframe nào hợp lệ, ép phát thẳng trang web bằng WebView 
-    // và dùng CSS giấu bảng tỷ số đi.
-    var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .ads, .footer-menu, .match-detail-top, iframe[src*='sbobet'], iframe[src*='score'] { display: none !important; }";
+    // =====================================================================
+    // FALLBACK WEBVIEW: Nếu bóc lỗi, ép chạy trang gốc và dùng JS dọn rác
+    // =====================================================================
+    var cssHide = "header, footer, nav, .sidebar, .chat-box, .comments, .banner, .ads, .footer-menu, .match-detail-top { display: none !important; }";
+    var jsHideScoreboard = "setInterval(function(){ document.querySelectorAll('iframe').forEach(function(f){ if(f.src.match(/sbobet|vnsport|bongdainfo|score|7m|bet|chat/i)) { f.remove(); } }); }, 1000);";
+
     return JSON.stringify({
         url: url,
         isEmbed: true,
@@ -195,22 +197,21 @@ function parseDetailResponse(html, url) {
             "Referer": BASEURL + "/",
             "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
             "Block-Ads": "true",
-            "Block-Css": cssHide
+            "Block-Css": cssHide,
+            "Inject-Js": jsHideScoreboard
         }
     });
 }
 
 // =============================================================================
-// BƯỚC 2: GIẢI MÃ M3U8 TỪ IFRAME PLAYER
+// BƯỚC 2: GIẢI MÃ M3U8 TỪ IFRAME (CHỐNG NGẮT 15 GIÂY)
 // =============================================================================
 function parseEmbedResponse(html, url) {
     var playUrl = "";
     var cleanHtml = html.replace(/\\/g, "").replace(/u0026/g, "&");
 
     var m3u8Match = cleanHtml.match(/(https?:\/\/[^"'\s<>]*\.m3u8[^"'\s<>]*)/i);
-    if (m3u8Match) {
-        playUrl = m3u8Match[1];
-    }
+    if (m3u8Match) playUrl = m3u8Match[1];
 
     if (!playUrl) {
         var b64Tokens = cleanHtml.match(/["'](aHR0cHM6[A-Za-z0-9+/=]+)["']/gi);
@@ -227,9 +228,7 @@ function parseEmbedResponse(html, url) {
 
     if (!playUrl) {
         var srcMatch = cleanHtml.match(/(?:file|source|url|src)["']?\s*[:=]\s*["'](https?:\/\/[^"'\s<>]+)["']/i);
-        if (srcMatch && srcMatch[1].indexOf(".m3u8") !== -1) {
-            playUrl = srcMatch[1];
-        }
+        if (srcMatch && srcMatch[1].indexOf(".m3u8") !== -1) playUrl = srcMatch[1];
     }
 
     if (playUrl) {
@@ -245,14 +244,18 @@ function parseEmbedResponse(html, url) {
         });
     }
 
+    // Nếu không giải mã được m3u8, duy trì iframe qua WebView & Xóa rác
     var cssHide = "header, footer, nav, .chat-box, .banner, .ads { display: none !important; }";
+    var jsHideScoreboard = "setInterval(function(){ document.querySelectorAll('iframe').forEach(function(f){ if(f.src.match(/sbobet|vnsport|bongdainfo|score|7m|bet|chat/i)) { f.remove(); } }); }, 1000);";
+
     return JSON.stringify({
         url: url,
         isEmbed: true, 
         headers: {
             "Referer": BASEURL + "/",
             "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-            "Block-Css": cssHide
+            "Block-Css": cssHide,
+            "Inject-Js": jsHideScoreboard
         }
     });
 }
