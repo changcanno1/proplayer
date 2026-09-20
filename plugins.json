@@ -192,12 +192,19 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/TruyenQQ_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/truyenqq.png"
     },
+     {
+      "id": "SportEng",
+      "name": "[SPORT] SportEng",
+      "version": "1.2.3",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/SportsEng_plugin.js",
+      "iconUrl": "https://i.ibb.co/BHQSwhLX/ppv-logo.png"
+   },
     {
-      "id": "zettruyen",
-      "name": "[MANGA] ZetTruyen",
+      "id": "rockystream",
+      "name": "[SPORT] RockyStream",
       "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/ztruyen_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/zettruyen.png"
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/rockystream_plugin.js",
+      "iconUrl": "https://i.ibb.co/PZFwWKKg/rockystream-logo.jpg"
     },
     {
       "id": "ThethaoTV-Xoilac",
@@ -205,13 +212,7 @@
       "version": "1.0.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Thethao_plugin.js",
       "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png"
-   },
-    {
-      "id": "SportEng",
-      "name": "SportEng",
-      "version": "1.2.3",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/SportsEng_plugin.js",
-      "iconUrl": "https://i.ibb.co/BHQSwhLX/ppv-logo.png"
    }
+   
 ]
 }
