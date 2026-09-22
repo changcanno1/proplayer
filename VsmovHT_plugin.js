@@ -1,13 +1,13 @@
 var BASEURL = "https://vsmov.com";
 var BASEAPI = "https://vsmov.com/api";
 var DEV = true;
-
+var popup_html = "";
 function getManifest() {
   return JSON.stringify({
-    id: "Vsmov",
+    id: "vsmov",
     name: "Nguồn Vsmov",
     description: "Nguồn phim Vsmov...",
-    "version": "1.2.3",
+    "version": "2.0",
     info: "",
     baseUrl: "https://vsmov.com",
     iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/vsmov.png",
@@ -15,9 +15,11 @@ function getManifest() {
     "adblock": false,
     type: "MOVIE",
     "author": "Alokillgtv",
+
     playerType: "exoplayer"
   });
 }
+//     popup_html: popup_html,
 
 function log(msg) {
   	console.log(msg);
@@ -32,6 +34,8 @@ function getHomeSections() {
         {"slug": "/danh-sach/phim-moi-cap-nhat/","title": "Phim Mới","type": "Grid"}
     ]);
 }
+
+
 
 function getPrimaryCategories() {
     try {
@@ -163,6 +167,11 @@ function getUrlSearch(keyword, filtersJson) {
     }
 }
 
+// /type/hoat-hinh/
+//filtersJson = "{page:5}"
+//getUrlList("/danh-sach/phim-moi-cap-nhat", filtersJson)
+//getUrlSearch("girl", filtersJson)
+
 function getUrlDetail(slug) {
     try {
         log("getUrlDetail[url]: \n" + slug);
@@ -186,6 +195,7 @@ function getUrlCategories() {
         return "";
     }
 }
+
 
 function getUrlCountries() { 
     try {
@@ -233,12 +243,16 @@ function parseListResponse(html, $url) {
     }
 }
 
+//html = sourceHTML;
+// https://vicdn.cc/api/type/hoat-hinh/1
+// https://vicdn.cc/?q=ta
 function parseAPI(html, $url) {
     var $data = JSON.parse(html);
     var $items = $data.items;
     var items = [];
     for (var $j = 0; $j < $items.length; $j++) {
         var item = $items[$j];
+        // var img = typeof item.thumb_url === "string" ? item.thumb_url : "";
 
         items.push({
             "id": BASEAPI + "/phim/" + item.slug,
@@ -267,6 +281,7 @@ function parseRAW(html, $url) {
         var poster = this.find("img").attr("data-original");
         var year = this.find("img.object-cover").closest("td").next().text();
         year = Number(year.trim());
+     // var img = typeof year === "number" ? year : 2026;
         items.push({
             "id": slug,
             "title": name,
@@ -284,6 +299,12 @@ function parseRAW(html, $url) {
     });
 }
 
+//html = sourceHTML;
+// https://vicdn.cc/api/type/hoat-hinh/1
+// https://vicdn.cc/?q=ta
+//JSON.parse(parseListResponse(sourceHTML, "https://vicdn.cc/api/type/hoat-hinh/1"))
+
+//$data = parseJSDataIsolated(script);
 function parseSearchResponse(html, url) {
     try {
         log("parseSearchResponse[url]: \n" + url);
@@ -381,7 +402,7 @@ function parseMovieDetail(html, url) {
           // Duyệt qua từng tập phim trong server_data
           serverItem.server_data.forEach(function(episode) {
             episodes.push({
-              id: episode.link_embed, 
+              id: episode.link_embed,// + "?currennt=" + episode.name + "&list=" + url, 
               name: "Tập " + episode.name,
               slug: episode.slug
             });
@@ -435,6 +456,20 @@ function parseMovieDetail(html, url) {
         });
     }
 }
+
+//var html = sourceHTML;
+//var url = "https://hentaivietsub.com/hentai/enjo-kouhai-tap-11?//current=1&maxEpi=11"
+//JSON.parse(parseMovieDetail(sourceHTML, "https://vicdn.cc/api/info/tv-278275-1"))
+
+//$data = JSON.parse(sourceHTML)
+
+/*
+    var $doc = _$(html);
+    var script = $doc.find("script:content('subtitles')").html()
+    var match = script.match(/subtitles:\s*(\[\s*\{.*?\}\s*\])/s);
+    var domain = url.replace(/^(https?:\/\/[^\/]+).*\/, "$1");
+    var subs = [];
+*/
 
 function parseDetailResponse(html, url) {
   try {
@@ -507,6 +542,8 @@ function parseYearsResponse(html) {
     }
 }
 
+
+// https://vsmov.com/api/the-loai/hanh-dong
 function getLISTmenu() {
     return `[{"link":"/the-loai/action-adventure/","name":"Action & Adventure"},{"link":"/the-loai/bi-an/","name":"Bí Ẩn"},{"link":"/the-loai/chien-tranh/","name":"Chiến Tranh"},{"link":"/the-loai/chinh-kich/","name":"Chính Kịch"},{"link":"/the-loai/chinh-tri-chien-tranh/","name":"Chính Trị - Chiến Tranh"},{"link":"/the-loai/chu-de-thuc-te/","name":"Chủ Đề Thực Tế"},{"link":"/the-loai/co-trang/","name":"Cổ Trang"},{"link":"/the-loai/drama/","name":"Drama"},{"link":"/the-loai/gia-dinh/","name":"Gia Đình"},{"link":"/the-loai/gia-tuong/","name":"Giả Tưởng"},{"link":"/the-loai/giat-gan/","name":"Giật Gân"},{"link":"/the-loai/hai/","name":"Hài"},{"link":"/the-loai/hanh-dong/","name":"Hành Động"},{"link":"/the-loai/hanh-dong-phieu-luu/","name":"Hành Động & Phiêu Lưu"},{"link":"/the-loai/hinh-su/","name":"Hình Sự"},{"link":"/the-loai/hoat-hinh/","name":"Hoạt Hình"},{"link":"/the-loai/hoc-duong/","name":"Học Đường"},{"link":"/the-loai/hon-nhan/","name":"Hôn Nhân"},{"link":"/the-loai/hu-cau/","name":"Hư Cấu"},{"link":"/the-loai/khoa-hoc-vien-tuong/","name":"Khoa Học Viễn Tưởng"},{"link":"/the-loai/khoa-hoc-vien-tuong-gia-tuong/","name":"Khoa Học Viễn Tưởng & Giả Tưởng"},{"link":"/the-loai/kiem-hiep/","name":"Kiếm hiệp"},{"link":"/the-loai/kinh-di/","name":"Kinh Dị"},{"link":"/the-loai/lang-man/","name":"Lãng Mạng"},{"link":"/the-loai/lang-mang/","name":"Lãng Mạng"},{"link":"/the-loai/lgbt/","name":"LGBT"},{"link":"/the-loai/phieu-luu/","name":"Phiêu Lưu"},{"link":"/the-loai/phim-nhac/","name":"Phim Nhạc"},{"link":"/the-loai/phuctrangcodai/","name":"Phụctrangcổđại"},{"link":"/the-loai/sci-fi-fantasy/","name":"Sci-Fi & Fantasy"},{"link":"/the-loai/thanh-xuan/","name":"Thanh Xuân"},{"link":"/the-loai/thieu-nhi/","name":"Thiếu Nhi"},{"link":"/the-loai/thuong-truong/","name":"Thương Trường"},{"link":"/the-loai/tien-hiep/","name":"Tiên Hiệp"},{"link":"/the-loai/tieu-thuyet-chuyen-the/","name":"Tiểu Thuyết Chuyển Thể"},{"link":"/the-loai/tinh-ban/","name":"Tình Bạn"},{"link":"/the-loai/tinh-tiet/","name":"Tình Tiết"},{"link":"/the-loai/tinh-yeu-ngot-ngao/","name":"Tình Yêu Ngọt Ngào"},{"link":"/the-loai/toi-pham/","name":"Tội Phạm"},{"link":"/the-loai/tra-thu/","name":"Trả Thù"},{"link":"/the-loai/truyen-hinh-thuc-te/","name":"Truyền Hình Thực Tế"},{"link":"/the-loai/vien-tuong/","name":"Viễn Tưởng"},{"link":"/the-loai/vo-hiep/","name":"Võ hiệp"},{"link":"/the-loai/vo-thuat/","name":"Võ Thuật"},{"link":"/the-loai/xa-hoi-den/","name":"Xã Hội Đen"}]`;
 }
