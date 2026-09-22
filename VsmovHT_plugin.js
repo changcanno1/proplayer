@@ -4,7 +4,7 @@ var DEV = true;
 var popup_html = "";
 function getManifest() {
   return JSON.stringify({
-    id: "vsmov",
+    id: "Vsmov",
     name: "Nguồn Vsmov",
     description: "Nguồn phim Vsmov...",
     "version": "2.0",
