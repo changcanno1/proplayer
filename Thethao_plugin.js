@@ -201,7 +201,7 @@ function parseYearsResponse(html) {
 // VARIABLES
 // ======================================
 
-const BASE_URL = "https://thcoban.github.io/thtt/tttt.m3u";
+const BASE_URL = "https://thtt.pages.dev/tttt.m3u";
 const FALLBACK_POSTER_URL = "https://i.ibb.co/rKHf363x/fallback-thumbnail.webp";
 let channelList = [];
 // Use GROUP_MAP to rename and merge the channel into tvg-group.
