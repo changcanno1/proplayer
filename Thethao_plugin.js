@@ -8,7 +8,7 @@ function getManifest() {
     name: "[SPORT] ThethaoTV",
     version: "1.0.3",
     baseUrl: BASE_URL,
-    iconUrl: "https://i.ibb.co/cSrQ5y7K/ththethao-logo.png",
+    iconUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfnJLExxN-7YI-DaEhsVtYj6brPMXrHVGo9Iw0wc2Y9xg2usgHxqV1x8&s",
     isEnabled: true,
     isAdult: false,
     type: "IPTV",
