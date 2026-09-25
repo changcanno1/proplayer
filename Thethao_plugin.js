@@ -6,7 +6,7 @@ function getManifest() {
   return JSON.stringify({
     id: "ThethaoTV",
     name: "[SPORT] ThethaoTV",
-    version: "1.0.2",
+    version: "1.0.3",
     baseUrl: BASE_URL,
     iconUrl: "https://i.ibb.co/cSrQ5y7K/ththethao-logo.png",
     isEnabled: true,
