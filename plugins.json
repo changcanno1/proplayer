@@ -106,6 +106,13 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/4KMovieHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/4kmovie.png"
     },
+     {
+      "id": "phimngan_net",
+      "name": "Phim Ngắn Net",
+      "version": "2.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
+      "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75",
+     },
     {
       "id": "shortflix",
       "name": "shortflix",
@@ -115,13 +122,6 @@
       "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
     },
     {
-      "id": "phimngan_net",
-      "name": "Phim Ngắn Net",
-      "version": "2.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
-      "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75",
-     },
-     {
       "id": "Mê Phim Ngắn",
       "name": "Mê Phim Ngắn",
       "version": "1.1.0",
