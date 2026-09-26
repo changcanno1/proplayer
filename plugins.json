@@ -11,7 +11,7 @@
     {
       "id": "vicdn",
       "name": "Nguồn Vicdn",
-      "version": "1.7.4",
+      "version": "2.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png"
     },
