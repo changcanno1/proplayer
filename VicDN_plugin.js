@@ -7,7 +7,7 @@ function getManifest() {
     id: "vicdn",
     name: "Nguồn Vicdn",
     description: "Nguồn phim Vicdn.",
-    "version": "1.7.4",
+    "version": "2.1",
     info: "Nguồn phim vietsub và thuyết minh mới.\n\n Hỗ trợ lồng tiếng và có tốc độ phát rất nhanh.",
     baseUrl: "https://vicdn.cc",
     iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png",
@@ -15,7 +15,7 @@ function getManifest() {
     "adblock": false,
     type: "MOVIE",
     "author": "Alokillgtv",
-    playerType: "embed",
+    playerType: "embed"
   });
 }
 
@@ -196,7 +196,6 @@ function getUrlCategories() {
     }
 }
 
-
 function getUrlCountries() { 
     try {
         return ""; 
@@ -253,10 +252,7 @@ function parseListResponse(html, $url) {
 }
 
 function parseJSDataIsolated(str) {
-    // Loại bỏ phần khai báo biến nếu có, chỉ giữ lại phần mảng/object
     const code = str.replace(/^(const|let|var)\s+\w+\s*=\s*/, '');
-
-    // Trả về dữ liệu bằng cách bọc trong return
     return new Function(`"use strict"; return (${code});`)();
 }
 
@@ -266,7 +262,7 @@ function domfetch($data, $url) {
     for (var $j = 0; $j < $data.length; $j++) {
         var item = $data[$j];
         items.push({
-            "id": BASEAPI + "/info/" + item.slug,
+            "id": BASEAPI + "/info/" + item.slug, 
             "title": item.vname,
             "posterUrl": "https://image.tmdb.org/t/p/w130_and_h195_face/" + item.poster + ".jpg", 
             "backdropUrl": "https://image.tmdb.org/t/p/w533_and_h300_face/" + item.banner + ".jpg", 
@@ -437,16 +433,18 @@ function checkRaw(scriptStr, returnFixed) {
         hasError = true;
       }
 
+      // Tiến hành SỬA LỖI tự động nếu tham số returnFixed = true
       var fixedLine = currentLine;
       if (returnFixed) {
         fixedLine = fixedLine
           .replace(/\r/g, "")
-          .replace(/\t/g, "  "); 
+          .replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
       }
 
       fixedLines.push(fixedLine);
     }
 
+    // 4. Kiểm tra cú pháp nhanh xem toàn bộ chuỗi có parse được JS không
     try {
       new Function(scriptStr);
     } catch (syntaxErr) {
@@ -466,7 +464,6 @@ function checkRaw(scriptStr, returnFixed) {
   }
 }
 
-
 function parseDetailResponse(html, url) {
   try {
     var $jsdata = JSON.parse(html);
@@ -483,7 +480,7 @@ function parseDetailResponse(html, url) {
         }
     }
     var customJS = checkRaw(rawJS(stream),true);
-    
+
     var idvd = url.match(/^https:\/\/vicdn\.cc\/api\/info\/([^\?]+)/i)
     var epi = url.match(/current=(\d+)&tm=(\w+)/i);
     sub = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-vi.vtt"
@@ -534,37 +531,76 @@ function bridgeLog(msg, check) {
         console.log(msg);
       }
     } catch(e) {}
-  }
+}
 
+/* ═══ MODE: null = chưa biết, 'web' = parent web, 'native' = parent native ═══ */
+var __vaxMode = null;
+var __modeTimer = setTimeout(function() {
+  if (__vaxMode === null) {
+    __vaxMode = 'native';
+    bridgeLog('Mode: native (default timeout)');
+  }
+}, 800);
+
+/* Báo parent biết mình ready */
+try { window.parent.postMessage({ type: 'vax_ready' }, '*'); } catch(e){}
+
+/* Lắng nghe lệnh từ parent */
+window.addEventListener('message', function(ev) {
+  var d = ev.data || {};
+  if (!d || !d.vaxCmd) return;
+  if (d.vaxCmd === 'setMode') {
+    __vaxMode = d.mode || 'web';
+    clearTimeout(__modeTimer);
+    bridgeLog('Mode set by parent: ' + __vaxMode);
+    if (__vaxMode === 'web') bindJwCtrl();
+    return;
+  }
+  /* JW control commands — chỉ khi web mode */
+  if (__vaxMode === 'web') {
+    jwCmd(d.vaxCmd, d.val);
+  } else {
+    /* native mode: cho phép toggle/seek/etc điều khiển <video> như cũ */
+    var v = document.querySelector('video');
+    if (!v) return;
+    if (d.vaxCmd === 'toggle') { if (v.paused) v.play().catch(function(){}); else v.pause(); }
+    else if (d.vaxCmd === 'seek+5') { try { v.currentTime = Math.min(v.duration, v.currentTime + 5); } catch(e){} }
+    else if (d.vaxCmd === 'seek-5') { try { v.currentTime = Math.max(0, v.currentTime - 5); } catch(e){} }
+    else if (d.vaxCmd === 'vol+') { v.volume = Math.min(1, v.volume + 0.1); v.muted = false; }
+    else if (d.vaxCmd === 'vol-') { v.volume = Math.max(0, v.volume - 0.1); v.muted = false; }
+    else if (d.vaxCmd === 'blur') { try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); window.blur(); } catch(e){} }
+  }
+}, false);
+
+/* CSS: chỉ che nhẹ để JW hiện được */
 (function injectCSS() {
   try {
-    const cssStyle = "body,html,*{display:none!important;background:black!important;opacity:0!important;z-index:-999999}";
-    const styleElement = document.createElement('style');
-    styleElement.type = 'text/css';
-    styleElement.setAttribute('data-injected-by', 'custom-script');
-
-    if (styleElement.styleSheet) {
-      styleElement.styleSheet.cssText = cssStyle;
-    } else {
-      styleElement.appendChild(document.createTextNode(cssStyle));
-    }
-
-    const targetNode = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
-
-    if (targetNode) {
-      targetNode.appendChild(styleElement);
-      bridgeLog("Chèn css ngay lập tức.");
-    } else {
-      document.addEventListener('DOMContentLoaded', function () {
-        (document.head || document.documentElement).appendChild(styleElement);
-        bridgeLog("Chèn Css sau khi load xong");
-      });
-    }
-  } catch (error) {
-    bridgeLog('Không thể chèn CSS tự động:', error);
-  }
+    var cssStyle = 'html,body{margin:0!important;padding:0!important;background:#000!important;overflow:hidden!important;width:100%!important;height:100%!important}#ssPlay,.jw-wrapper{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:9!important}';
+    var s = document.createElement('style');
+    s.type = 'text/css';
+    s.setAttribute('data-injected-by', 'custom-script');
+    if (s.styleSheet) s.styleSheet.cssText = cssStyle;
+    else s.appendChild(document.createTextNode(cssStyle));
+    var t = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
+    if (t) t.appendChild(s);
+  } catch (e) { bridgeLog('CSS err: ' + e.message); }
 })();
 
+/* ⭐ Block devtoolsDetector (nếu không bị block sẽ redirect about:blank) */
+try {
+  var _fakeDtd = { launch:function(){}, addListener:function(){}, on:function(){}, isOpen:function(){ return false; } };
+  Object.defineProperty(window, 'devtoolsDetector', {
+    configurable: true,
+    get: function(){ return _fakeDtd; },
+    set: function(){}
+  });
+  bridgeLog('🚫 devtoolsDetector blocked');
+} catch(e) { bridgeLog('dtd block fail: ' + e.message); }
+
+/* ═══════════════════════════════════════════════════════════════
+   SNIFFER — giữ nguyên logic cũ cho native
+   Chỉ dispatch khi mode === 'native' (hoặc chưa biết → default native)
+   ═══════════════════════════════════════════════════════════════ */
 (function initLocalBlobSniffer() {
   if (window.__BLOB_SNIFFER_INITIALIZED__) return;
   window.__BLOB_SNIFFER_INITIALIZED__ = 1;
@@ -576,11 +612,10 @@ function bridgeLog(msg, check) {
   bridgeLog("Đang tiến hành tìm link Video, xin chờ....", true);
 
   timeoutTimer = setTimeout(function() {
-    if (hasDispatchedAny === 0 && isFinished === 0) {
+    if (hasDispatchedAny === 0 && isFinished === 0 && __vaxMode !== 'web') {
       isFinished = 1;
-      bridgeLog("❌ [TIMEOUT] Đã quá 20 giây nhưng không tìm thấy Blob M3U8!", false);
+      bridgeLog("❌ [TIMEOUT] không tìm thấy Blob M3U8!", false);
       bridgeLog("Không tìm thấy link video (Hết thời gian 20s).", true);
-      
       if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
         window.SnifferBridge.play("https://google.com", "");
       }
@@ -588,126 +623,197 @@ function bridgeLog(msg, check) {
   }, 20000);
 
   function stopTimeout() {
-    if (timeoutTimer) {
-      clearTimeout(timeoutTimer);
-      timeoutTimer = null;
-    }
+    if (timeoutTimer) { clearTimeout(timeoutTimer); timeoutTimer = null; }
   }
 
   function isValidM3U8(content) {
     if (typeof content !== 'string') return false;
-    var trimmed = content.trim();
-    return trimmed.indexOf('#EXTM3U') === 0 && 
-          (trimmed.indexOf('#EXTINF') !== -1 || trimmed.indexOf('#EXT-X-STREAM-INF') !== -1);
+    var t = content.trim();
+    return t.indexOf('#EXTM3U') === 0 &&
+          (t.indexOf('#EXTINF') !== -1 || t.indexOf('#EXT-X-STREAM-INF') !== -1);
   }
 
   function getServerMapping() {
     var mapping = {};
     try {
       var rawHtml = document.documentElement.outerHTML || document.body.innerHTML || "";
-      
       var matches = rawHtml.match(/\\bx\\d{3}\\b/gi) || [];
-
       for (var i = 0; i < matches.length; i++) {
         var code = matches[i].toLowerCase();
-
-        if (/^x30/i.test(code)) {
-          mapping['tm2'] = code;
-          mapping['nam'] = code;
-        } else if (/^x20/i.test(code)) {
-          mapping['tm1'] = code;
-        } else if (/^x10/i.test(code)) {
-          mapping['raw'] = code;
-          mapping['origin'] = code;
-        }
+        if (/^x30/i.test(code)) { mapping['tm2'] = code; mapping['nam'] = code; }
+        else if (/^x20/i.test(code)) { mapping['tm1'] = code; }
+        else if (/^x10/i.test(code)) { mapping['raw'] = code; mapping['origin'] = code; }
       }
-    } catch (e) {
-      bridgeLog('❌ [MAP ERROR]: ' + e.message);
-    }
+    } catch (e) { bridgeLog('MAP err: ' + e.message); }
     return mapping;
   }
 
   function processAndReplaceM3u8Server(m3u8Content, requestedTm) {
     if (!requestedTm) return m3u8Content;
-
     var mapping = getServerMapping();
     var targetKey = requestedTm.toLowerCase();
     var targetServerCode = mapping[targetKey];
-
-    bridgeLog('🗺️ [MAPPING QUÉT ĐƯỢC]: ' + JSON.stringify(mapping));
-
+    bridgeLog('MAP: ' + JSON.stringify(mapping));
     if (!targetServerCode) {
-      bridgeLog('⚠️ Không tìm thấy server nào khớp với quy luật cho "' + requestedTm + '", giữ nguyên M3U8 gốc.');
+      bridgeLog('Không tìm thấy server khớp "' + requestedTm + '"');
       return m3u8Content;
     }
-
     var currentMatch = m3u8Content.match(/(x\\d+)\\.vicdn\\.cc/i);
     var currentServerCode = currentMatch ? currentMatch[1] : null;
-
     if (currentServerCode) {
-      bridgeLog('🔄 Đổi Server M3U8: ' + currentServerCode + ' ➡️ ' + targetServerCode + ' (' + requestedTm + ')');
-    } else {
-      bridgeLog('🔄 Thay thế tất cả domain x***.vicdn.cc ➡️ ' + targetServerCode + '.vicdn.cc');
+      bridgeLog('🔄 Đổi: ' + currentServerCode + ' ➡️ ' + targetServerCode + ' (' + requestedTm + ')');
     }
-
-    var updatedM3u8 = m3u8Content.replace(/(x\\d+)(\\.vicdn\\.cc)/gi, targetServerCode + '$2');
-    return updatedM3u8;
+    return m3u8Content.replace(/(x\\d+)(\\.vicdn\\.cc)/gi, targetServerCode + '$2');
   }
 
   function dispatchM3u8ToApp(m3u8Content) {
+    /* ⭐ Chỉ dispatch khi native (web giữ iframe JW điều khiển) */
+    if (__vaxMode === 'web') {
+      bridgeLog('Web mode → bỏ qua sniffer dispatch');
+      return;
+    }
     if (!m3u8Content || hasDispatchedAny === 1) return;
     hasDispatchedAny = 1;
     isFinished = 1;
     stopTimeout();
-
-    bridgeLog('🎯 [LOCAL-DISPATCH] Đã bắt được M3U8! Đang đổi server...');
-
-    var requestedTm = "${tm || 'tm1'}";
-    var finalM3u8Content = processAndReplaceM3u8Server(m3u8Content, requestedTm);
-
-    bridgeLog("🎯 Đổi Server thành công! Đang gửi link cho Native...", true);
-
+    bridgeLog('🎯 [LOCAL-DISPATCH] Bắt M3U8! Đổi server...');
+    var requestedTm = "${tm || 'raw'}";
+    var finalM3u8 = processAndReplaceM3u8Server(m3u8Content, requestedTm);
+    bridgeLog("🎯 Đang gửi native...", true);
     try {
-      SnifferBridge.playM3u8Content(finalM3u8Content, JSON.stringify({"Origin":"https://phim.nguonc.com","Referer":"${referer}"}));
-    } catch(e) {
-      bridgeLog('❌ [DISPATCH ERROR]: ' + e.message);
-    }
+      SnifferBridge.playM3u8Content(finalM3u8, JSON.stringify({"Origin":"https://phim.nguonc.com","Referer":"${referer}"}));
+    } catch(e) { bridgeLog('❌ dispatch err: ' + e.message); }
   }
 
+  /* Hook URL.createObjectURL */
   try {
     if (typeof URL !== 'undefined' && URL.createObjectURL) {
-      var originalCreateObjectURL = URL.createObjectURL;
-      
+      var origCOU = URL.createObjectURL;
       URL.createObjectURL = function(blob) {
-        var blobUrl = originalCreateObjectURL.apply(this, arguments);
-
+        var blobUrl = origCOU.apply(this, arguments);
         if (isFinished === 0 && blob && (blob instanceof Blob || blob instanceof File)) {
-          var processContent = function(content) {
-            if (isValidM3U8(content)) {
-              dispatchM3u8ToApp(content);
-            }
+          var proc = function(content) {
+            if (isValidM3U8(content)) dispatchM3u8ToApp(content);
           };
-
           if (typeof blob.text === 'function') {
-            blob.text().then(processContent).catch(function(){});
+            blob.text().then(proc).catch(function(){});
           } else {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-              processContent(e.target.result);
-            };
-            reader.readAsText(blob);
+            var r = new FileReader();
+            r.onload = function(e){ proc(e.target.result); };
+            r.readAsText(blob);
           }
         }
-
         return blobUrl;
       };
-      
-      bridgeLog('🚀 [INIT] Đã Hook thành công.');
+      bridgeLog('🚀 Hook URL.createObjectURL OK');
     }
-  } catch (e) {
-    bridgeLog('❌ [INIT-ERROR]: ' + e.message);
-  }
+  } catch (e) { bridgeLog('INIT err: ' + e.message); }
 })();
+/* ═══════════════════════════════════════════════════════════════
+   PROXY FETCH — bypass CORS cho file mã hóa .html
+   Player fetch vicdn.cc/hls/*.html và /subtitle/*.html để decrypt.
+   Từ iframe sandbox → CORS block. Rewrite qua worker proxy.
+   ═══════════════════════════════════════════════════════════════ */
+(function initProxyFetch() {
+  if (window.__VAX_PROXY_FETCH__) return;
+  window.__VAX_PROXY_FETCH__ = 1;
+
+  var PROXY = 'https://streamfile.alokillgtv04.workers.dev/proxy';
+  var REF = 'https://vicdn.cc';
+
+  function shouldProxy(u) {
+    if (!u || typeof u !== 'string') return false;
+    return /vicdn\.cc\/(hls|subtitle|vtt)\//i.test(u);
+  }
+  function toProxy(u) {
+    return PROXY + '?url=' + encodeURIComponent(u) + '&referer=' + REF;
+  }
+
+  /* Hook fetch */
+  try {
+    var rawFetch = window.fetch;
+    window.fetch = function(input, init) {
+      var u = typeof input === 'string' ? input : (input && input.url);
+      if (shouldProxy(u)) {
+        var newU = toProxy(u);
+        bridgeLog('🌐 [PROXY-FETCH] ' + u.slice(-70));
+        if (typeof input === 'string') return rawFetch.call(this, newU, init);
+        try { return rawFetch.call(this, new Request(newU, input)); }
+        catch(e) { return rawFetch.call(this, newU, init); }
+      }
+      return rawFetch.apply(this, arguments);
+    };
+    bridgeLog('🚀 [PROXY] Hook fetch OK');
+  } catch(e) { bridgeLog('❌ proxy fetch hook: ' + e.message); }
+
+  /* Hook XHR */
+  try {
+    var rawOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url) {
+      if (shouldProxy(url)) {
+        var newU = toProxy(url);
+        bridgeLog('🌐 [PROXY-XHR] ' + url.slice(-70));
+        arguments[1] = newU;
+      }
+      return rawOpen.apply(this, arguments);
+    };
+    bridgeLog('🚀 [PROXY] Hook XHR OK');
+  } catch(e) { bridgeLog('❌ proxy xhr hook: ' + e.message); }
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   JW PLAYER CONTROL — chỉ bật khi web mode
+   ═══════════════════════════════════════════════════════════════ */
+var __jwPlayer = null;
+var __jwBound = false;
+
+function bindJwCtrl() {
+  if (__jwBound) return true;
+  if (!window.jwplayer) return false;
+  var p;
+  try { p = window.jwplayer(); } catch(e) { return false; }
+  if (!p || !p.on) return false;
+  __jwPlayer = p;
+  __jwBound = true;
+  bridgeLog('✅ Bound JW Player (web mode)', true);
+
+  function post(type, d) { try { window.parent.postMessage(Object.assign({type:type}, d||{}), '*'); } catch(e){} }
+
+  p.on('time', function(e) { post('NGUONC_TIME', { time: e.position || 0, duration: e.duration || 0 }); });
+  p.on('play', function() { post('NGUONC_STATE', { paused:false }); });
+  p.on('pause', function() { post('NGUONC_STATE', { paused:true }); });
+  p.on('seek', function(e) { post('NGUONC_TIME', { offset: e.offset || 0, duration: p.getDuration() || 0 }); });
+  return true;
+}
+
+function jwCmd(c, val) {
+  if (!__jwPlayer) {
+    if (!bindJwCtrl()) return;
+  }
+  var p = __jwPlayer;
+  if (!p) return;
+  try {
+    if (c === 'toggle') { if (p.getState() === 'playing') p.pause(); else p.play(); }
+    else if (c === 'seek+5') { var d = p.getDuration() || 0; p.seek(Math.min(d, (p.getPosition()||0) + 5)); }
+    else if (c === 'seek-5') { p.seek(Math.max(0, (p.getPosition()||0) - 5)); }
+    else if (c === 'vol+') { p.setVolume(Math.min(100, (p.getVolume()||0) + 10)); }
+    else if (c === 'vol-') { p.setVolume(Math.max(0, (p.getVolume()||0) - 10)); }
+    else if (c === 'blur') { try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); window.blur(); } catch(e){} }
+    else if (c === 'scale') { /* no-op cho JW */ }
+  } catch(e) { bridgeLog('jwCmd err: ' + e.message); }
+}
+
+/* Nếu vì lý do nào đó parent không gửi setMode nhưng đã web (window.parent có VaxSub)
+   thì vẫn bind JW sau timeout dự phòng */
+setTimeout(function() {
+  if (__vaxMode === 'web' && !__jwBound) {
+    var tries = 0;
+    var iv = setInterval(function() {
+      if (bindJwCtrl() || ++tries > 50) clearInterval(iv);
+    }, 200);
+  }
+}, 1500);
   `
 }
 
