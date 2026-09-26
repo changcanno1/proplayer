@@ -4,10 +4,10 @@ var DEV = true;
 var popup_html = "";
 function getManifest() {
   return JSON.stringify({
-    id: "Vsmov",
+    id: "vsmov",
     name: "Nguồn Vsmov",
     description: "Nguồn phim Vsmov...",
-    "version": "2.0",
+    "version": "2.1",
     info: "",
     baseUrl: "https://vsmov.com",
     iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/vsmov.png",
@@ -463,52 +463,59 @@ function parseMovieDetail(html, url) {
 
 //$data = JSON.parse(sourceHTML)
 
-/*
-    var $doc = _$(html);
-    var script = $doc.find("script:content('subtitles')").html()
-    var match = script.match(/subtitles:\s*(\[\s*\{.*?\}\s*\])/s);
-    var domain = url.replace(/^(https?:\/\/[^\/]+).*\/, "$1");
-    var subs = [];
-*/
 
 function parseDetailResponse(html, url) {
   try {
     console.log("parseDetailResponse dang xu ly: " + url);
-    var m3u8 = url.replace("/video/","/stream/") + "/master.m3u8";
+
+    /* ⭐ Parse signedMasterUrl từ HTML player — có token expires + signature */
+    var m3u8 = "";
+    var signedMatch = html.match(/signedMasterUrl\s*:\s*["']([^"']+)["']/i);
+    if (signedMatch && signedMatch[1]) {
+      m3u8 = signedMatch[1];
+      console.log("✅ signedMasterUrl: " + m3u8);
+    } else {
+      /* Fallback: build cũ (sẽ 403 nếu server bật token, nhưng giữ để debug) */
+      m3u8 = url.replace("/video/", "/stream/") + "/master.m3u8";
+      console.log("⚠️ không tìm thấy signedMasterUrl → fallback: " + m3u8);
+    }
+
     var $doc = _$(html);
     var domain = url.replace(/^(https?:\/\/[^\/]+).*/, "$1");
-    var script = $doc.find("script:content('subtitles')").html()
+    var script = $doc.find("script:content('subtitles')").html();
     var match = script.match(/subtitles:\s*(\[\s*\{.*?\}\s*\])/s);
     var subitem = [];
-    if(match && match[1]){
-        var sublist = JSON.parse(match[1]);
-        sublist.forEach(function(item, index){
-            var name = item.code.replace("vie","Vietsub").replace("eng","Engsub");
-            var link = domain + item.url;
-            subitem.push({
-                lang: name + " " + (index + 1),
-                url: link
-            })
-        })
+    if (match && match[1]) {
+      var sublist = JSON.parse(match[1]);
+      sublist.forEach(function(item, index) {
+        var name = item.code.replace("vie", "Vietsub").replace("eng", "Engsub");
+        var link = domain + item.url;
+        subitem.push({
+          lang: name + " " + (index + 1),
+          url: link
+        });
+      });
     }
+
     console.log("stream: " + m3u8);
     return JSON.stringify({
       url: m3u8,
       isEmbed: false,
       mimeType: "application/x-mpegURL",
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Referer: BASEURL
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": BASEURL
       },
-      subtitles:subitem,
+      subtitles: subitem
     });
   } catch (e) {
     log("parseDetailResponse[err]:\n " + e);
-    return JSON.stringify({ 
-      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-      mimeType: "video/mp4", 
-      isEmbed: false, headers: {}, subtitles: [] 
+    return JSON.stringify({
+      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4",
+      mimeType: "video/mp4",
+      isEmbed: false,
+      headers: {},
+      subtitles: []
     });
   }
 }
