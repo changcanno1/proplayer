@@ -25,7 +25,7 @@
     {
       "id": "phimhdcs",
       "name": "Phim HDCS",
-      "version": "1.1.6",
+      "version": "1.1.7",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
       "iconUrl": "https://phimhdcss.com/favicon.ico"
     },
