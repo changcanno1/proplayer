@@ -4,21 +4,22 @@
 //BASEURL = "http://vkey.vn/yanhh3d";
 var iddomain = "yanhh3d"
 BASEURL = "https://vkey.vn/" + iddomain;
-
+var popup_html = "";
 function getManifest() {
     return JSON.stringify({
         "id": "yanhh3d",
-        "name": "Yanhh3d",
+        "name": "Yanhh3d [ANIME]",
         "description": "Trang xem phim Hoạt Hình siêu hay.",
       	"info":"",
-        "version": "1.7",
+        "version": "2.3",
         "baseUrl": BASEURL,
-        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yanhh3d.png",
+        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/yanhh3d.png",
         "isEnabled": true,
         "layoutType": "HORIZONTAL",
         "author": "Alokillgtv",
+        popup_html: popup_html,
         "type": "ANIME",
-        "playerType": "embed"
+        "playerType": "exoplayer"
     });
 }
 
@@ -74,6 +75,7 @@ function getPrimaryCategories() {
     }
 }
 
+// ĐÃ SỬA: Lỗi cú pháp khai báo biến trong JSON.stringify
 function getFilterConfig() {
     try {
         var listurl = getLISTmenu();
@@ -95,13 +97,18 @@ function getUrlList(slug, filtersJson) {
     try {
         log("getUrlList[url]: \n" + slug);
 
+        // 1. Kiểm tra nếu slug là link tuyệt đối (chứa http) và không có bộ lọc thì trả về luôn
         if ((slug && slug.indexOf("http") > -1) || (slug && slug.indexOf("search") > -1)) {
+            // thường là link search sẽ bị trả về ở đây
             return slug;
         }
         let page = 1;
         let path = slug || "";
 
+        // 2. Xử lý an toàn filtersJson nếu có truyền vào
         if (filtersJson) {
+            // Nếu có số trang hoặc có menu categ
+            // Sửa lỗi nếu JSON thiếu dấu ngoặc kép ở key hoặc sai cú pháp cơ bản
             let fixedJson = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
                 .replace(/:,/g, ':');
 
@@ -109,6 +116,7 @@ function getUrlList(slug, filtersJson) {
                 let filters = JSON.parse(fixedJson);
                 page = parseInt(filters.page) || 1;
 
+                // Nếu có category trong JSON, ưu tiên lấy category làm đường dẫn (path)
                 if (filters.category) {
                     if (Array.isArray(filters.category) && filters.category.length > 0) {
                         path = filters.category[0].slug;
@@ -119,6 +127,7 @@ function getUrlList(slug, filtersJson) {
             } catch (jsonErr) {}
         }
 
+        // 5. Nối chuỗi URL kết quả
         let resultUrl = BASEURL;
         if (path) {
             resultUrl += path;
@@ -128,12 +137,14 @@ function getUrlList(slug, filtersJson) {
             resultUrl += "?page=" + page;
         }
 
+        // Trả về kết quả, chỉ gộp dấu // ở phần path, giữ nguyên https://
         var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
         log("getUrlList[url]: \n" + finalUrl);
         return finalUrl;
 
     } catch (e) {
         log("getUrlList[err]:\n " + e);
+        // Trả về URL gốc an toàn nếu có lỗi
         let fallback = BASEURL + (slug ? "/" + slug : "");
         var resFallback = fallback.replace(/([^:]\/)\/+/g, "$1");
         log("getUrlList[url]: \n" + resFallback);
@@ -146,6 +157,7 @@ function getUrlSearch(keyword, filtersJson) {
         var page = 1;
         var path = "";
 
+        // 2. Xử lý an toàn filtersJson nếu có truyền vào
         if (filtersJson) {
             var fixedJson = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
                 .replace(/:,/g, ':');
@@ -293,6 +305,7 @@ function parseMovieDetail(htmlContent, url) {
     try {
         log("parseMovieDetail[url]: \n" + url);
 
+        // === BƯỚC 1: ĐỒNG NHẤT ID PHIM BẰNG REGEX META (Y hệt tác giả) ===
         var idMatch = /<link\s+rel="canonical"\s+href="([^"]+)"/i.exec(htmlContent) ||
             /<meta\s+property="og:url"\s+content="([^"]+)"/i.exec(htmlContent);
         var id = idMatch ? idMatch[1] : (url || "");
@@ -307,6 +320,7 @@ function parseMovieDetail(htmlContent, url) {
             slug = slugMatch2 ? slugMatch2[1] : "";
         }
 
+        // === BƯỚC 2: TRÍCH XUẤT THÔNG TIN PHIM ===
         var lurl = "";
         var limg = "";
         var lname = "Đang cập nhật...";
@@ -378,6 +392,7 @@ function parseMovieDetail(htmlContent, url) {
             return match ? parseInt(match[0], 10) : 0;
         }
 
+        // Duyệt qua từng server để sort mảng episodes bên trong
         servers.forEach(server => {
             if (server.episodes && Array.isArray(server.episodes)) {
                 server.episodes.sort((a, b) => {
@@ -424,7 +439,7 @@ function parseMovieDetail(htmlContent, url) {
         });
     }
 }
-
+/*
 function parseDetailResponse(html, url) {
     try {
         log("parseDetailResponse[url]: \n" + url);
@@ -483,6 +498,89 @@ function parseDetailResponse(html, url) {
         return JSON.stringify({ "url": "", "headers": {} });
     }
 }
+*/
+function parseDetailResponse(html, url) {
+    try {
+        log("parseDetailResponse[url]: \n" + url);
+        var allLink = [];
+        _$(html).find('div[class*="list-severs"]').find("a").each(function() {
+            var name = this.text();
+            var link = this.attr("data-src");
+            allLink.push({ link: link, name: name });
+        });
+
+        let selectedLink = null;
+        const pool = { k4: null, hd: null, anyM3u8: null, anyEmbed: null };
+        allLink.forEach((item) => {
+            if (item.name.match(/4k/i) && item.link.endsWith('.m3u8')) {
+                pool.k4 = item.link;
+            } else if (item.name.match(/1080/i) && item.link.endsWith('.m3u8')) {
+                pool.hd = item.link;
+            } else if (item.link.endsWith('.m3u8')) {
+                pool.anyM3u8 = item.link;
+            } else if (item.link.includes('abyss')) {
+                pool.anyEmbed = item.link;
+            }
+        });
+
+        selectedLink = pool.hd || pool.k4 || pool.anyM3u8 || pool.anyEmbed;
+        if (url.indexOf("type=4k") > -1) {
+            selectedLink = pool.k4 || pool.hd || pool.anyM3u8 || pool.anyEmbed;
+            log("parseDetailResponse[url]: \nĐã chọn 4K: " + selectedLink);
+        }
+
+       var streamlink = selectedLink
+       var res = httpRequest(streamlink, {
+            method: "GET",
+            headers: {
+                "Referer": "https://yanhh3d.mom"
+            }
+        }); 
+        
+        if(res.body.indexOf("body") > -1){
+          if(res.body.indexOf("data-obf") > -1){
+            var $doc = _$(res.body);
+            var key = $doc.find("#player").attr("data-obf");
+            var decode = BASE64.decode(key);
+            var $data = JSON.parse(decode);
+            streamlink = $data.pU;
+            console.log("raw_m3u8_base64:\n" + streamlink);
+            
+          }
+          if(res.body.indexOf("var cccc") > -1){
+            // var cccc = "https://scontent-sin2-3-xx.streamrpt.xyz/stream/m3u8/9fb0d469-9cfc-4a97-91f4-fc74615b8d11.m3u8"
+            streamlink = res.body.match(/var cccc[^'"]+["']([^'"]+)["']/i)
+            if(streamlink && streamlink[1]){
+              streamlink = streamlink[1];
+              console.log("raw_m3u8_var:\n" + streamlink);
+            }
+            else{
+              console.log("raw_m3u8_replace 1:\n" + res.body)
+            }
+          }
+          else{
+            console.log("raw_m3u8_replace 2:\n" + res.body)
+          }
+          
+        }
+          
+        return JSON.stringify({
+            "url": streamlink,
+            mimeType: 'application/x-mpegURL',
+            "isEmbed": false,
+            "headers": {
+                "Referer": "https://yanhh3d.mom",
+                "Origin": "https://yanhh3d.mom",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+        });
+
+    } catch (e) {
+        log("parseDetailResponse[err]:\n " + e);
+        return JSON.stringify({ "url": "", "headers": {} });
+    }
+}
+
 
 function parseEmbedResponse(html, url, datasend) {
   console.log("embed Raw:\n" + html)
@@ -491,7 +589,7 @@ function parseEmbedResponse(html, url, datasend) {
       var stream = $data.streams[0].url;
       return JSON.stringify({
         url: stream + "#.m3u8" || url,
-        isEmbed: false, 
+        isEmbed: false, // STOP đệ quy - Trả kết quả cho App phát Video
         mimeType: "video/mp4",
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -504,19 +602,25 @@ function parseEmbedResponse(html, url, datasend) {
   }
 }
 
+
 function customJS(initialLink) {
   return `
 (function () {
     'use strict';
 
+    // Biến trạng thái
     let baseM3u8Url = null;
     let hasSentToBridge = false;
     let fallbackTimer = null;
 
+    // Lưu lại hàm fetch gốc ngay từ đầu để dùng nội bộ, tránh bị hook vòng lặp
     const rawFetch = window.fetch;
     const rawXHROpen = XMLHttpRequest.prototype.open;
     const rawSetAttribute = Element.prototype.setAttribute;
 
+    // ==========================================
+    // 1. HỆ THỐNG TOAST MINI
+    // ==========================================
     function injectToastStyles() {
         if (document.getElementById('ts-toast-styles')) return;
         const style = document.createElement('style');
@@ -553,6 +657,10 @@ function customJS(initialLink) {
         } catch (e) { console.error('Toast error:', e); }
     }
 
+    // ==========================================
+    // 2. LOGIC NATIVE BRIDGE & STREAM ANALYSIS
+    // ==========================================
+
     function isTargetUrl(url) {
         if (!url || typeof url !== 'string') return false;
         return url.includes('.m3u8') || url.includes('.mpd');
@@ -565,7 +673,7 @@ function customJS(initialLink) {
     }
 
     function sendToNativeBridge(playUrl, isTokenUrl) {
-        if (hasSentToBridge) return; 
+        if (hasSentToBridge) return; // Tránh gửi đúp
         hasSentToBridge = true;
         
         if (fallbackTimer) {
@@ -589,10 +697,12 @@ function customJS(initialLink) {
     async function verifyAndProcessRawM3u8(url) {
         try {
             showToast('🔍 Đang fetch thử link gốc...', url);
+            // Dùng rawFetch để không bị lặp vô hạn vào hook của chính mình
             const response = await rawFetch(url);
             
             if (response.ok) {
                 const text = await response.text();
+                // Kiểm tra xem file trả về có đúng chuẩn M3U8 không
                 if (text.includes('#EXTM3U')) {
                     if (!hasSentToBridge) {
                         showToast('✅ Link gốc phát được ngay (Không cần token)', 'Gửi tới Native lập tức!');
@@ -603,8 +713,10 @@ function customJS(initialLink) {
             }
             throw new Error(\`Status \${response.status} hoặc không phải M3U8 chuẩn.\`);
         } catch (error) {
+            // Lỗi 403, 401 hoặc CORS -> Cần token
             showToast('⏳ Link gốc bị khóa. Bắt đầu chờ Iframe/Network lấy Token...', error.message);
             
+            // Cài đặt hàng chờ 20s (nếu không lấy được token nào thì gửi tạm link gốc)
             if (!fallbackTimer && !hasSentToBridge) {
                 fallbackTimer = setTimeout(() => {
                     if (!hasSentToBridge && baseM3u8Url) {
@@ -618,19 +730,24 @@ function customJS(initialLink) {
 
     function processDetectedUrl(url) {
         if (!isTargetUrl(url)) return;
-        if (hasSentToBridge) return; 
+        if (hasSentToBridge) return; // Nếu đã gửi rồi thì bỏ qua mọi link sau đó
 
         const isToken = hasToken(url);
 
         if (isToken) {
             sendToNativeBridge(url, true);
         } else {
+            // Chỉ lưu và test link gốc lần đầu tiên
             if (!baseM3u8Url) {
                 baseM3u8Url = url;
                 verifyAndProcessRawM3u8(url);
             }
         }
     }
+
+    // ==========================================
+    // 3. HOOK NETWORK & DOM
+    // ==========================================
 
     window.fetch = async function (...args) {
         const url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url ? args[0].url : '');
@@ -703,6 +820,7 @@ function parseCategoriesResponse(apiResponseJson) {
 
 function parseCountriesResponse(html) { return "[]"; }
 function parseYearsResponse(html) { return "[]"; }
+// https://k8s.onflixcdn.com/api/movies?sort=year_desc&limit=24&category=chien-tranh
 function getLISTmenu() {
     return `
 /the-loai/huyen-huyen@@Huyền Huyễn
