@@ -1,4 +1,4 @@
-lo{
+{
   "version": 1,
   "plugins": [
      {
@@ -143,9 +143,9 @@ lo{
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortmax.png"
     },
     {
-      "id": "yanhh3d",
-      "name": "Yanhh3d [ANIME]",
-      "version": "2.3.0",
+      "id": "Hh3D",
+      "name": "Hoạt Hình 3D",
+      "version": "1.3.5",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HH3DNew_plugin.js",
       "iconUrl": "https://hoathinh3d.co/wp-content/uploads/2023/09/favicon.png"
     },
