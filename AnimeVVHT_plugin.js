@@ -1,17 +1,17 @@
 var iddomain = "animevv"
 BASEURL = "https://vkey.vn/" + iddomain;
 //var BASEURL = "https://animevv.com";
-
+var popup_html = "";
 var DEV = true;
 function getManifest() {
   return JSON.stringify({
     id: "animevv",
     name: "Nguồn Animevv",
     description: "Nguồn phim Animevv...",
-    "version": "1.3",
+    "version": "2.1",
     info: "",
     "BASEURL": BASEURL,
-    iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/animevv.png",
+    iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/icon/animevv.png",
     isEnabled: true,
     "adblock": false,
     type: "ANIME",
@@ -20,6 +20,7 @@ function getManifest() {
     playerType: "embedtoexoplay"
   });
 }
+// popup_html: popup_html,
 
 function log(msg) {
   	console.log(msg);
