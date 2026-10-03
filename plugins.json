@@ -157,11 +157,11 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hhpanda.png"
     },
     {
-      "id": "animehay",
-      "name": "Animehay",
-      "version": "1.8.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/AnimeVVHT_plugin.js",
-      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZUJFommwTmhA50YpBZs8H9bADnyol72lPnTjsBrhHM_zGkmE32Z1JCZrB&s=10"
+      "id": "cartoon",
+      "name": "Cartoon [ANIME]",
+      "version": "1.2.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Cartoon_plugins.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/cartoon.png"
     },
     {
       "id": "animevv",
