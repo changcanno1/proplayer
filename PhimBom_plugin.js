@@ -7,13 +7,13 @@ var popup_html = "";
 function getManifest() {
   try{
     return JSON.stringify({
-      "id": "PhimBom",
-      "name": "[MOVIE] Phim Bom",
-      "version": "2.0",
+      "id": "phimbom",
+      "name": "Phim Bom [MOVIE]",
+      "version": "2.1",
       "author": "Alokillgtv",
       "info": "",
       "baseUrl": BASEURL,
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/phimbom.png",
       "isEnabled": true,
       "isAdult": false,
       "adblock": false,
