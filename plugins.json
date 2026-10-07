@@ -51,13 +51,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
     },
     {
-      "id": "onflix",
-      "name": "Onflix",
-      "version": "1.2.3",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/OnflixHT_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
-    },
-    {
       "id": "vsmov",
       "name": "Nguồn Vsmov",
       "version": "2.1.0",
@@ -105,6 +98,13 @@
       "version": "2.2.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/4KMovieHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/4kmovie.png"
+    },
+      {
+      "id": "onflix",
+      "name": "Onflix",
+      "version": "1.2.3",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/OnflixHT_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
     },
      {
       "id": "phimngan_net",
