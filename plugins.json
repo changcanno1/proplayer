@@ -58,13 +58,6 @@
       "iconUrl": "https://phimhdcss.com/favicon.ico"
     },
     {
-      "id": "bilutv",
-      "name": "[MOVIE] Bilutv",
-      "version": "1.5.6",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Bilutv_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
-    },
-    {
       "id": "phimfun",
       "name": "Nguồn Phim Fun",
       "version": "1.1.8",
@@ -98,6 +91,13 @@
       "version": "1.2.3",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/OnflixHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
+    },
+    {
+      "id": "bilutv",
+      "name": "[MOVIE] Bilutv",
+      "version": "1.5.6",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Bilutv_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
     },
     {
       "id": "PhimBom",
