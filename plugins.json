@@ -37,13 +37,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vn2c.png"
     },
     {
-      "id": "PhimBom",
-      "name": "PhimBom",
-      "version": "2.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
-    },
-    {
       "id": "kkphim",
       "name": "KKPhim",
       "version": "1.0.9",
@@ -99,12 +92,19 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/4KMovieHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/4kmovie.png"
     },
-      {
+    {
       "id": "onflix",
       "name": "Onflix",
       "version": "1.2.3",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/OnflixHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
+    },
+    {
+      "id": "PhimBom",
+      "name": "PhimBom",
+      "version": "2.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
     },
      {
       "id": "phimngan_net",
