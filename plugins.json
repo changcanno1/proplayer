@@ -122,6 +122,13 @@
       "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
     },
     {
+      "id": "netshort",
+      "name": "Netshort [SHORT]",
+      "version": "2.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Netshort_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/netshort.png"
+    },
+    {
       "id": "Mê Phim Ngắn",
       "name": "Mê Phim Ngắn",
       "version": "1.1.0",
