@@ -1,25 +1,24 @@
 var BASEURL = "https://netshort.com";
 var BASEAPI = "http://vkey.vn/novahd/api";
 var BASELINK = BASEURL;
-
+var popup_html = "";
 // https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
   try{
     return JSON.stringify({
       "id": "netshort",
-      "name": "Nguồn Netshort",
-      "version": "1.0",
+      "name": "Netshort [SHORT]",
+      "version": "2.1",
       "author": "Alokillgtv",
       "info": "Nguồn phim ngắn của netshort",
       "baseUrl": BASEURL,
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/netshort.png",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/netshort.png",
       "isEnabled": true,
       "isAdult": false,
       "adblock": false,
-      "layoutType": "HORIZONTAL",
       "type": "shortfilm",
       "subtitleCat": false,
-      "debug": true,
+      popup_html: popup_html,
       "playerType": "exoplayer"
     });
   }
@@ -28,7 +27,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "loiapp",
       "name": "Plugin bị lỗi cài đặt",
-      "version": "1.0",
+      "version": "2.0",
       "info": "Plugin đang bị lỗi: \n" + e,
       "baseUrl": "http://vkey.vn/",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/novahd.png",
@@ -175,6 +174,12 @@ function getUrlSearch(keyword, filtersJson) {
       }
   }
 } // getUrlList, getUrlSearch
+// http://vkey.vn/animevv
+// /quoc-gia/M%E1%BB%B9
+// /top
+//filtersJson = "{page:5}"
+//getUrlList("/top", filtersJson)
+//getUrlSearch("girl", filtersJson)
 // ===== HÀM TẠO URL END ======
 
 // ===== HÀM TẠO KHỐI LIST PHIM BEGIN ======
@@ -184,8 +189,8 @@ function parseListResponse(html, url) {
             "items": [{
                 "id": "/vi/drama/all-plots" || "error_url",
                 "title": "Netshort này không search được nha bạn.",
-                "posterUrl": "https://vaxplugin.alokillgtv.workers.dev/img/search.png",
-                "backdropUrl": "https://vaxplugin.alokillgtv.workers.dev/img/search.png",
+                "posterUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/search.png",
+                "backdropUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/search.png",
                 quality: "CAT"
             }],
             "pagination": {
@@ -262,6 +267,8 @@ function parseListResponse(html, url) {
         });
     }
 }
+//html = sourceHTML;
+//$data = parseJSDataIsolated(script);
 // ===== HÀM TẠO KHỐI LIST PHIM END ======
 
 // ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
@@ -295,12 +302,14 @@ function parseMovieDetail(html, url) {
         var extra = "";
 
         // Tách ID Video
+                // Tách ID Video
         var matchId = url.match(/(\d{17,20})(?:-ep-\d+)?(?:[?#]|$)/i);
         var idvideo = matchId ? matchId[1] : "";
 
         if (!idvideo) {
             throw new Error("Không thể trích xuất ID video từ URL: " + url);
         }
+
 
         var servers = [];
         for (var $h = 1; $h < 3; $h++) {
@@ -368,12 +377,20 @@ function parseMovieDetail(html, url) {
         });
     }
 }
+
+//var url = "https://novahd.cc/api/show/1413"
+//var url = "http://vkey.vn/novahd/api/show/1413"
+// https://novahd.cc/api/shows/1413
+//var html = sourceHTML;
+//JSON.parse(parseMovieDetail(sourceHTML, url))
 // ===== HÀM TẠO KHỐI CHI TIẾT PHIM END ======
 
 // ===== HÀM TẠO XỬ LÝ STREAM PHIM BEGIN ======
 {
  function parseDetailResponse(html, url) {
     log("parseEmbedResponse [url]: " + url); 
+    //log("parseEmbedResponse raw: " + html); 
+  //console.log("parseEmbedResponse [Raw]: " + html);
     try {
     
     function getQueryParam(url, param) {
@@ -386,39 +403,27 @@ function parseMovieDetail(html, url) {
     var sv = getQueryParam(url, "sv");           // "2"
     var eq = getQueryParam(url, "eq");           // "1"
 
+      // https://cdn-netshort.dramafren.org/index.php?action=resolve_watch&id=2087124383822565377&ep=28&server=1&_=1787627634991&lang=vi
       var stream = "https://cdn-netshort.dramafren.org/index.php?action=resolve_watch&id="+idvideo+"&ep="+ep+"&lang=vi&sv="+sv+"&eq=" + eq;
-      var customJS = clearJS(rawJS);
+      // Mimetype application/x-mpegURL video/mp4
       console.log("parseEmbedResponse fetch\n" + stream);
-  
-      var $return = JSON.stringify({
-        url: stream,
-        isEmbed: true,
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Referer": "https://netshort.dramafren.org",
-          "Origin": "https://netshort.dramafren.org"        },
-        subtitles: [{
-          lang: "",
-          url: ""
-        }],      
-      });
-      console.log("Return Embed:\n" + $return)
-      return $return
-    } catch (e) {
-      console.log("[Lỗi parseEmbedResponse]", e);
-      return JSON.stringify({ 
-        url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-        mimeType: "video/mp4", 
-        isEmbed: false, headers: {}, subtitles: [] 
-      });
-    }
-  }
- function parseEmbedResponse(html, url) {
-    console.log("parseDetailResponse dang xu ly: " + url);
-    console.log("parseDetailResponse raw: " + html);
-    try {
-        var responseData = JSON.parse(html);
 
+var res = httpRequest(stream, {
+    method: "GET",
+    headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "User-Agent": "Mozilla/5.0...",
+        "Referer": "https://netshort.dramafren.org",
+        "Origin": "https://netshort.dramafren.org"     
+    },
+});
+
+if (res && res.isSuccessful) {
+    console.log("Nội dung body:", res.body);
+  
+    var responseData = JSON.parse(res.body);
+
+        // Trích xuất tham số eq từ URL (ví dụ eq=3 -> index 3)
         var eqMatch = url.match(/[?&]eq=(\d+)/i);
         var index = eqMatch ? parseInt(eqMatch[1], 10) : 1;
 
@@ -432,6 +437,77 @@ function parseMovieDetail(html, url) {
             return "video/mp4";
         }
 
+        // Sắp xếp các độ phân giải từ cao xuống thấp
+        var sortedQualities = (responseData.qualities || []).slice().sort(function(a, b) {
+            var resA = parseInt((a.quality.match(/(\d+)p/) || [0, 0])[1], 10);
+            var resB = parseInt((b.quality.match(/(\d+)p/) || [0, 0])[1], 10);
+            return resB - resA; 
+        });
+
+        var stream = "";
+
+        if (sortedQualities.length > 0) {
+            var targetIndex = Math.max(0, Math.min(index - 1, sortedQualities.length - 1));
+            stream = sortedQualities[targetIndex].url;
+        } else {
+            stream = responseData.videoUrl || "";
+        }
+
+        var mimeType = getMimeType(stream);
+        var subtitle = (responseData.subtitles || []).map(function(sub) {
+            var subUrl = typeof sub === "string" ? sub : sub.url;
+            return {
+                lang: sub.lang || sub.name || "Vietsub",
+                url: subUrl,
+                mimeType: "text/vtt"
+            };
+        });
+
+        var baseReferer = typeof BASEURL !== "undefined" ? BASEURL : "https://www.netshort.com/";
+
+        return JSON.stringify({
+            url: stream,
+            mimeType: mimeType,
+            isEmbed: false,
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Referer": baseReferer,
+                "Origin": baseReferer
+            },
+            subtitles: subtitle
+        });
+}
+
+    } catch (e) {
+      console.log("[Lỗi parseEmbedResponse]", e);
+      return JSON.stringify({ 
+        url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+        mimeType: "video/mp4", 
+        isEmbed: false, headers: {}, subtitles: [] 
+      });
+    }
+  }
+ function parseEmbedResponse(html, url) {
+    console.log("parseDetailResponse dang xu ly: " + url);
+   // console.log("parseDetailResponse raw: " + html);
+    try {
+        var responseData = JSON.parse(html);
+
+        // Trích xuất tham số eq từ URL (ví dụ eq=3 -> index 3)
+        var eqMatch = url.match(/[?&]eq=(\d+)/i);
+        var index = eqMatch ? parseInt(eqMatch[1], 10) : 1;
+
+        function getMimeType(targetUrl) {
+            if (!targetUrl) return "video/mp4";
+            var cleanUrl = targetUrl.split("?")[0].toLowerCase();
+            if (cleanUrl.endsWith(".m3u8")) return "application/x-mpegURL";
+            if (cleanUrl.endsWith(".mpd")) return "application/dash+xml";
+            if (cleanUrl.endsWith(".vtt")) return "text/vtt";
+            if (cleanUrl.endsWith(".srt")) return "application/x-subrip";
+            return "video/mp4";
+        }
+
+        // Sắp xếp các độ phân giải từ cao xuống thấp
         var sortedQualities = (responseData.qualities || []).slice().sort(function(a, b) {
             var resA = parseInt((a.quality.match(/(\d+)p/) || [0, 0])[1], 10);
             var resB = parseInt((b.quality.match(/(\d+)p/) || [0, 0])[1], 10);
@@ -485,7 +561,7 @@ function parseMovieDetail(html, url) {
 } // parseDetailResnse, parseEmbedResponse
 // ===== HÀM TẠO XỬ LÝ STREAM PHIM END ======
 
-// ==== HÀM TẠO CUSTOM SCRIPT BEGIN ====
+// ==== HÀM TẠO CUSTOMpo SCRIPT BEGIN ====
 function rawJS(){
  function LOG(msg, check) {
     var logMsg = msg;
@@ -1237,7 +1313,7 @@ BASE64 = {
         var fixedLine = currentLine;
         if (returnFixed) {
           // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
-          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
+          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
         }
   
         fixedLines.push(fixedLine);
