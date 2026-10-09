@@ -1,16 +1,18 @@
 var iddomain = "1phim"
 BASEURL = "https://vkey.vn/" + iddomain;
 var BASELINK = BASEURL;
+var popup_html = "";
+// https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
   try{
     return JSON.stringify({
       "id": "phimlongtieng",
-      "name": "[MOVIE] Phim Lồng Tiếng",
-      "version": "1.1.6",
+      "name": "Phim Lồng Tiếng [MOVIE]",
+      "version": "2.2",
       "author": "Alokillgtv",
       "info": "",
       "baseUrl": "https://www.1phim23.com",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/phimlongtieng.png",
       "isEnabled": true,
       "isAdult": false,
       "adblock": false,
@@ -24,7 +26,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "loiapp",
       "name": "Plugin bị lỗi cài đặt",
-      "version": "1.0",
+      "version": "2.0",
       "info": "Plugin đang bị lỗi: \n" + e,
       "baseUrl": "http://vkey.vn/",
       "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
@@ -540,7 +542,17 @@ function parseMovieDetail(html, url) {
       } else {
         var targetIndex = server - 1;
         if (links.length > targetIndex && links[targetIndex]) {
+          
+          if (links[targetIndex].indexOf("player-cdn.com") !== -1) {
+          var vMatch = links[targetIndex].match(/[?&]v=([^&]+)/i);
+          if (vMatch && vMatch[1]) {
+              stream = "https://abysscdn.com/?v="  + vMatch[1];
+              mimeType = "video/mp4";
+              isEmbed = false;
+            }
+          }
           stream = processLink(links[targetIndex]);
+          
         } else {
           stream = processLink(getPriorityLink(links));
         }
