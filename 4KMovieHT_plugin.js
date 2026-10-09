@@ -6,15 +6,15 @@ function getManifest() {
   try{
     return JSON.stringify({
       "id": "4kmovie",
-      "name": "[MOVIE] 4K Movie",
+      "name": "4K Movie [MOVIE]",
       "description": "Nguồn phim 4K Movie",
-      "version": "2.2",
+      "version": "2.4",
       "author": "Alokillgtv",
       "headers":{
           "X-VAX-YB": "deo_co_gi_de_coi"
       },
       "BASEURL": BASEURL,
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/4kmovie.png",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/4kmovie.png",
       "isEnabled": true,
       "isAdult": false,
       "adblock": false,
@@ -997,10 +997,16 @@ function parseEmbedResponse(html, url) {
         var subtitleList = [];
         subtitlesData.forEach(function(item) {
             var itemUrl = item.url || item.file || item.src || "";
+            var sname = item.name || item.display || item.label || "Subtitle";
             if (!itemUrl) return;
-
+            if (sname.match(/english|eng/i)){
+              itemUrl = "https://trans.alokillgtv02.workers.dev/?sub_url="+BASE64.encode(itemUrl)+"&sl=auto&tl=vi&cache=false";
+              item.mimetype = "text/vtt"
+              console.log("dịch subeng:\n" + itemUrl);
+              sname = "[4. AI] Vietsub"
+            }
             subtitleList.push({
-                lang: item.name || item.display || item.label || "Subtitle",
+                lang: sname,
                 url: itemUrl,
                 mimeType: item.mimetype || item.mimeType || "text/vtt"
             });
@@ -1041,7 +1047,7 @@ function parseEmbedResponse(html, url) {
             subtitles: subtitleList
         });
 
-        console.log("streamdata embed:\n" + $return);
+      //  console.log("streamdata embed:\n" + $return);
         return $return;
 
     } catch (e) {
