@@ -6,16 +6,16 @@ var popup_html = "";
 function getManifest() {
   return JSON.stringify({
     id: "novahd",
-    name: "[MOVIE] Nova HD",
+    name: "Nguồn NovaHD",
     description: "Nguồn phim NovaHD",
-    "version": "2.3",
+    "version": "2.4",
     "author": "Alokillgtv",
       "headers":{
           "X-VAX-YB": "deo_co_gi_de_coi"
       },
     info: "",
     BASEURL: BASEURL,
-    iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/novahd.png",
+    iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/icon/novahd.png",
     isEnabled: true,
     "adblock": false,
     "author": "Alokillgtv",
