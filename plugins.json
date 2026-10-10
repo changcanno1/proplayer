@@ -50,12 +50,19 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
-   {
-      "id": "phimhdcs",
-      "name": "Phim HDCS",
-      "version": "1.1.7",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
-      "iconUrl": "https://phimhdcss.com/favicon.ico"
+       {
+      "id": "bilutv",
+      "name": "[MOVIE] Bilutv",
+      "version": "1.5.6",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Bilutv_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
+    },
+    {
+      "id": "PhimBom",
+      "name": "PhimBom",
+      "version": "2.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
     },
     {
       "id": "phimfun",
@@ -92,20 +99,14 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/OnflixHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
     },
-    {
-      "id": "bilutv",
-      "name": "[MOVIE] Bilutv",
-      "version": "1.5.6",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Bilutv_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
+       {
+      "id": "phimhdcs",
+      "name": "Phim HDCS",
+      "version": "1.1.7",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
+      "iconUrl": "https://phimhdcss.com/favicon.ico"
     },
-    {
-      "id": "PhimBom",
-      "name": "PhimBom",
-      "version": "2.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
-    },
+ 
      {
       "id": "phimngan_net",
       "name": "Phim Ngắn Net",
