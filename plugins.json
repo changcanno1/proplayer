@@ -1,12 +1,12 @@
 {
   "version": 1,
   "plugins": [
-     {
-      "id": "nguoncnew",
-      "name": "Phim NguonC VIP",
-      "version": "1.8.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
+    {
+      "id": "vsmov",
+      "name": "Nguồn Vsmov",
+      "version": "2.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
+      "iconUrl": "https://vsmov.com/VSmov.png"
     },
     {
       "id": "vicdn",
@@ -44,11 +44,11 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
     },
     {
-      "id": "vsmov",
-      "name": "Nguồn Vsmov",
-      "version": "2.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
-      "iconUrl": "https://vsmov.com/VSmov.png"
+      "id": "nguoncnew",
+      "name": "Phim NguonC VIP",
+      "version": "1.8.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
        {
       "id": "bilutv",
