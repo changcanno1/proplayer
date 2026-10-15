@@ -11,8 +11,6 @@ function getManifest() {
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/nguoncnew.png",
         "isEnabled": true,
         "type": "MOVIE",
-        "popup_html": popuphtml,
-        "author": "Alokillgtv",
         "playerType": "embedtoexoplay"
     });
 }
