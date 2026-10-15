@@ -1,5 +1,6 @@
 var iddomain = "animevv"
-BASEURL = "https://vkey.vn/" + iddomain;
+BASEURL = "https://animevv.com";
+NEWDOMAIN = true;
 //var BASEURL = "https://animevv.com";
 var popup_html = "";
 var DEV = true;
@@ -8,7 +9,7 @@ function getManifest() {
     id: "animevv",
     name: "Nguồn Animevv",
     description: "Nguồn phim Animevv...",
-    "version": "2.1",
+    "version": "2.4",
     info: "",
     "BASEURL": BASEURL,
     iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/icon/animevv.png",
@@ -17,7 +18,7 @@ function getManifest() {
     type: "ANIME",
     "author": "Alokillgtv",
     
-    playerType: "embedtoexoplay"
+    playerType: "auto"
   });
 }
 // popup_html: popup_html,
@@ -26,18 +27,19 @@ function log(msg) {
   	console.log(msg);
 }
 
-if (typeof httpRequest === "function") {
-  var res = httpRequest("https://vaxplugin.alokillgtv.workers.dev/jsonStore/domain.json?debug=9780752&time=2323", {method: "POST"});
-  if (res && res.isSuccessful) {
-    var resobj = JSON.parse(res.body);
-    BASEURL = resobj[iddomain].new;   
-  } else {
-    BASEURL = "https://vkey.vn/" + iddomain;
-  }
-} else {
-  BASEURL = "https://vkey.vn/" + iddomain;
-}
-
+if (NEWDOMAIN) {
+    if (typeof httpRequest === "function") {
+        var res = httpRequest("https://vaxplugin.alokillgtv.workers.dev/jsonStore/domain.json?debug=9780752&time=2323", {
+            method: "POST"
+        });
+        if (res && res.isSuccessful) {
+            var resobj = JSON.parse(res.body);
+            if (resobj[iddomain]) {
+                BASEURL = resobj[iddomain].new;
+            }
+        } 
+    } 
+} 
 BASELINK = BASEURL;
 console.log("BASEURL " + BASEURL);
 
@@ -233,46 +235,64 @@ function getUrlYears() {
 
 function parseListResponse(html, $url) {
     try {
-        var $doc = _$(html)
+        var $doc = _$(html);
         var json = $doc.find("script[type='application/json']").html();
+        if (!json) throw new Error("Không tìm thấy script JSON");
         var $data = JSON.parse(json);
-        listData = $data.props.results.data;
+
+        // ✅ Defensive parsing — chấp nhận nhiều structure
+        var listData = [];
+        if ($data && $data.props) {
+            var p = $data.props;
+
+            if (p.results && Array.isArray(p.results.data))     listData = p.results.data;
+            else if (Array.isArray(p.results))                  listData = p.results;
+            else if (Array.isArray(p.items))                    listData = p.items;
+            else if (Array.isArray(p.animes))                   listData = p.animes;
+            else if (Array.isArray(p.data))                     listData = p.data;
+            else {
+                // Fallback: quét key nào là mảng có item hợp lệ
+                for (var k in p) {
+                    if (Array.isArray(p[k]) && p[k].length > 0) {
+                        var first = p[k][0];
+                        if (first && (first.slug || first.id || first.title)) {
+                            listData = p[k];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (!Array.isArray(listData)) listData = [];
+
         var $items = [];
-        listData.forEach(function(item){
-            // https://animevv.com/anime/kimi-no-koto-ga-daidaidaidaidaisuki-na-100-nin-no-kanojo-p5072
-            var poster = BASEURL + item.thumbnailOptimized;
-            var background = BASEURL + item.backgroundOptimized;
-            var year = Number(item.year);
+        listData.forEach(function(item) {
+            var poster = BASEURL + (item.thumbnailOptimized || item.thumbnail || "");
+            var background = item.backgroundOptimized
+                ? BASEURL + item.backgroundOptimized
+                : (item.background ? BASEURL + item.background : poster);
+            var year = Number(item.year) || 2026;
+
             $items.push({
-                "id": BASEURL + "/anime/" + item.slug,
-                "title": item.title,
-                "quality": item.lastEpisodeName,
-                "episode_current": item.statusEpisode,
-                "posterUrl": typeof poster === "string" ? poster : "",
-                "backdropUrl": typeof background === "string" ? background : "",
-                "year": typeof year === "number" ? year : 2026
+                "id":              BASEURL + "/anime/" + (item.slug || item.id || ""),
+                "title":           item.title || item.name || "",
+                "quality":         item.lastEpisodeName || "",
+                "episode_current": item.statusEpisode || "",
+                "posterUrl":       typeof poster === "string" ? poster : "",
+                "backdropUrl":     typeof background === "string" ? background : "",
+                "year":            year
             });
-        })
+        });
+
         return JSON.stringify({
             "items": $items,
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 9999
-            }
+            "pagination": { "currentPage": 1, "totalPages": 9999 }
         });
     } catch (e) {
-        log("parseListResponse[err]:\n " + e);
+        log("parseListResponse[err]: " + e);
         return JSON.stringify({
-            "items": [{
-                "id": $url || "error_url",
-                "title": "Lỗi: " + e,
-                "posterUrl": "",
-                "backdropUrl": ""
-            }],
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 1
-            }
+            "items": [],
+            "pagination": { "currentPage": 1, "totalPages": 1 }
         });
     }
 }
@@ -389,208 +409,595 @@ function parseMovieDetail(html, url) {
         });
     }
 }
-//var html = sourceHTML;
-//var url = "https://hentaivietsub.com/hentai/enjo-kouhai-tap-11?//current=1&maxEpi=11"
-//JSON.parse(parseMovieDetail(sourceHTML, "https://vicdn.cc/api/info/tv-278275-1"))
 
-//$data = JSON.parse(sourceHTML)
+function parseDetailResponse(html, url, datasend) {
+    console.log("[animevv] " + url);
 
-/*
-    var $doc = _$(html);
-    var script = $doc.find("script:content('subtitles')").html()
-    var match = script.match(/subtitles:\s*(\[\s*\{.*?\}\s*\])/s);
-    var domain = url.replace(/^(https?:\/\/[^\/]+).*\/, "$1");
-    var subs = [];
-*/
+    // ============ 1. Lấy sourceId từ Inertia page ============
+    var sourceId = null;
+    try {
+        var im = html.match(/<script[^>]*data-page=["']app["'][^>]*>([\s\S]*?)<\/script>/);
+        if (im) {
+            var raw = im[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#039;/g, "'");
+            var pageData = JSON.parse(raw);
+            var sources = (pageData.props || {}).sources || [];
+            if (sources.length > 0 && sources[0].id) {
+                sourceId = sources[0].id;
+                console.log("[animevv] sourceId=" + sourceId);
+            }
+        }
+    } catch(e) { console.log("[animevv] parse page err: " + e); }
 
-function parseDetailResponse(html, url) {
-  try {
-    console.log("parseDetailResponse dang xu ly: " + url);
-    var rawJS = runJS();
+    if (!sourceId) return fallbackWebView(url);
+
+    // ============ 2. Lấy XSRF token từ cookie ============
+    var xsrf = "";
+    try {
+        var ck = getCookie("https://animevv.com") || "";
+        var xm = ck.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+        if (xm) xsrf = decodeURIComponent(xm[1]);
+    } catch(e) {}
+
+    if (!xsrf) {
+        console.log("[animevv] no XSRF → WebView fallback");
+        return fallbackWebView(url);
+    }
+    console.log("[animevv] XSRF len=" + xsrf.length);
+
+    var commonHeaders = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        "X-XSRF-TOKEN": xsrf,
+        "Referer": url,
+        "Origin": "https://animevv.com",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36"
+    };
+
+    // ============ 3. POST grant ============
+    var grantRes = httpRequest("https://animevv.com/player/playback/grant", {
+        method: "POST",
+        headers: commonHeaders,
+        body: JSON.stringify({ sourceId: sourceId })
+    });
+
+    if (!grantRes || !grantRes.isSuccessful) {
+        console.log("[animevv] grant fail status=" + (grantRes && grantRes.status));
+        return fallbackWebView(url);
+    }
+
+    var grant = "";
+    try { grant = JSON.parse(grantRes.body).grant || ""; } catch(e) {}
+    if (!grant) {
+        console.log("[animevv] no grant field");
+        return fallbackWebView(url);
+    }
+    console.log("[animevv] grant OK len=" + grant.length);
+
+    // ============ 4. POST bootstrap ============
+    var bootstrapRes = httpRequest("https://animevv.com/player/playback/bootstrap", {
+        method: "POST",
+        headers: commonHeaders,
+        body: JSON.stringify({
+            grant: grant,
+            clientPublicKey: "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEh637VJCJ1s75IlgkAOvQRW21DQt0qYmSf0qtXo7873O0JT5Q2JA5uJbqUq_j-H40D2lNR3Q2aSMupxz7QHVntw",
+            turnstileToken: null,
+            capabilities: {
+                webCrypto: true,
+                serviceWorker: true,
+                directPlayback: true,
+                compressionStream: true
+            }
+        })
+    });
+
+    if (!bootstrapRes || !bootstrapRes.isSuccessful) {
+        console.log("[animevv] bootstrap fail status=" + (bootstrapRes && bootstrapRes.status));
+        return fallbackWebView(url);
+    }
+
+    var bj = {};
+    try { bj = JSON.parse(bootstrapRes.body); } catch(e) {}
+    console.log("[animevv] bootstrap type=" + bj.type + " mode=" + bj.mode);
+
+    // ============ 5. RẼ NHÁNH ============
+    var embedUrl = bj.embedUrl || bj.url || "";
+
+    // --- LUỒNG 1: có embed URL (playhydrax / abysscdn / m3u8 trực tiếp) ---
+    if (embedUrl) {
+        // 1a. playhydrax → abysscdn
+        var hm = embedUrl.match(/playhydrax\.com\/([A-Za-z0-9_-]+)/i);
+        if (hm && hm[1]) {
+            var abyssUrl = "https://abysscdn.com/?v=" + hm[1];
+            console.log("[animevv] ✅ LUỒNG 1 → abysscdn: " + abyssUrl);
+            return JSON.stringify({
+                url: abyssUrl,
+                isEmbed: false,
+                mimeType: "video/mp4",
+                headers: {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
+                    "Referer": "https://playhydrax.com/",
+                    "Origin": "https://playhydrax.com"
+                },
+                subtitles: []
+            });
+        }
+
+        // 1b. m3u8 trực tiếp
+        if (embedUrl.indexOf(".m3u8") > -1) {
+            console.log("[animevv] ✅ LUỒNG 1 → m3u8: " + embedUrl);
+            return JSON.stringify({
+                url: embedUrl,
+                isEmbed: false,
+                mimeType: "application/x-mpegURL",
+                headers: {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
+                    "Referer": "https://animevv.com/",
+                    "Origin": "https://animevv.com"
+                },
+                subtitles: []
+            });
+        }
+
+        // 1c. URL khác → WebView generic
+        console.log("[animevv] ✅ LUỒNG 1 → generic: " + embedUrl);
+        return JSON.stringify({
+            url: embedUrl,
+            isEmbed: true,
+            mimeType: "",
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
+                "Referer": "https://animevv.com/",
+                "Block-Ads": true,
+                "Stream-Regex": "https?:\\/\\/[^\"']+\\.m3u8[^\"']*"
+            },
+            subtitles: []
+        });
+    }
+
+    // --- LUỒNG 2: type=api, jwplayer, secureEnvelope → WebView + blob hook ---
+    console.log("[animevv] ✅ LUỒNG 2 → WebView + blob hook");
+    return fallbackWebView(url);
+}
+
+function fallbackWebView(url) {
     return JSON.stringify({
-      url: url,
-      isEmbed: false,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Referer: BASEURL,
-        "Block-Ads": false,
-        "Block-Css": "html,body,*",
-        "Custom-Js": rawJS
-      },
-      subtitles: [],
+        url: url,
+        isEmbed: false,
+        mimeType: "",
+        headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
+            "Referer": BASEURL,
+            "Block-Ads": false,
+            "Block-Domains": "google.com,www.google.com,iz.shrikesanopias.cyou,073m.com,meatusbyway.cfd,podzols.lactoidhazansswagers.cyou,kr.hutchetcymblin.com,uv.pastfibres.cfd,tc.sovransbraws.com,googlesyndication.com,doubleclick.net,googleadservices.com,googletagmanager.com,google-analytics.com",
+            "Custom-Js": runJS()
+        },
+        subtitles: []
     });
-  } catch (e) {
-    log("parseDetailResponse[err]:\n " + e);
-        return JSON.stringify({ 
-      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-      mimeType: "video/mp4", 
-      isEmbed: false, headers: {}, subtitles: [] 
+}
+
+function makeStream(m3u8Url, referer) {
+    console.log("🎬 Return stream: " + m3u8Url);
+    return JSON.stringify({
+        url: m3u8Url,
+        mimeType: "application/x-mpegURL",
+        isEmbed: false,
+        headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
+            "Referer": referer || "https://abysscdn.com/",
+            "Origin": "https://abysscdn.com"
+        },
+        subtitles: []
     });
-  }
 }
 
 
 function runJS() {
-    return `
-function bridgeLog(msg, check) {
+    return `(function(){
+if (window.__vax_mse) return;
+window.__vax_mse = 1;
+
+// ═══════════════════════════════════════════════════════════════════
+// 1. CHẶN CONSOLE WEB — dùng Object.defineProperty (mạnh hơn)
+// ═══════════════════════════════════════════════════════════════════
+try {
+    var noop = function(){};
+    var fakeConsole = {
+        log: noop, warn: noop, error: noop, info: noop, debug: noop,
+        trace: noop, dir: noop, table: noop, group: noop, groupEnd: noop,
+        groupCollapsed: noop, time: noop, timeEnd: noop, timeLog: noop,
+        assert: noop, count: noop, countReset: noop, clear: noop
+    };
     try {
-      if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
-        window.SnifferBridge.log(msg);
-        if (check === true && typeof window.SnifferBridge.toast === 'function') {
-          window.SnifferBridge.toast(msg, 1000);
-        }
-      } else if (typeof console !== 'undefined' && console.log) {
-        console.log(msg);
-      }
-    } catch(e) {}
-  }
-(function injectCSS() {
-  try {
-    // 1. Khai báo nội dung CSS của bạn ở đây
-    const cssStyle = "body,html,*{display:none!important,backgroud:black!important;opacity:0!important;z-index:-999999}";
-
-    // 2. Tạo thẻ <style>
-    const styleElement = document.createElement('style');
-    styleElement.type = 'text/css';
-    styleElement.setAttribute('data-injected-by', 'custom-script');
-
-    if (styleElement.styleSheet) {
-      // Dành cho các trình duyệt IE cũ
-      styleElement.styleSheet.cssText = cssStyle;
-    } else {
-      // Dành cho trình duyệt hiện đại
-      styleElement.appendChild(document.createTextNode(cssStyle));
+        Object.defineProperty(window, 'console', {
+            get: function(){ return fakeConsole; },
+            set: function(){},
+            configurable: false,
+            enumerable: true
+        });
+    } catch(e1) {
+        try { window.console = fakeConsole; } catch(e2){}
     }
+} catch(e){}
 
-    // 3. Tìm vị trí để chèn (ưu tiên <head>, nếu chưa có head thì lấy documentElement)
-    const targetNode = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
+var G = function(m){ try{ SnifferBridge.log('[GUARD] '+m); }catch(e){} };
+var L = function(m){ try{ SnifferBridge.log('[MSE] '+m); }catch(e){} };
+G('install');
 
-    if (targetNode) {
-      targetNode.appendChild(styleElement);
-      bridgeLog("Chèn css ngay lập tức.")
-    } else {
-      // Fallback: Nếu DOM chưa sẵn sàng, chờ DOMContentLoaded rồi mới chèn
-      document.addEventListener('DOMContentLoaded', function () {
-        (document.head || document.documentElement).appendChild(styleElement);
-        bridgeLog("Chèn Css sau khi load xong")
-      });
-    }
-  } catch (error) {
-    // Bắt toàn bộ lỗi để đảm bảo script chính vẫn tiếp tục chạy bình thường
-    bridgeLog('Không thể chèn CSS tự động, bỏ qua lỗi:', error);
-  }
-})();
-
-(function initLocalBlobSniffer() {
-  if (window.__BLOB_SNIFFER_INITIALIZED__) return;
-  window.__BLOB_SNIFFER_INITIALIZED__ = 1;
-
-  var hasDispatchedAny = 0;
-  var isFinished = 0;
-  var timeoutTimer = null;
-
-  
-
-  // =========================================================================
-  // 1. GIỚI HẠN THỜI GIAN 10 GIÂY (TIMEOUT)
-  // =========================================================================
-  bridgeLog("Đang tiến hành tìm link Video, xin chờ....", true);
-
-  timeoutTimer = setTimeout(function() {
-    if (hasDispatchedAny === 0 && isFinished === 0) {
-      isFinished = 1;
-      bridgeLog("❌ [TIMEOUT] Đã quá 10 giây nhưng không tìm thấy Blob M3U8!", false);
-      bridgeLog("Không tìm thấy link video (Hết thời gian 10s).", true);
-      
-      // Fallback khi không tìm thấy
-      if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
-        window.SnifferBridge.play("https://google.com", "");
-      }
-    }
-  }, 20000); // 10,000 ms = 10 giây
-
-  function stopTimeout() {
-    if (timeoutTimer) {
-      clearTimeout(timeoutTimer);
-      timeoutTimer = null;
-    }
-  }
-
-  // =========================================================================
-  // 2. KIỂM TRA M3U8 HỢP LỆ
-  // =========================================================================
-  function isValidM3U8(content) {
-    if (typeof content !== 'string') return false;
-    var trimmed = content.trim();
-    return trimmed.indexOf('#EXTM3U') === 0 && 
-          (trimmed.indexOf('#EXTINF') !== -1 || trimmed.indexOf('#EXT-X-STREAM-INF') !== -1);
-  }
-
-  // =========================================================================
-  // 3. CHUYỂN NỘI DUNG M3U8 VỀ APP (LOCAL SERVER)
-  // =========================================================================
-  function dispatchM3u8ToApp(m3u8Content) {
-    if (!m3u8Content || hasDispatchedAny === 1) return;
-    hasDispatchedAny = 1;
-    isFinished = 1;
-    stopTimeout(); // Hủy đếm ngược 10s khi đã lấy thành công
-
-    bridgeLog('🎯 [LOCAL-DISPATCH] Đã tìm thấy M3U8! Đang nạp vào Local Player...');
-    bridgeLog("🎯 Bắt link thành công! Đang phát video...", true);
-
-    try {
-      if (window.SnifferBridge && typeof window.SnifferBridge.playM3u8Content === 'function') {
-        // Truyền trực tiếp nội dung M3U8 thô + URL hiện tại làm Referer/BaseURL
-        window.SnifferBridge.playM3u8Content(m3u8Content, window.location.href);
-      } else {
-        bridgeLog('❌ SnifferBridge.playM3u8Content không khả dụng!');
-      }
-    } catch(e) {
-      bridgeLog('❌ [DISPATCH ERROR]: ' + e.message);
-    }
-  }
-
-  // =========================================================================
-  // 4. HOOK URL.createObjectURL (BẮT TRỰC TIẾP DỮ LIỆU BLOB M3U8)
-  // =========================================================================
-  try {
-    if (typeof URL !== 'undefined' && URL.createObjectURL) {
-      var originalCreateObjectURL = URL.createObjectURL;
-      
-      URL.createObjectURL = function(blob) {
-        var blobUrl = originalCreateObjectURL.apply(this, arguments);
-
-        if (isFinished === 0 && blob && (blob instanceof Blob || blob instanceof File)) {
-          var processContent = function(content) {
-            if (isValidM3U8(content)) {
-              //bridgeLog('🎯 [FOUND-BLOB]: Phát hiện M3U8 từ Blob RAM!');
-              dispatchM3u8ToApp(content);
-            }
-          };
-
-          if (typeof blob.text === 'function') {
-            blob.text().then(processContent).catch(function(){});
-          } else {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-              processContent(e.target.result);
-            };
-            reader.readAsText(blob);
-          }
-        }
-
-        return blobUrl;
-      };
-      
-      bridgeLog('🚀 [INIT] Đã Hook thành công.');
-    }
-  } catch (e) {
-    bridgeLog('❌ [INIT-ERROR]: ' + e.message);
-  }
-})();
-  `;
+// ═══════════════════════════════════════════════════════════════════
+// 2. GUARD CHỐNG REDIRECT (giữ tối thiểu)
+// ═══════════════════════════════════════════════════════════════════
+var ALLOWED = ['animevv.com','abysscdn.com','googlevideo.com','blogger.com','blogspot.com','googleusercontent.com','gstatic.com','googleapis.com'];
+function isOk(u){
+    if (!u) return true;
+    if (u.indexOf('about:') === 0 || u.indexOf('blob:') === 0 || u.indexOf('data:') === 0) return true;
+    if (u.charAt(0) === '/' || u.charAt(0) === '#') return true;
+    for (var i = 0; i < ALLOWED.length; i++) if (u.indexOf(ALLOWED[i]) > -1) return true;
+    return false;
 }
+
+try { window.open = function(u){ G('block open'); return null; }; } catch(e){}
+try {
+    var origAClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function(){
+        if (!isOk(this.href)) { G('block a.click'); return; }
+        return origAClick.apply(this, arguments);
+    };
+} catch(e){}
+document.addEventListener('click', function(e){
+    try {
+        var a = e.target && e.target.closest ? e.target.closest('a') : null;
+        if (a && a.href && !isOk(a.href)) {
+            e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        }
+    } catch(err){}
+}, true);
+
+// Watchdog chống redirect main frame
+var ORIGIN = location.origin, ORIG_PATH = location.pathname + location.search;
+var RESTORING = 0;
+window.addEventListener('beforeunload', function(e){
+    if (RESTORING) return;
+    var cur = location.origin;
+    if (cur && cur !== 'null' && cur !== ORIGIN && cur.indexOf('about:') === -1) {
+        e.preventDefault(); e.returnValue = 'stay';
+        G('beforeunload block');
+        return 'stay';
+    }
+}, true);
+setInterval(function(){
+    try {
+        var cur = location.origin;
+        if (!cur || cur === 'null' || cur === ORIGIN) return;
+        if (cur.indexOf('about:') === 0 || cur.indexOf('data:') === 0 || cur.indexOf('blob:') === 0) return;
+        G('watchdog → restore');
+        RESTORING = 1;
+        try { location.replace(ORIGIN + ORIG_PATH); } catch(e){}
+        setTimeout(function(){ RESTORING = 0; }, 500);
+    } catch(e){}
+}, 50);
+
+G('guards ready');
+
+// ═══════════════════════════════════════════════════════════════════
+// 3. HOOK M3U8
+// ═══════════════════════════════════════════════════════════════════
+var done = 0;
+var REFERER = 'https://www.blogger.com/';
+var ORIGIN_HDR = 'https://www.blogger.com';
+
+var WORKER = 'https://animevv.alokillgtv06.workers.dev';
+
+// Chế độ phát:
+//   "content" — gửi thẳng m3u8 raw cho native qua SnifferBridge.playM3u8Content
+//               (nhanh, không tốn request worker, nhưng dính giới hạn bridge size)
+//   "worker"  — POST m3u8 lên worker, nhận URL .m3u8, native tự fetch
+//               (chậm hơn ~1 round-trip, nhưng chắc chắn với m3u8 lớn)
+//   "auto"    — thử "content" trước, nếu m3u8 > 30KB thì dùng "worker"
+var PLAY_MODE = "content";
+var CONTENT_SIZE_LIMIT = 30 * 1024;
+
+function send(m3u8, base){
+    if (done) return;
+    if (!m3u8 || m3u8.indexOf('#EXTM3U') !== 0) return;
+    done = 1;
+
+    L('MODE=' + PLAY_MODE + ' m3u8 len=' + m3u8.length);
+    try { SnifferBridge.toast('Da bat link!', 2000); } catch(e){}
+
+    // Dừng WebView player trước
+    try {
+        var vids = document.querySelectorAll('video');
+        for (var vi = 0; vi < vids.length; vi++) {
+            try { vids[vi].pause(); } catch(e){}
+        }
+    } catch(e){}
+
+    // Chọn chế độ thực tế khi "auto"
+    var mode = PLAY_MODE;
+    if (mode === "auto") {
+        mode = (m3u8.length > CONTENT_SIZE_LIMIT) ? "worker" : "content";
+        L('AUTO → ' + mode);
+    }
+
+    if (mode === "content") {
+        sendByContent(m3u8);
+    } else {
+        sendByWorker(m3u8);
+    }
+}
+
+// ─── Chế độ 1: gửi m3u8 raw cho native ───
+function sendByContent(m3u8) {
+    L('CONTENT mode: sending raw m3u8');
+    try {
+        SnifferBridge.playM3u8Content(m3u8, location.href, JSON.stringify({
+            'Referer': location.origin + '/',
+            'Origin': location.origin,
+            'User-Agent': navigator.userAgent
+        }));
+        L('CONTENT sent OK');
+    } catch(e) {
+        L('CONTENT err ' + e.message + ' → fallback worker');
+        // Nếu content fail, tự chuyển sang worker
+        sendByWorker(m3u8);
+    }
+}
+
+// ─── Chế độ 2: POST m3u8 lên worker, nhận URL ───
+function sendByWorker(m3u8) {
+    L('WORKER mode: uploading m3u8');
+    fetch(WORKER + '/store', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: m3u8
+    }).then(function(r){ return r.json(); }).then(function(j){
+        if (!j || !j.url) throw new Error('store failed');
+        L('WORKER OK id=' + j.id);
+        L('WORKER URL=' + j.url);
+
+        try {
+            SnifferBridge.play(j.url, JSON.stringify({
+                'Referer': WORKER + '/',
+                'User-Agent': navigator.userAgent
+            }));
+            L('WORKER sent OK');
+        } catch(e) {
+            L('WORKER play err ' + e.message);
+        }
+    }).catch(function(err){
+        L('WORKER err ' + (err.message || err));
+
+        // Fallback cuối: rewrite segment qua worker rồi gửi content
+        try {
+            var CR = String.fromCharCode(13), LF = String.fromCharCode(10);
+            var norm = m3u8.split(CR + LF).join(LF).split(CR).join(LF);
+            var lines = norm.split(LF);
+            var out = [];
+            for (var i = 0; i < lines.length; i++) {
+                var t = lines[i].replace(/^\s+|\s+$/g, '');
+                if (t.length > 0 && t.charAt(0) !== '#') {
+                    out.push(WORKER + '/?u=' + encodeURIComponent(t));
+                } else {
+                    out.push(lines[i]);
+                }
+            }
+            SnifferBridge.playM3u8Content(out.join(LF), WORKER + '/', JSON.stringify({
+                'Referer': WORKER + '/',
+                'User-Agent': navigator.userAgent
+            }));
+            L('WORKER fallback sent');
+        } catch(e2) {
+            L('WORKER fallback err ' + e2.message);
+        }
+    });
+}
+
+function isM3U8(s){
+    if (typeof s !== 'string') return false;
+    return s.trim().indexOf('#EXTM3U') === 0;
+}
+
+function findInBytes(bytes){
+    try {
+        var u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        var n = Math.min(u8.length, 4096);
+        var head = '';
+        for (var i = 0; i < n; i++) head += String.fromCharCode(u8[i]);
+        if (head.indexOf('#EXTM3U') === 0 || head.indexOf('#EXTM3U') > -1) {
+            var full = '';
+            for (var j = 0; j < u8.length; j++) full += String.fromCharCode(u8[j]);
+            return full;
+        }
+    } catch(e){}
+    return null;
+}
+
+try {
+    if (window.MediaSource) {
+        var origAdd = MediaSource.prototype.addSourceBuffer;
+        MediaSource.prototype.addSourceBuffer = function(mime){
+            L('addSourceBuffer ' + mime);
+            var sb = origAdd.apply(this, arguments);
+            try {
+                var origApp = sb.appendBuffer;
+                sb.appendBuffer = function(buf){
+                    try {
+                        if (!done && buf) {
+                            var u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+                            var m = findInBytes(u8);
+                            if (m) { L('MSE appendBuffer → m3u8'); send(m, REFERER); }
+                        }
+                    } catch(e){}
+                    return origApp.apply(this, arguments);
+                };
+                L('hooked appendBuffer');
+            } catch(e){}
+            return sb;
+        };
+        L('hooked MediaSource');
+    }
+} catch(e){ L('ms err ' + e.message); }
+
+try {
+    if (window.crypto && window.crypto.subtle && window.crypto.subtle.decrypt) {
+        var origDec = window.crypto.subtle.decrypt;
+        window.crypto.subtle.decrypt = function(){
+            var p = origDec.apply(this, arguments);
+            if (p && p.then) {
+                return p.then(function(buf){
+                    try {
+                        if (buf && !done) {
+                            var m = findInBytes(buf);
+                            if (m) { L('subtle.decrypt → m3u8'); send(m, REFERER); }
+                        }
+                    } catch(e){}
+                    return buf;
+                });
+            }
+            return p;
+        };
+        L('hooked subtle.decrypt');
+    }
+} catch(e){ L('subtle err ' + e.message); }
+
+try {
+    var origFetch = window.fetch;
+    window.fetch = function(input){
+        var url = (typeof input === 'string') ? input : ((input && input.url) || '');
+        var p = origFetch.apply(this, arguments);
+        if (!p || !p.then) return p;
+        return p.then(function(resp){
+            try {
+                if (!done && resp) {
+                    var ct = (resp.headers && resp.headers.get ? resp.headers.get('content-type') : '') || '';
+                    if (ct.indexOf('mpegurl') > -1 || ct.indexOf('m3u') > -1) {
+                        resp.clone().text().then(function(txt){
+                            if (isM3U8(txt)) { L('fetch → m3u8'); send(txt, REFERER); }
+                        }).catch(function(){});
+                    }
+                }
+            } catch(e){}
+            return resp;
+        });
+    };
+    L('hooked fetch');
+} catch(e){ L('fetch err ' + e.message); }
+
+try {
+    var origOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url){
+        this.__url = url;
+        return origOpen.apply(this, arguments);
+    };
+    var origSendX = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send = function(){
+        var xhr = this;
+        xhr.addEventListener('load', function(){
+            try {
+                if (done) return;
+                if (xhr.responseType === '' || xhr.responseType === 'text') {
+                    var txt = xhr.responseText || '';
+                    if (isM3U8(txt)) { L('xhr → m3u8'); send(txt, REFERER); }
+                }
+                if (xhr.responseType === 'arraybuffer' && xhr.response) {
+                    var m = findInBytes(new Uint8Array(xhr.response));
+                    if (m) { L('xhr arraybuffer → m3u8'); send(m, REFERER); }
+                }
+            } catch(e){}
+        });
+        return origSendX.apply(this, arguments);
+    };
+    L('hooked xhr');
+} catch(e){ L('xhr err ' + e.message); }
+
+try {
+    if (window.Worker) {
+        var OW = window.Worker;
+        window.Worker = function(url, opts){
+            L('new Worker ' + url);
+            var w = new OW(url, opts);
+            try {
+                var origPost = w.postMessage;
+                w.postMessage = function(){
+                    try {
+                        var msg = arguments[0];
+                        if (typeof msg === 'string' && isM3U8(msg)) { L('worker post → m3u8'); send(msg, REFERER); }
+                        else if (msg && typeof msg === 'object') {
+                            var s = JSON.stringify(msg);
+                            if (s.indexOf('#EXTM3U') > -1) {
+                                var m = s.match(/#EXTM3U[\\s\\S]*/);
+                                if (m) send(m[0].replace(/\\\\n/g, '\\n'), REFERER);
+                            }
+                        }
+                    } catch(e){}
+                    return origPost.apply(this, arguments);
+                };
+                w.addEventListener('message', function(ev){
+                    try {
+                        var d = ev.data;
+                        if (typeof d === 'string' && isM3U8(d)) { L('worker msg → m3u8'); send(d, REFERER); }
+                    } catch(e){}
+                });
+            } catch(e){}
+            return w;
+        };
+        L('hooked Worker');
+    }
+} catch(e){ L('worker err ' + e.message); }
+
+try {
+    var origBlob = URL.createObjectURL;
+    URL.createObjectURL = function(blob){
+        var u = origBlob.apply(this, arguments);
+        try {
+            if (!done && blob instanceof Blob) {
+                if (typeof blob.text === 'function') {
+                    blob.text().then(function(t){
+                        if (isM3U8(t)) { L('blob → m3u8'); send(t, REFERER); }
+                    }).catch(function(){});
+                } else {
+                    var r = new FileReader();
+                    r.onload = function(e){
+                        if (isM3U8(e.target.result)) { L('blob → m3u8'); send(e.target.result, REFERER); }
+                    };
+                    r.readAsText(blob);
+                }
+            }
+        } catch(e){}
+        return u;
+    };
+    L('hooked createObjectURL');
+} catch(e){ L('blob err ' + e.message); }
+
+setTimeout(function(){
+    try {
+        var sels = ['button','[role=button]','.jw-icon-display','.jw-display-icon-container','[class*=play]'];
+        var seen = {};
+        for (var s = 0; s < sels.length; s++) {
+            var all = document.querySelectorAll(sels[s]);
+            for (var i = 0; i < all.length; i++) {
+                var b = all[i];
+                if (seen[b]) continue;
+                seen[b] = 1;
+                var r = b.getBoundingClientRect();
+                if (r.width > 0 && r.height > 0) {
+                    L('click ' + (b.className || b.tagName).substring(0, 40));
+                    try { b.click(); } catch(e){}
+                }
+            }
+        }
+    } catch(e){}
+}, 4000);
+
+setTimeout(function(){ if (!done) L('TIMEOUT 45s'); }, 45000);
+
+L('ready');
+})();`;
+}
+
+
+
 
 
 
