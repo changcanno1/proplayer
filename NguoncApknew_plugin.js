@@ -1,16 +1,18 @@
 // =============================================================================
 // CONFIGURATION & METADATA
 // =============================================================================
+var popuphtml = "";
 function getManifest() {
     return JSON.stringify({
         "id": "nguoncnew",
         "name": "Phim NguonC VIP",
-        "version": "1.8.1",
+        "version": "2.2",
         "baseUrl": "https://phim.nguonc.com",
-        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png",
+        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/nguoncnew.png",
         "isEnabled": true,
         "type": "MOVIE",
-         "author": "Alokillgtv",
+        "popup_html": popuphtml,
+        "author": "Alokillgtv",
         "playerType": "embedtoexoplay"
     });
 }
@@ -374,7 +376,7 @@ function bridgeLog(msg, check) {
   var isFinished = 0;
   var timeoutTimer = null;
 
-  bridgeLog("Đang tiến hành giải mã & bắt link M3U8, xin chờ....", true);
+  bridgeLog("Đang tiến hành giải mã, xin chờ....", true);
 
   // 1. Timeout 20 giây bảo vệ
   timeoutTimer = setTimeout(function() {
@@ -404,6 +406,54 @@ function bridgeLog(msg, check) {
           (trimmed.indexOf('#EXTINF') !== -1 || trimmed.indexOf('#EXT-X-STREAM-INF') !== -1);
   }
 
+  // 3. Xử lý URL segment.
+  //    Mặc định dùng VAX LOCAL: phát blob M3U8 tại 127.0.0.1, segment trỏ thẳng CDN
+  //    và ExoPlayer tự đính kèm Referer (truyền qua playM3u8Content) -> không cần worker.
+  //    Đổi USE_WORKER = true nếu muốn đi qua Cloudflare worker proxy.
+  var STREAM_WORKER = "https://streamfile.alokillgtv.workers.dev/proxy";
+  var USE_WORKER = false;
+
+  function wrapWithWorker(u) {
+    var abs = u;
+    try { abs = new URL(u, location.href).href; } catch (e) { abs = u; }
+    if (!USE_WORKER) return abs;
+    return STREAM_WORKER + "?referer=" + encodeURIComponent(location.origin + "/") + "&url=" + encodeURIComponent(abs);
+  }
+
+  function logFirstFiles(m3u8, n) {
+    var ls = m3u8.split("\\n");
+    var segs = [];
+    for (var i = 0; i < ls.length && segs.length < n; i++) {
+      var s = ls[i].trim();
+      if (s === "" || s.charAt(0) === "#") continue;
+      segs.push(s);
+    }
+    return segs.join("\\n");
+  }
+
+  function rewriteM3U8ToWorker(content) {
+    var lines = content.split(/\\r?\\n/);
+    var out = [];
+    var segCount = 0;
+    for (var i = 0; i < lines.length; i++) {
+      var t = lines[i].trim();
+      if (t === "") continue;
+      if (t.charAt(0) === "#") {
+        out.push(lines[i].replace(/URI="([^"]+)"/g, function (m, u) { return 'URI="' + wrapWithWorker(u) + '"'; }));
+        continue;
+      }
+      segCount++;
+      // CDN chặn 403 segment đầu tiên (streamaaa0000.png) -> bỏ để player bắt đầu từ segment kế tiếp
+      if (segCount === 1) {
+        if (out.length && out[out.length - 1].indexOf("#EXTINF") === 0) out.pop();
+        bridgeLog('⏭️ Bỏ segment đầu (CDN 403) để tránh lỗi phát.');
+        continue;
+      }
+      out.push(wrapWithWorker(t));
+    }
+    return out.join("\\n");
+  }
+
   // 3. Chuyển M3U8 về App
   function dispatchM3u8ToApp(m3u8Content) {
     if (!m3u8Content || hasDispatchedAny === 1) return;
@@ -414,12 +464,20 @@ function bridgeLog(msg, check) {
     bridgeLog('🎯 [CRYPTO-HOOK] Giải mã thành công M3U8! Đang gửi lên App...');
     bridgeLog("🎯 Bắt link thành công! Đang xử lý video...", true);
 
+    var finalM3U8 = m3u8Content;
+    try { finalM3U8 = rewriteM3U8ToWorker(m3u8Content); }
+    catch (e) { bridgeLog('⚠️ rewrite m3u8 lỗi: ' + e.message); finalM3U8 = m3u8Content; }
+
     try {
       if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
-        window.SnifferBridge.log("M3U8\\n" + m3u8Content);
+        window.SnifferBridge.log("M3U8 (5 file đầu)\\n" + logFirstFiles(finalM3U8, 5));
       }
       bridgeLog('🎯 Đang bắn m3u8 cho native');
-      SnifferBridge.playM3u8Content(m3u8Content, JSON.stringify({"Origin":"https://phim.nguonc.com","Referer":"${referer}"}));
+      SnifferBridge.playM3u8Content(finalM3U8, location.href, JSON.stringify({
+        "Referer": location.origin + "/",
+        "Origin": location.origin,
+        "User-Agent": navigator.userAgent
+      }));
     } catch(e) {
       bridgeLog('❌ [DISPATCH ERROR]: ' + e.message);
     }
