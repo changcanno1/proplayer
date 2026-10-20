@@ -8,7 +8,7 @@ function getManifest() {
       "id": "4kmovie",
       "name": "4K Movie [MOVIE]",
       "description": "Nguồn phim 4K Movie",
-      "version": "2.4",
+      "version": "2.6",
       "author": "Alokillgtv",
       "headers":{
           "X-VAX-YB": "deo_co_gi_de_coi"
@@ -525,7 +525,7 @@ function parseMovieDetail(html, url) {
                                     (finalImdbId ? ("&imdb_id=" + encodeURIComponent(finalImdbId)) : "") +
                                     (finalTtId ? ("&ttid=" + encodeURIComponent(finalTtId)) : "") +
                                     "&title=" + encodeURIComponent(movieTitle)
-                    var movieEpisodes = rawStreams.map(function(stream, idx) {
+                    var movieIds = rawStreams.map(function(stream, idx) {
                         var srvNum = idx + 1;
                         var providerStr = stream.provider ? String(stream.provider) : ("SERVER " + srvNum);
                         var qualityStr = stream.quality ? "[" + stream.quality + "]" : "";
@@ -534,11 +534,19 @@ function parseMovieDetail(html, url) {
                         var epUrl = linkfetch + "&server=" + srvNum;
 
                         return {
-                            id: epUrl,
                             name: epName,
-                            slug: "server-" + srvNum
+                            url: epUrl
                         };
                     });
+                    var movieEpisodes = [];
+                    if (movieIds.length) {
+                        movieEpisodes.push({
+                            id: movieIds[0].url,
+                            name: "Xem ngay",
+                            slug: "full",
+                            ids: movieIds
+                        });
+                    }
                     movieEpisodes.push({
                       id: linkfetch + "&server=1&cache=false",
                       name: "Làm Mới Link Stream",
@@ -1107,7 +1115,7 @@ function rawJS(){
   function getUrlCategories() { 
       try {
           log("getUrlCategories[url]: \n" + BASEURL);
-          return "https://subtitles.shegu.st/subtitles?type=movie&tmdb=96968"; 
+          return "https://example.com"; 
       } catch (e) {
           log("getUrlCategories[err]:\n " + e);
           return "";
