@@ -29,14 +29,14 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
-     {
+    {
       "id": "zophim",
       "name": "Zophim",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/zophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/zophim.png"
     },
-     {
+    {
       "id": "cityphim",
       "name": "City Phim [MOVIE]",
       "version": "1.0.0",
@@ -77,6 +77,7 @@
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/xinkTest_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/xink.png"
+    },
     {
       "id": "PhimBom",
       "name": "PhimBom",
@@ -91,14 +92,14 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
       "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
     },
-      {
+    {
       "id": "novahd",
       "name": "[MOVIE] Nova HD",
       "version": "2.3.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Super4K_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
     },
-     {
+    {
       "id": "HDVNN-wait 10s",
       "name": "HDVNN-wait 10s",
       "version": "2.2.0",
@@ -126,13 +127,13 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
       "iconUrl": "https://phimhdcss.com/favicon.ico"
     },
-     {
+    {
       "id": "phimngan_net",
       "name": "Phim Ngắn Net",
       "version": "2.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
-      "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75",
-     },
+      "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75"
+    },
     {
       "id": "shortflix",
       "name": "shortflix",
@@ -160,15 +161,15 @@
       "name": "YiniTV [SHORT]",
       "version": "1.1.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/YiniTV_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yini.png",
-     },
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yini.png"
+    },
     {
       "id": "nartodrama",
       "name": "[SHORT] Narto",
       "version": "1.2.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/Nartodrama_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nartodrama.png",
-     },
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nartodrama.png"
+    },
     {
       "id": "ShortFilm",
       "name": "ShortFilm",
@@ -222,8 +223,8 @@
       "id": "anidoki",
       "name": "AniDoki [ANIME]",
       "version": "1.0.0",
-      "scriptUrl": "https://anidoki.com/favicon-192x192.png",
-      "iconUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/anidoki_plugin.js"
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/anidoki_plugin.js",
+      "iconUrl": "https://anidoki.com/favicon-192x192.png"
     },
     {
       "id": "ThethaoTV",
@@ -231,13 +232,13 @@
       "version": "1.0.3",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Thethao_plugin.js",
       "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png"
-   },
-     {
+    },
+    {
       "id": "SportEng",
       "name": "[SPORT] SportEng",
       "version": "1.2.3",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/SportsEng_plugin.js",
       "iconUrl": "https://i.ibb.co/BHQSwhLX/ppv-logo.png"
-   }
-]
+    }
+  ]
 }
