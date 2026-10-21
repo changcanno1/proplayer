@@ -30,13 +30,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
     {
-      "id": "zophim",
-      "name": "Zophim",
-      "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/zophim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/zophim.png"
-    },
-    {
       "id": "cityphim",
       "name": "City Phim [MOVIE]",
       "version": "1.0.0",
@@ -225,6 +218,13 @@
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/anidoki_plugin.js",
       "iconUrl": "https://anidoki.com/favicon-192x192.png"
+    },
+     {
+      "id": "zophim",
+      "name": "Zophim",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/zophim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/zophim.png"
     },
     {
       "id": "ThethaoTV",
