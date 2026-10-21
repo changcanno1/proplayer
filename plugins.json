@@ -172,13 +172,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/cartoon.png"
     },
     {
-      "id": "animevv",
-      "name": "animevv",
-      "version": "1.3.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/AnimeVVHT_plugin.js",
-      "iconUrl": "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/i/c72e2f68-1a1c-48a2-aa5f-edf7eaaf3548/d77q5ev-af22ff5c-be81-4e24-bf0e-13836c6c939e.png"
-    },
-    {
       "id": "Anime47",
       "name": "Anime47",
       "version": "1.3.2",
@@ -186,20 +179,20 @@
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBfZXavFvLlt56VptIFEx-RSQI-oSTGEEjJT7D9hNKJA&s"
     },
     {
-      "id": "nettruyen",
-      "name": "[MANGA] Nettruyen",
-      "version": "1.6.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/nettruyen_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nettruyen.png"
+      "id": "animet",
+      "name": "Animet [ANIME]",
+      "version": "1.0.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/animet_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/animet.png"
     },
     {
-      "id": "truyenqq",
-      "name": "[MANGA] TruyệnQQ",
-      "version": "1.8.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/TruyenQQ_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/truyenqq.png"
+      "id": "animevv",
+      "name": "animevv",
+      "version": "1.3.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/AnimeVVHT_plugin.js",
+      "iconUrl": "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/i/c72e2f68-1a1c-48a2-aa5f-edf7eaaf3548/d77q5ev-af22ff5c-be81-4e24-bf0e-13836c6c939e.png"
     },
-      {
+    {
       "id": "ThethaoTV",
       "name": "[Sport] ThethaoTV",
       "version": "1.0.3",
@@ -212,13 +205,6 @@
       "version": "1.2.3",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/SportsEng_plugin.js",
       "iconUrl": "https://i.ibb.co/BHQSwhLX/ppv-logo.png"
-   },
-    {
-      "id": "rockystream",
-      "name": "[SPORT] RockyStream",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/rockystream_plugin.js",
-      "iconUrl": "https://i.ibb.co/PZFwWKKg/rockystream-logo.jpg"
-    } 
+   }
 ]
 }
