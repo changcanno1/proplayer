@@ -16,6 +16,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
     {
+      "id": "vicdn",
+      "name": "Nguồn Vicdn",
+      "version": "2.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png"
+    },
+    {
       "id": "rophim",
       "name": "Rổ Phim-No Zoom",
       "version": "1.2.7",
@@ -42,13 +49,6 @@
       "version": "2.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
-    },
-    {
-      "id": "vicdn",
-      "name": "Chọn lồng tiếng",
-      "version": "2.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png"
     },
     {
       "id": "cityphim",
