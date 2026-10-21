@@ -65,6 +65,12 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
     },
     {
+      "id": "xinkTest",
+      "name": "Xink [MOVIE]",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/xinkTest_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/xink.png"
+    {
       "id": "PhimBom",
       "name": "PhimBom",
       "version": "2.0.0",
@@ -142,6 +148,13 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/mephimngan_plugin.js",
       "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
     },
+    {
+      "id": "yini",
+      "name": "YiniTV [SHORT]",
+      "version": "1.1.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/YiniTV_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yini.png",
+     },
     {
       "id": "nartodrama",
       "name": "[SHORT] Narto",
