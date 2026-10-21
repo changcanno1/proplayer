@@ -16,18 +16,46 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
     {
-      "id": "vicdn",
-      "name": "Nguồn Vicdn",
-      "version": "2.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png"
-    },
-    {
       "id": "rophim",
       "name": "Rổ Phim-No Zoom",
       "version": "1.2.7",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+    },
+    {
+      "id": "vn2c",
+      "name": "PhimVn2C",
+      "version": "1.3.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VN2Cfilm_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vn2c.png"
+    },
+    {
+      "id": "kkphim",
+      "name": "KKPhim",
+      "version": "1.0.9",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
+    },
+      {
+      "id": "xinkTest",
+      "name": "Xink [MOVIE]",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/xinkTest_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/xink.png"
+    },
+    {
+      "id": "PhimBom",
+      "name": "PhimBom",
+      "version": "2.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
+    },
+    {
+      "id": "vicdn",
+      "name": "Chọn lồng tiếng",
+      "version": "2.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png"
     },
     {
       "id": "cityphim",
@@ -44,39 +72,11 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
     },
     {
-      "id": "vn2c",
-      "name": "PhimVn2C",
-      "version": "1.3.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VN2Cfilm_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vn2c.png"
-    },
-    {
-      "id": "kkphim",
-      "name": "KKPhim",
-      "version": "1.0.9",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
-    },
-    {
       "id": "bilutv",
       "name": "[MOVIE] Bilutv",
       "version": "1.5.6",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Bilutv_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
-    },
-    {
-      "id": "xinkTest",
-      "name": "Xink [MOVIE]",
-      "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/xinkTest_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/xink.png"
-    },
-    {
-      "id": "PhimBom",
-      "name": "PhimBom",
-      "version": "2.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
     },
     {
       "id": "phimfun",
@@ -91,13 +91,6 @@
       "version": "2.3.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Super4K_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
-    },
-    {
-      "id": "HDVNN-wait 10s",
-      "name": "HDVNN-wait 10s",
-      "version": "2.2.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HDVNN_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hdvnn.png"
     },
     {
       "id": "4kmovie",
@@ -218,13 +211,6 @@
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/anidoki_plugin.js",
       "iconUrl": "https://anidoki.com/favicon-192x192.png"
-    },
-     {
-      "id": "zophim",
-      "name": "Zophim",
-      "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/zophim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/zophim.png"
     },
     {
       "id": "ThethaoTV",
