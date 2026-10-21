@@ -17,10 +17,10 @@ var ONFLIX_XOR_KEY = "onflix_secure_stream_v2_2026";
 // =============================================================================
 function getManifest() {
   return JSON.stringify({
-    id:          "xinkTest",
+    id:          "xink",
     name:        "Xink [MOVIE]",
     description: "Phim HD tổng hợp",
-    version:     "1.0.0",
+    version:     "1.0.1",
     author:      "Community",
     baseUrl:     BASEURL,
     iconUrl:     "https://vaxplugin.alokillgtv.workers.dev/img/icon/xink.png",
