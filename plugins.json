@@ -36,7 +36,14 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/zophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/zophim.png"
     },
-       {
+     {
+      "id": "cityphim",
+      "name": "City Phim [MOVIE]",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/cityphim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/cityphim.png"
+    },
+    {
       "id": "phimlongtieng",
       "name": "[MOVIE] Phim Lồng Tiếng",
       "version": "1.1.6",
