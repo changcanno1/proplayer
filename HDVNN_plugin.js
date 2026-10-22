@@ -7,11 +7,11 @@ function getManifest() {
   try{
     return JSON.stringify({
       "id": "hdvnn",
-      "name": "[MOVIE] HDVNN",
-      "version": "2.2",
+      "name": "HDVNN [MOVIE]",
+      "version": "2.4",
       "author": "Alokillgtv",
       "baseUrl": BASEURL,
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hdvnn.png",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/hdvnn.png",
       "isEnabled": true,
       "isAdult": false,
       "adblock": false,
@@ -237,16 +237,18 @@ function parseMovieDetail(html, url) {
           var link = $doc.find(".list-item-episode a").attr("href");
           episodes.push({
                 id: link + "?server=1",
-                name: "Google",
-                slug: "full"
-          },{
-                id: link + "?server=2",
-                name: "Dự Phòng",
-                slug: "full"
-          },{
-                id: link + "?server=3",
-                name: "Embed",
-                slug: "full"
+                name: "Xem ngay",
+                slug: "full",
+                ids: [{
+                      name: "Google",
+                      url: link + "?server=1"
+                },{
+                      name: "Dự Phòng",
+                      url: link + "?server=2"
+                },{
+                      name: "Embed",
+                      url: link + "?server=3"
+                }]
           });
           servers.push({
                 name: "Server",
