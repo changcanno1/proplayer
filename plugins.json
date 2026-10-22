@@ -16,20 +16,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
     {
-      "id": "vicdn",
-      "name": "Nguồn Vicdn",
-      "version": "2.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png"
-    },
-    {
-      "id": "rophim",
-      "name": "Rổ Phim-No Zoom",
-      "version": "1.2.7",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
-    },
-    {
       "id": "vn2c",
       "name": "PhimVn2C",
       "version": "1.3.0",
@@ -51,11 +37,32 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
     },
     {
-      "id": "cityphim",
-      "name": "City Phim [MOVIE]",
-      "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/cityphim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/cityphim.png"
+      "id": "rophim",
+      "name": "Rổ Phim-No Zoom",
+      "version": "1.2.7",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+    },
+    {
+      "id": "novahd",
+      "name": "[MOVIE] Nova HD",
+      "version": "2.3.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Super4K_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
+    },
+    {
+      "id": "onflix",
+      "name": "Onflix",
+      "version": "1.2.3",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/OnflixHT_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
+    },
+    {
+      "id": "vicdn",
+      "name": "Nguồn Vicdn",
+      "version": "2.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png"
     },
     {
       "id": "phimlongtieng",
@@ -77,41 +84,6 @@
       "version": "1.1.8",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
       "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
-    },
-    {
-      "id": "novahd",
-      "name": "[MOVIE] Nova HD",
-      "version": "2.3.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Super4K_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
-    },
-    {
-      "id": "4kmovie",
-      "name": "[MOVIE] 4K Movie",
-      "version": "2.2.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Suutamphim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/4kmovie.png"
-    },
-    {
-      "id": "onflix",
-      "name": "Onflix",
-      "version": "1.2.3",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/OnflixHT_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
-    },
-    {
-      "id": "xinkTest",
-      "name": "Xink [MOVIE]",
-      "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/xinkTest_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/xink.png"
-    },
-    {
-      "id": "phimhdcs",
-      "name": "Phim HDCS",
-      "version": "1.1.7",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimHDCS_plugin.js",
-      "iconUrl": "https://phimhdcss.com/favicon.ico"
     },
     {
       "id": "phimngan_net",
@@ -157,13 +129,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nartodrama.png"
     },
     {
-      "id": "ShortFilm",
-      "name": "ShortFilm",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortmax_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortmax.png"
-    },
-    {
       "id": "yanhh3d",
       "name": "Yanhh3d [ANIME]",
       "version": "2.3.0",
@@ -190,13 +155,6 @@
       "version": "1.3.2",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Animie47New_plugin.js",
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBfZXavFvLlt56VptIFEx-RSQI-oSTGEEjJT7D9hNKJA&s"
-    },
-    {
-      "id": "animet",
-      "name": "Animet [ANIME]",
-      "version": "1.0.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/animet_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/animet.png"
     },
     {
       "id": "animevv",
