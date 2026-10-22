@@ -1,23 +1,24 @@
 var BASEURL = "https://vicdn.cc"; 
 var BASEAPI = BASEURL + "/api";
 var DEV = true;
-
+var popup_html = "";
 function getManifest() {
   return JSON.stringify({
     id: "vicdn",
     name: "Nguồn Vicdn",
     description: "Nguồn phim Vicdn.",
-    "version": "2.1",
+    "version": "2.3",
     info: "Nguồn phim vietsub và thuyết minh mới.\n\n Hỗ trợ lồng tiếng và có tốc độ phát rất nhanh.",
     baseUrl: "https://vicdn.cc",
-    iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png",
+    iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/icon/vicdn.png",
     isEnabled: true,
     "adblock": false,
     type: "MOVIE",
     "author": "Alokillgtv",
-    playerType: "embed"
+     playerType: "embedtoexoplay",
   });
 }
+//     popup_html: popup_html,
 
 function log(msg) {
   	console.log(msg);
@@ -171,6 +172,11 @@ function getUrlSearch(keyword, filtersJson) {
         return finalFallback;
     }
 }
+// /type/hoat-hinh/
+//filtersJson = "{page:5}"
+//getUrlList("/type/hoat-hinh/", filtersJson)
+//getUrlSearch("girl", filtersJson)
+
 
 function getUrlDetail(slug) {
     try {
@@ -195,6 +201,7 @@ function getUrlCategories() {
         return "";
     }
 }
+
 
 function getUrlCountries() { 
     try {
@@ -252,7 +259,10 @@ function parseListResponse(html, $url) {
 }
 
 function parseJSDataIsolated(str) {
+    // Loại bỏ phần khai báo biến nếu có, chỉ giữ lại phần mảng/object
     const code = str.replace(/^(const|let|var)\s+\w+\s*=\s*/, '');
+
+    // Trả về dữ liệu bằng cách bọc trong return
     return new Function(`"use strict"; return (${code});`)();
 }
 
@@ -262,10 +272,10 @@ function domfetch($data, $url) {
     for (var $j = 0; $j < $data.length; $j++) {
         var item = $data[$j];
         items.push({
-            "id": BASEAPI + "/info/" + item.slug, 
+            "id": BASEAPI + "/info/" + item.slug, // https://vicdn.cc/api/info/tv-278275-1
             "title": item.vname,
-            "posterUrl": "https://image.tmdb.org/t/p/w130_and_h195_face/" + item.poster + ".jpg", 
-            "backdropUrl": "https://image.tmdb.org/t/p/w533_and_h300_face/" + item.banner + ".jpg", 
+            "posterUrl": "https://image.tmdb.org/t/p/w130_and_h195_face/" + item.poster + ".jpg", // https://image.tmdb.org/t/p/w130_and_h195_face/qWx7w7Af5qvqmTmjwjxIWMIBHPB.jpg
+            "backdropUrl": "https://image.tmdb.org/t/p/w533_and_h300_face/" + item.banner + ".jpg", // https://image.tmdb.org/t/p/w533_and_h300_face/t5uqDBIYtxKtWeJjXAZd4l919hF.jpg
             "quality": item.type.toUpperCase(),
             "episode_current": "Tập " + item.stt + "/" + item.total
         });
@@ -280,7 +290,12 @@ function domfetch($data, $url) {
     });
 
 }
+//html = sourceHTML;
+// https://vicdn.cc/api/type/hoat-hinh/1
+// https://vicdn.cc/?q=ta
+//JSON.parse(parseListResponse(sourceHTML, "https://vicdn.cc/api/type/hoat-hinh/1"))
 
+//$data = parseJSDataIsolated(script);
 function parseSearchResponse(html, url) {
     try {
         log("parseSearchResponse[url]: \n" + url);
@@ -394,7 +409,11 @@ function parseMovieDetail(html, url) {
         });
     }
 }
+//var html = sourceHTML;
+//var url = "https://hentaivietsub.com/hentai/enjo-kouhai-tap-11?//current=1&maxEpi=11"
+//JSON.parse(parseMovieDetail(sourceHTML, "https://vicdn.cc/api/info/tv-278275-1"))
 
+//$data = JSON.parse(sourceHTML)
 function checkRaw(scriptStr, returnFixed) {
   try {
     if (!scriptStr || typeof scriptStr !== 'string') {
@@ -412,6 +431,7 @@ function checkRaw(scriptStr, returnFixed) {
       var lineErrorFound = false;
 
       // 1. Kiểm tra lỗi escape newline/tab nguy hiểm nằm trần trong chuỗi quote
+      // Trường hợp chưa được escape dạng '\\n' hoặc '\\t' trong chuỗi ghép
       if (/([^\\]|^)(\r\n|\r|\n)/.test(currentLine)) {
         console.log("[Lỗi escape runJS]\r\n\t Phát hiện xuống dòng chưa escape ở Dòng " + lineNum + ": " + currentLine.trim());
         lineErrorFound = true;
@@ -436,6 +456,7 @@ function checkRaw(scriptStr, returnFixed) {
       // Tiến hành SỬA LỖI tự động nếu tham số returnFixed = true
       var fixedLine = currentLine;
       if (returnFixed) {
+        // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
         fixedLine = fixedLine
           .replace(/\r/g, "")
           .replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
@@ -456,13 +477,15 @@ function checkRaw(scriptStr, returnFixed) {
       console.log("[checkRaw] 🟢 Chuỗi Raw JS hoàn toàn sạch lỗi!");
     }
 
+    // Trả về bản đã fix hoặc bản gốc theo tham số returnFixed
     return returnFixed ? fixedLines.join('\n') : scriptStr;
 
   } catch (e) {
     console.log("[Lỗi escape runJS]\r\n\t Lỗi ngoại lệ trong hàm checkRaw: " + e.message);
-    return scriptStr; 
+    return scriptStr; // Luôn an toàn: Fallback trả về chuỗi gốc chứ không làm sập script
   }
 }
+
 
 function parseDetailResponse(html, url) {
   try {
@@ -476,16 +499,19 @@ function parseDetailResponse(html, url) {
         var item = $data.list_episodes[$j];
         var split = item.split("|");
         if(Number(split[0]) == current){
-          stream = split[1] + "?episodes=" + url;
+              stream = split[1] + "?episodes=" + url;
         }
     }
     var customJS = checkRaw(rawJS(stream),true);
-
-    var idvd = url.match(/^https:\/\/vicdn\.cc\/api\/info\/([^\?]+)/i)
-    var epi = url.match(/current=(\d+)&tm=(\w+)/i);
-    sub = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-vi.vtt"
-    subeng = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-en.vtt"
-    console.log("TM: "+epi[2]+" sub\n" + sub)    
+    // 
+// https://vicdn.cc/tv-297826-1-9?episodes=https://vicdn.cc/api/info/tv-297826-1?current=9
+//https://vicdn.cc/tv-297826-1-1
+//https://vicdn.cc/vtt/tv-297826-1-1-vi.vtt
+var idvd = url.match(/^https:\/\/vicdn\.cc\/api\/info\/([^\?]+)/i)
+var epi = url.match(/current=(\d+)&tm=(\w+)/i);
+sub = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-vi.vtt"
+subeng = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-en.vtt"
+console.log("TM: "+epi[2]+" sub\n" + sub)    
     log("Embed: " + stream)
     return JSON.stringify({
       url: stream,
@@ -520,6 +546,13 @@ function parseDetailResponse(html, url) {
 
 function rawJS(referer, tm) {
 return `
+(function ensureHls(){
+  if (typeof window.hls !== 'undefined' || typeof window.Hls !== 'undefined') return;
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js';
+  s.onload = function(){ try { if (window.Hls && !window.hls) window.hls = window.Hls; } catch(e){} };
+  (document.head || document.documentElement).appendChild(s);
+})();
 function bridgeLog(msg, check) {
     try {
       if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
@@ -610,7 +643,6 @@ try {
   var timeoutTimer = null;
 
   bridgeLog("Đang tiến hành tìm link Video, xin chờ....", true);
-
   timeoutTimer = setTimeout(function() {
     if (hasDispatchedAny === 0 && isFinished === 0 && __vaxMode !== 'web') {
       isFinished = 1;
@@ -633,20 +665,44 @@ try {
           (t.indexOf('#EXTINF') !== -1 || t.indexOf('#EXT-X-STREAM-INF') !== -1);
   }
 
-  function getServerMapping() {
-    var mapping = {};
+function getServerMapping() {
+  var mapping = {};
+  try {
+    var rawHtml = document.documentElement.outerHTML || document.body.innerHTML || "";
+
+    // ⭐ DEBUG: dump tất cả mã xNNN/XNNN tìm được, không giới hạn \b
+    var all = rawHtml.match(/x\\d{2,4}/gi) || [];
+    var uniq = [];
+    var seen = {};
+    for (var k = 0; k < all.length; k++) {
+      var c = all[k].toLowerCase();
+      if (!seen[c]) { seen[c] = 1; uniq.push(c); }
+    }
+    bridgeLog('🔍 HTML x-codes: ' + JSON.stringify(uniq));
+    bridgeLog('📄 HTML size: ' + rawHtml.length);
+
+    // ⭐ DEBUG: dump các <script> chứa x-code (thường server map nằm ở đây)
     try {
-      var rawHtml = document.documentElement.outerHTML || document.body.innerHTML || "";
-      var matches = rawHtml.match(/\\bx\\d{3}\\b/gi) || [];
-      for (var i = 0; i < matches.length; i++) {
-        var code = matches[i].toLowerCase();
-        if (/^x30/i.test(code)) { mapping['tm2'] = code; mapping['nam'] = code; }
-        else if (/^x20/i.test(code)) { mapping['tm1'] = code; }
-        else if (/^x10/i.test(code)) { mapping['raw'] = code; mapping['origin'] = code; }
+      var scripts = document.querySelectorAll('script');
+      for (var s = 0; s < scripts.length; s++) {
+        var txt = scripts[s].textContent || '';
+        var hits = txt.match(/x\\d{2,4}/gi);
+        if (hits && hits.length) {
+          bridgeLog('📜 script[' + s + '] codes: ' + JSON.stringify([...new Set(hits.map(x=>x.toLowerCase()))]));
+        }
       }
-    } catch (e) { bridgeLog('MAP err: ' + e.message); }
-    return mapping;
-  }
+    } catch(e){}
+
+    for (var i = 0; i < all.length; i++) {
+      var code = all[i].toLowerCase();
+      if (/^x30\d/i.test(code)) { mapping['tm2'] = code; mapping['nam'] = code; }
+      else if (/^x20\\d/i.test(code)) { mapping['tm1'] = code; mapping['nu'] = code; }
+      else if (/^x10\\d/i.test(code)) { mapping['raw'] = code; mapping['origin'] = code; }
+    }
+  } catch (e) { bridgeLog('MAP err: ' + e.message); }
+  bridgeLog('MAP final: ' + JSON.stringify(mapping));
+  return mapping;
+}
 
   function processAndReplaceM3u8Server(m3u8Content, requestedTm) {
     if (!requestedTm) return m3u8Content;
@@ -721,10 +777,20 @@ try {
   var PROXY = 'https://streamfile.alokillgtv04.workers.dev/proxy';
   var REF = 'https://vicdn.cc';
 
-  function shouldProxy(u) {
-    if (!u || typeof u !== 'string') return false;
-    return /vicdn\.cc\/(hls|subtitle|vtt)\//i.test(u);
-  }
+ function shouldProxy(u) {
+  if (!u || typeof u !== 'string') return false;
+  if (!/vicdn\\.cc\\//i.test(u)) return false;
+
+  // Bỏ qua JS/CSS/JSON — không được đụng vào, sẽ làm chết player của site
+  if (/\\.(js|mjs|css|json|png|jpg|jpeg|gif|webp|svg|woff2?|ttf)(\\?|#|$)/i.test(u)) return false;
+
+  // CHỈ proxy file decrypt (.html) và subtitle (.vtt)
+  if (/vicdn\\.cc\\/hls\\/[^?#]+\\.html/i.test(u))     return true;
+  if (/vicdn\\.cc\\/subtitle\\/[^?#]+\\.html/i.test(u)) return true;
+  if (/vicdn\\.cc\\/vtt\\/[^?#]+\\.vtt/i.test(u))      return true;
+
+  return false;
+}
   function toProxy(u) {
     return PROXY + '?url=' + encodeURIComponent(u) + '&referer=' + REF;
   }
@@ -817,6 +883,16 @@ setTimeout(function() {
   `
 }
 
+
+
+
+
+
+
+
+
+
+
 function sortEpisodesByName(data) {
     try {
         if (data && Array.isArray(data)) {
@@ -867,6 +943,8 @@ function parseYearsResponse(html) {
         return "[]";
     }
 }
+
+
 
 function getLISTmenu() {
     return `[{\"link\":\"/type/hoat-hinh/\",\"name\":\"Hoạt Hình\"},{\"link\":\"/type/vien-tuong/\",\"name\":\"Viễn Tưởng\"},{\"link\":\"/type/hinh-su/\",\"name\":\"Hình Sự\"},{\"link\":\"/type/bi-an/\",\"name\":\"Bí Ẩn\"},{\"link\":\"/type/hanh-dong/\",\"name\":\"Hành Động\"}]`;
