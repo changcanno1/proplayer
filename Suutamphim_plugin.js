@@ -17,7 +17,7 @@ function getManifest() {
     return JSON.stringify({
         "id": "sieutamphim",
         "name": "Sưu Tầm Phim",
-        "version": "3.2",
+        "version": "3.3",
         "baseUrl": BASE_URL,
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/sieutamphim.png",
         "isEnabled": true,
@@ -106,6 +106,50 @@ function stpAbyssCdn(u) {
         /https?:\/\/(short\.ink|short\.icu|abyssplayer\.com|player\.abyssplayer\.com|play\.abyssplayer\.com)\//gi,
         "https://abysscdn.com/"
     );
+}
+
+// Tải URL bằng IP thiết bị qua vax.local (OK.ru ký link theo IP lúc tải trang)
+function stpDeviceFetch(url, headers, method, body) {
+    try {
+        var h = {}, src = headers || {};
+        for (var k in src) if (src.hasOwnProperty(k)) h[k] = src[k];
+        if (!h["User-Agent"]) h["User-Agent"] = STP_UA;
+        var payload = {
+            url: url,
+            method: (method || "GET").toUpperCase(),
+            headers: h,
+            body: body || null,
+            sessionId: "vaxpl_sieutamphim",
+            via: "direct"
+        };
+        var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+            .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        if (!b64) return "";
+        var r = httpRequest("https://vax.local/p?d=" + b64, { method: "GET" });
+        if (r && r.isSuccessful && r.body) {
+            var out = r.body;
+            try {
+                var j = JSON.parse(out);
+                if (j && typeof j.data === "string") out = j.data;
+            } catch (e) {}
+            if (out && out.length > 100) return out;
+        }
+        log("device fetch fail status=" + (r && (r.status || r.statusCode)));
+    } catch (e) { log("device fetch err: " + e.message); }
+    return "";
+}
+
+// Proxy qua worker streamfile: worker vừa ký link OK vừa phát (cùng IP egress)
+function stpWorkerProxy(url) {
+    return "https://streamfile.alokillgtv04.workers.dev/proxy?url=" + encodeURIComponent(url)
+        + "&referer=" + encodeURIComponent("https://ok.ru/")
+        + "&origin=" + encodeURIComponent("https://ok.ru");
+}
+
+// Chỉ lấy id từ trang ok.ru/videoembed/<id> — KHÔNG dùng param id= của link đã ký
+function stpOkPageId(u) {
+    var m = String(u || "").match(/ok\.ru\/(?:videoembed|video)\/(\d+)/i);
+    return m ? m[1] : "";
 }
 
 // Custom-JS: bắt link media trong iframe abysscdn → player native
@@ -392,32 +436,93 @@ function stpExtractOk(html) {
     return null;
 }
 
-// Tải trang ok.ru/videoembed → lấy HLS đã ký (expires/sig)
+// Tải trang ok.ru/videoembed/<id> → lấy HLS đã ký (expires/sig)
+// QUAN TRỌNG: link ký gắn IP của bên tải trang. Phải tải bằng IP thiết bị
+// (vax.local) rồi phát trên thiết bị, nếu không variant/segment trả 400.
 function stpResolveOk(url) {
-    if (!/ok\.ru|odnoklassniki/i.test(url)) return null;
+    if (!/ok\.ru\/(?:videoembed|video)\/\d+/i.test(url)) return null;
+    var id = stpOkPageId(url);
+    if (!id) return null;
+    var pageUrl = "https://ok.ru/videoembed/" + id;
+    var hdrs = {
+        "User-Agent": STP_UA,
+        "Referer": "https://ok.ru/",
+        "Accept": "text/html,application/xhtml+xml,*/*",
+        "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8"
+    };
+
+    // 1) IP thiết bị → link ký phát được bằng chính thiết bị
     try {
-        var r = httpRequest(url, {
-            method: "GET",
-            headers: {
-                "User-Agent": STP_UA,
-                "Referer": "https://ok.ru/",
-                "Accept": "text/html,application/xhtml+xml,*/*"
-            }
-        });
-        if (!r || !r.isSuccessful || !r.body) { log("ok fetch fail status=" + (r && r.statusCode)); return null; }
-        var ok = stpExtractOk(r.body);
-        if (ok) log("ok " + ok.kind + ": " + ok.url.slice(0, 140));
-        else log("ok: không thấy hlsManifestUrl");
-        return ok;
-    } catch (e) { log("ok err: " + e.message); return null; }
+        var page = stpDeviceFetch(pageUrl, hdrs, "GET");
+        if (page) {
+            var ok = stpExtractOk(page);
+            if (ok) { log("ok device " + ok.kind + ": " + ok.url.slice(0, 140)); return ok; }
+            log("ok device: không thấy hlsManifestUrl");
+        }
+    } catch (e) { log("ok device err: " + e.message); }
+
+    // 2) Fallback: worker ký + worker phát (cùng egress) → tránh 400 do lệch IP
+    try {
+        var fb = stpOkWorkerFallback(pageUrl);
+        if (fb) { log("ok worker " + fb.kind + " (fallback)"); return fb; }
+        log("ok worker: không thấy hlsManifestUrl");
+    } catch (e2) { log("ok worker err: " + e2.message); }
+    return null;
+}
+
+// Fallback OK.ru: worker ký link rồi trả variant đã rewrite segment qua worker
+function stpOkWorkerFallback(pageUrl) {
+    var h = { "User-Agent": STP_UA, "Accept": "text/html,application/xhtml+xml,*/*" };
+    var w = httpRequest(stpWorkerProxy(pageUrl), { method: "GET", headers: h });
+    if (!w || !w.isSuccessful || !w.body) return null;
+    var ok = stpExtractOk(w.body);
+    if (!ok) return null;
+
+    if (ok.kind !== "hls") {
+        return { kind: "mp4", url: stpWorkerProxy(ok.url) };
+    }
+
+    // Tải master qua worker (worker rewrite variant → URL worker)
+    var mr = httpRequest(stpWorkerProxy(ok.url), { method: "GET", headers: h });
+    if (!mr || !mr.isSuccessful || !mr.body) {
+        return { kind: "hls", url: stpWorkerProxy(ok.url) };
+    }
+
+    var lines = String(mr.body).split("\n");
+    var best = null, bestBw = -1;
+    for (var i = 0; i < lines.length; i++) {
+        var ln = lines[i].trim();
+        if (!/^#EXT-X-STREAM-INF/i.test(ln)) continue;
+        var bw = parseInt((ln.match(/BANDWIDTH=(\d+)/i) || [])[1] || "0", 10);
+        var uri = "";
+        for (var j = i + 1; j < lines.length; j++) {
+            var t = lines[j].trim();
+            if (!t) continue;
+            if (t.charAt(0) !== "#") { uri = t; break; }
+        }
+        if (uri && bw > bestBw) { bestBw = bw; best = uri; }
+    }
+    if (!best) return { kind: "hls", url: stpWorkerProxy(ok.url) };
+
+    // Lấy URL variant gốc (worker đã bọc) rồi ép worker rewrite segment
+    var vOrig = best;
+    var mu = best.match(/[?&]url=([^&]+)/);
+    if (mu) { try { vOrig = decodeURIComponent(mu[1]); } catch (e) { vOrig = mu[1]; } }
+    if (!/\.m3u8(\?|#|$)/i.test(vOrig)) {
+        vOrig += (vOrig.indexOf("?") > -1 ? "&" : "?") + "x=.m3u8";
+    }
+    return { kind: "hls", url: stpWorkerProxy(vOrig) };
 }
 
 // Bóc embed.php → embed → player-payload → OK/abyss player
 function stpResolvePlayer(watchHtml, watchUrl) {
     try {
-        // Một số trang nhúng OKVideo trực tiếp
+        // Trang watch có sẵn link ok.ru/videoembed → ký lại bằng IP thiết bị
         var direct = stpExtractOk(watchHtml);
-        if (direct) return direct;
+        if (direct && /ok\.ru\/(?:videoembed|video)\/\d+/i.test(direct.url)) {
+            var dOk = stpResolveOk(direct.url);
+            if (dOk) return dOk;
+        }
 
         var em = watchHtml.match(/var\s+encodedUrl\s*=\s*"([^"]+)"/i);
         if (!em) em = watchHtml.match(/encodedUrl\s*[:=]\s*"([A-Za-z0-9+\/=_-]+)"/i);
@@ -446,8 +551,9 @@ function stpResolvePlayer(watchHtml, watchUrl) {
         if (!embedHtml) return null;
 
         var inEmbed = stpExtractOk(embedHtml);
-        if (inEmbed && !/short\.ink|abyss/i.test(inEmbed.url)) {
-            return inEmbed;
+        if (inEmbed && /ok\.ru\/(?:videoembed|video)\/\d+/i.test(inEmbed.url)) {
+            var iOk = stpResolveOk(inEmbed.url);
+            if (iOk) return iOk;
         }
 
         var pm = embedHtml.match(/name="player-payload"\s+content="([^"]+)"/i);
