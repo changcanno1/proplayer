@@ -11,18 +11,18 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "2.6",
+            "version": "2.7",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
             "isEnabled": true,
             "isAdult": false,
-            "adblock": true,
+            "adblock": false,
             "type": "MOVIE",
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "auto" // Đặt "auto" để App luôn vào trang Chi tiết chọn tập trước, khi bấm tập mới mở WebView
+            "playerType": "embed" // Bắt buộc dùng WebView của trang Rophim (như HH3DNew_plugin.js)
         });
     } catch (e) {
         return JSON.stringify({
@@ -34,7 +34,7 @@ function getManifest() {
             "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
             "isEnabled": true,
             "type": "MOVIE",
-            "playerType": "auto"
+            "playerType": "embed"
         });
     }
 }
@@ -268,7 +268,7 @@ function parseListResponse(html, $url) {
                 rawId = BASEAPI + "/api/v1/movie/gallery/" + item._id;
             }
 
-            // Đóng gói dữ liệu chuẩn qua |data: để bảo toàn 100% trên mọi nền tảng
+            // Đóng gói dữ liệu chuẩn qua |data: để bảo toàn 100%
             var encodedItem = encodeURIComponent(JSON.stringify(item));
             var idWithPipe = rawId + "|data:" + encodedItem;
 
@@ -311,8 +311,6 @@ function parseListResponse(html, $url) {
                     "backdropUrl": background,
                     "year": item.year || "",
                     "lang": namelang,
-                    "isCategory": false,
-                    "isFolder": false,
                     "datasend": JSON.stringify(item)
                 });
             }
@@ -381,8 +379,6 @@ function parseMovieDetail(html, url, datasend) {
         var servers = [];
 
         if (item.type == 1) {
-            // Tách mỗi bản (Vietsub / Lồng Tiếng / Thuyết Minh) thành tab Server riêng với slug duy nhất
-            // Tránh việc dùng mảng ids lồng nhau hoặc 1 nút duy nhất khiến App tự động Auto-Play khi mở Detail
             var typeEpi = item.latest_episode || { "1": 1 };
             for (var key in typeEpi) {
                 var namesv = "Vietsub";
@@ -393,11 +389,18 @@ function parseMovieDetail(html, url, datasend) {
                 var embedLink = "https://api.rophim.stream/player/embed?id=" + item._id + "&ver=" + key + "&version=" + key + "|data:ver=" + key;
                 servers.push({
                     name: namesv,
-                    episodes: [{
-                        id: embedLink,
-                        name: "Full (" + namesv + ")",
-                        slug: "phim-le-sv-" + key
-                    }]
+                    episodes: [
+                        {
+                            id: embedLink,
+                            name: "Tập Full",
+                            slug: "tap-1-sv-" + key
+                        },
+                        {
+                            id: embedLink + "&backup=1",
+                            name: "Dự Phòng",
+                            slug: "tap-2-sv-" + key
+                        }
+                    ]
                 });
             }
         } else {
@@ -460,7 +463,7 @@ function parseMovieDetail(html, url, datasend) {
             casts: "",
             director: "",
             country: country,
-            extra: "" // Tuyệt đối để rỗng extra để App không tự động chạy tiếp luồng ngầm
+            extra: ""
         });
     } catch (e) {
         log("parseMovieDetail[err]:\n " + e);
@@ -473,21 +476,22 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM (CHẠY WEBVIEW PLAYER CỦA TRANG + XOAY NGANG) =====
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (ÉP CHẠY 100% TRONG WEBVIEW ROPHIM) =====
 function parseDetailResponse(html, url, datasend) {
     console.log("parseDetailResponse dang xu ly: " + url);
     try {
         var cleanUrl = (url || "").split("|")[0];
         return JSON.stringify({
             url: cleanUrl,
-            isEmbed: true, // Khi playerType="auto", url không chứa .m3u8/.mp4 và isEmbed=true -> Mở WebView của trang
+            isEmbed: false, // BẮT BUỘC ĐỂ false KHI playerType="embed" ĐỂ APP MỞ THẲNG WEBVIEW, KHÔNG GỌI parseEmbedResponse HAY SNIFFER!
             headers: {
-                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 "Referer": BASEURL + "/",
                 "Origin": BASEURL,
+                "Block-Sniffer": "true", // Khóa hoàn toàn bộ bắt link m3u8 ngầm của App để giữ nguyên WebView Rophim
                 "Block-Ads": "true",
                 "Block-Redirects": "true",
-                "Custom-Js": webviewSubHelperJS()
+                "Custom-Js": webviewRophimJS()
             },
             subtitles: []
         });
@@ -503,42 +507,46 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// Script hỗ trợ WebView: Tự động bật Vietsub, chất lượng cao nhất và Tự động Xoay Ngang màn hình (Landscape)
-function webviewSubHelperJS() {
+// Script hỗ trợ trong WebView: Cấm SnifferBridge bắt link ra ngoài + Tự bật Vietsub của JWPlayer + Tự động Xoay Ngang
+function webviewRophimJS() {
     return `(function() {
         'use strict';
-        if (window.__ROPHIM_WEBVIEW_INIT__) return;
-        window.__ROPHIM_WEBVIEW_INIT__ = true;
+        if (window.__ROPHIM_WEBVIEW_LOCK__) return;
+        window.__ROPHIM_WEBVIEW_LOCK__ = true;
 
-        // 1. CSS chuẩn hóa khung hình full 100% + Tự động xoay ngang bằng CSS nếu thiết bị đang cầm dọc
+        // 1. Vô hiệu hóa SnifferBridge.play để App TUYỆT ĐỐI KHÔNG tự rút link m3u8 ra trình phát ngoài
+        try {
+            if (window.SnifferBridge) {
+                window.SnifferBridge.play = function() {};
+                window.SnifferBridge.playVideo = function() {};
+                window.SnifferBridge.playExoPlayer = function() {};
+                window.SnifferBridge.sendToPlayer = function() {};
+                window.SnifferBridge.onVideoDetected = function() {};
+                window.SnifferBridge.playM3u8Content = function() {};
+            }
+        } catch (e) {}
+
+        // 2. CSS toàn màn hình + Hiển thị rõ phụ đề JWPlayer gốc của Rophim + Xoay ngang màn hình
         var style = document.createElement('style');
         style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; } ' +
                             '.jwplayer, #player, video { width: 100% !important; height: 100% !important; object-fit: contain !important; } ' +
-                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; } ' +
+                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 99999 !important; pointer-events: none !important; } ' +
                             '@media screen and (orientation: portrait) { ' +
                             '  body { transform: rotate(90deg) !important; transform-origin: bottom left !important; position: absolute !important; top: -100vw !important; left: 0 !important; width: 100vh !important; height: 100vw !important; } ' +
                             '}';
         (document.head || document.documentElement).appendChild(style);
 
-        // 2. Hàm yêu cầu hệ thống khóa xoay ngang màn hình (Landscape)
-        function forceLandscapeOrientation() {
+        // 3. Yêu cầu hệ thống khóa xoay ngang màn hình (Landscape)
+        function lockLandscape() {
             try {
                 if (screen && screen.orientation && typeof screen.orientation.lock === 'function') {
                     screen.orientation.lock('landscape').catch(function() {});
-                } else if (screen && typeof screen.lockOrientation === 'function') {
-                    screen.lockOrientation('landscape');
-                }
-            } catch (e) {}
-            try {
-                if (window.SnifferBridge && typeof window.SnifferBridge.setOrientation === 'function') {
-                    window.SnifferBridge.setOrientation('landscape');
                 }
             } catch (e) {}
         }
+        lockLandscape();
 
-        forceLandscapeOrientation();
-
-        // 3. Tự động chọn phụ đề Tiếng Việt, Max Quality & kích hoạt xoay ngang khi phát
+        // 4. Giữ thẻ <video> chạy inline trong WebView (ngăn iOS bung trình phát hệ thống làm mất sub JWPlayer)
         var checkCount = 0;
         var timer = setInterval(function() {
             checkCount++;
@@ -546,47 +554,46 @@ function webviewSubHelperJS() {
                 clearInterval(timer);
                 return;
             }
+
+            var v = document.querySelector('video');
+            if (v) {
+                v.setAttribute('playsinline', 'true');
+                v.setAttribute('webkit-playsinline', 'true');
+            }
+
             if (typeof window.jwplayer === 'function') {
                 try {
                     var player = window.jwplayer();
                     if (player && typeof player.on === 'function') {
                         clearInterval(timer);
 
-                        // Giữ inline trên iOS để phụ đề JWPlayer luôn hiển thị đè lên video
-                        var videoEl = document.querySelector('video');
-                        if (videoEl) {
-                            videoEl.setAttribute('playsinline', 'true');
-                            videoEl.setAttribute('webkit-playsinline', 'true');
-                        }
-
-                        var autoSetupPlayer = function() {
+                        var setupJW = function() {
                             try {
-                                forceLandscapeOrientation();
-
-                                var v = document.querySelector('video');
-                                if (v) {
-                                    v.setAttribute('playsinline', 'true');
-                                    v.setAttribute('webkit-playsinline', 'true');
+                                lockLandscape();
+                                var vid = document.querySelector('video');
+                                if (vid) {
+                                    vid.setAttribute('playsinline', 'true');
+                                    vid.setAttribute('webkit-playsinline', 'true');
                                 }
 
-                                // Tự động bật phụ đề Tiếng Việt
+                                // Tự động chọn phụ đề Tiếng Việt trên JWPlayer của Rophim
                                 var tracks = player.getCaptionsList ? player.getCaptionsList() : [];
                                 if (tracks && tracks.length > 1) {
-                                    var viIndex = -1;
+                                    var viIdx = -1;
                                     for (var i = 0; i < tracks.length; i++) {
-                                        var label = (tracks[i].label || '').toLowerCase();
-                                        if (label.indexOf('việt') !== -1 || label.indexOf('viet') !== -1 || label.indexOf('vi') !== -1) {
-                                            viIndex = i;
+                                        var lb = (tracks[i].label || '').toLowerCase();
+                                        if (lb.indexOf('việt') !== -1 || lb.indexOf('viet') !== -1 || lb.indexOf('vi') !== -1) {
+                                            viIdx = i;
                                             break;
                                         }
                                     }
-                                    if (viIndex === -1) viIndex = 1;
-                                    if (player.getCurrentCaptions && player.getCurrentCaptions() !== viIndex) {
-                                        player.setCurrentCaptions(viIndex);
+                                    if (viIdx === -1) viIdx = 1;
+                                    if (player.getCurrentCaptions && player.getCurrentCaptions() !== viIdx) {
+                                        player.setCurrentCaptions(viIdx);
                                     }
                                 }
 
-                                // Tự động chọn độ phân giải cao nhất
+                                // Tự động chọn chất lượng cao nhất
                                 var levels = player.getQualityLevels ? player.getQualityLevels() : [];
                                 if (levels && levels.length > 0) {
                                     var maxIdx = 0, maxH = -1;
@@ -601,10 +608,10 @@ function webviewSubHelperJS() {
                             } catch (err) {}
                         };
 
-                        player.on('ready', autoSetupPlayer);
-                        player.on('firstFrame', autoSetupPlayer);
-                        player.on('captionsList', autoSetupPlayer);
-                        player.on('play', autoSetupPlayer);
+                        player.on('ready', setupJW);
+                        player.on('firstFrame', setupJW);
+                        player.on('captionsList', setupJW);
+                        player.on('play', setupJW);
                     }
                 } catch (e) {}
             }
@@ -612,7 +619,7 @@ function webviewSubHelperJS() {
     })();`;
 }
 
-// ==== HIDEMENU (CHUẨN HỆ THỐNG VAAPP - DÙNG BUILT-IN _$ & BASE64) ====
+// ==== HIDEMENU ====
 {
     function getUrlDetail(slug) {
         try {
