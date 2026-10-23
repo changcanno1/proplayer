@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "2.9",
+            "version": "3.0",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "auto" // 🌟 QUAN TRỌNG: Để "auto" giúp App luôn dừng ở trang Chi tiết để bạn chủ động chọn tập phim
+            "playerType": "embed" // ⭐ Bắt buộc dùng "embed" để mở WebView của trang, giúp giữ nguyên font chữ tiếng Việt và Vietsub chuẩn 100%
         });
     } catch (e) {
         return JSON.stringify({
@@ -34,7 +34,7 @@ function getManifest() {
             "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
             "isEnabled": true,
             "type": "MOVIE",
-            "playerType": "auto"
+            "playerType": "embed"
         });
     }
 }
