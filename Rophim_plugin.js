@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "2.8",
+            "version": "2.7",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "auto" // Đặt "auto" để dừng ở trang Chi tiết chọn tập, không tự động phát khi bấm vào phim[cite: 3, 6, 7, 10]
+            "playerType": "embed" // ⭐ Sử dụng WebView (embed) của trang để trình duyệt tự render font chữ và phụ đề tiếng Việt chuẩn 100%
         });
     } catch (e) {
         return JSON.stringify({
@@ -34,7 +34,7 @@ function getManifest() {
             "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
             "isEnabled": true,
             "type": "MOVIE",
-            "playerType": "auto"
+            "playerType": "embed"
         });
     }
 }
@@ -58,7 +58,7 @@ function log(msg) {
     console.log(msg);
 }
 
-// Helper bóc tách dữ liệu từ quy ước dấu |data:[cite: 8]
+// Helper bóc tách dữ liệu từ quy ước dấu |data:
 function getPipeData(rawUrl) {
     if (!rawUrl) return "";
     var idx = rawUrl.indexOf("|");
@@ -470,21 +470,21 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM (WEBVIEW PLAYER + TỰ ĐỘNG XOAY NGANG & TUA VIDEO) =====
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (DÙNG WEBVIEW EMBED ĐỂ GIỮ CHUẨN FONT & VIETSUB TRÊN TRANG) =====
 function parseDetailResponse(html, url, datasend) {
     console.log("parseDetailResponse dang xu ly: " + url);
     try {
         var cleanUrl = (url || "").split("|")[0];
         return JSON.stringify({
             url: cleanUrl,
-            isEmbed: true, // Mở WebView của trang để trình duyệt tự render phụ đề chuẩn 100%[cite: 1, 7]
+            isEmbed: true, // ⭐ Bật cờ isEmbed: true kết hợp playerType: "embed" để App hiển thị WebView chính chủ của trang
             headers: {
                 "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
                 "Referer": BASEURL + "/",
                 "Origin": BASEURL,
                 "Block-Ads": "true",
                 "Block-Redirects": "true",
-                "Custom-Js": webviewSubAndLandscapeHelperJS()
+                "Custom-Js": webviewSubAndLandscapeHelperJS() // Script tiêm tự động ép font, tự động chọn Vietsub và Xoay ngang màn hình
             },
             subtitles: []
         });
@@ -500,31 +500,29 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// Script tiêm vào WebView: Chống lỗi font UTF-8, tự bật Vietsub, giữ nguyên tỉ lệ video và tự động xoay ngang phần cứng (Landscape)
+// Script tiêm vào WebView: Tự động ép meta UTF-8 chống lỗi font, bật Vietsub, Max Quality và Tự động xoay ngang màn hình (Landscape)
 function webviewSubAndLandscapeHelperJS() {
     return `(function() {
         'use strict';
         if (window.__ROPHIM_WEBVIEW_EMBED_INIT__) return;
         window.__ROPHIM_WEBVIEW_EMBED_INIT__ = true;
 
-        // 1. Thêm viewport và meta charset UTF-8 để đảm bảo hiển thị đúng font chữ và không bị vỡ giao diện
-        var metaCharset = document.createElement('meta');
-        metaCharset.charset = 'UTF-8';
-        (document.head || document.documentElement).appendChild(metaCharset);
+        // 1. Ép thẻ Meta Charset UTF-8 ngay lập tức để chống triệt để lỗi font chữ tiếng Việt
+        var meta = document.createElement('meta');
+        meta.charset = 'UTF-8';
+        (document.head || document.documentElement).appendChild(meta);
 
-        var metaViewport = document.createElement('meta');
-        metaViewport.name = 'viewport';
-        metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-        (document.head || document.documentElement).appendChild(metaViewport);
-
-        // 2. CSS căn chỉnh full màn hình, bảo toàn khung điều khiển (tua, play/pause) của JWPlayer
+        // 2. CSS định hình giao diện full màn hình + Xoay ngang màn hình (Landscape) dự phòng
         var style = document.createElement('style');
         style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; } ' +
                             '.jwplayer, #player, video { width: 100% !important; height: 100% !important; object-fit: contain !important; } ' +
-                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; }';
+                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; } ' +
+                            '@media screen and (orientation: portrait) { ' +
+                            '  body { transform: rotate(90deg) !important; transform-origin: bottom left !important; position: absolute !important; top: -100vw !important; left: 0 !important; width: 100vh !important; height: 100vw !important; } ' +
+                            '}';
         (document.head || document.documentElement).appendChild(style);
 
-        // 3. Yêu cầu hệ thống tự động xoay ngang màn hình (Landscape)
+        // 3. Hàm kích hoạt khóa xoay ngang màn hình (Landscape) cấp phần cứng
         function forceLandscapeOrientation() {
             try {
                 if (screen && screen.orientation && typeof screen.orientation.lock === 'function') {
@@ -542,7 +540,7 @@ function webviewSubAndLandscapeHelperJS() {
 
         forceLandscapeOrientation();
 
-        // 4. Tự động bật phụ đề Tiếng Việt, Max Quality và ép kích hoạt Landscape trên JWPlayer
+        // 4. Tự động chọn phụ đề Tiếng Việt, Max Quality trên JWPlayer của trang web
         var checkCount = 0;
         var timer = setInterval(function() {
             checkCount++;
@@ -566,7 +564,7 @@ function webviewSubAndLandscapeHelperJS() {
                                     v.setAttribute('webkit-playsinline', 'true');
                                 }
 
-                                // Tự động chọn phụ đề Tiếng Việt
+                                // Tự động bật phụ đề Tiếng Việt chuẩn
                                 var tracks = player.getCaptionsList ? player.getCaptionsList() : [];
                                 if (tracks && tracks.length > 1) {
                                     var viIndex = -1;
@@ -583,7 +581,7 @@ function webviewSubAndLandscapeHelperJS() {
                                     }
                                 }
 
-                                // Tự động chọn chất lượng cao nhất
+                                // Tự động chọn chất lượng hình ảnh cao nhất
                                 var levels = player.getQualityLevels ? player.getQualityLevels() : [];
                                 if (levels && levels.length > 0) {
                                     var maxIdx = 0, maxH = -1;
