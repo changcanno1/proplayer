@@ -85,6 +85,13 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
       "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
     },
+     {
+      "id": "Backup",
+      "name": "[MOVIE] Backup",
+      "version": "1.2.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
+      "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
+    },
     {
       "id": "phimngan_net",
       "name": "Phim Ngắn Net",
