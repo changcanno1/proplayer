@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "2.7",
+            "version": "2.8",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "embed" // Bắt buộc dùng WebView của trang Rophim (như HH3DNew_plugin.js)
+            "playerType": "embed" // Bắt buộc dùng WebView của trang Rophim
         });
     } catch (e) {
         return JSON.stringify({
@@ -268,7 +268,6 @@ function parseListResponse(html, $url) {
                 rawId = BASEAPI + "/api/v1/movie/gallery/" + item._id;
             }
 
-            // Đóng gói dữ liệu chuẩn qua |data: để bảo toàn 100%
             var encodedItem = encodeURIComponent(JSON.stringify(item));
             var idWithPipe = rawId + "|data:" + encodedItem;
 
@@ -476,19 +475,19 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM (ÉP CHẠY 100% TRONG WEBVIEW ROPHIM) =====
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (WEBVIEW ROPHIM + KHẮC PHỤC TRIỆT ĐỂ LỖI FONT CHỮ) =====
 function parseDetailResponse(html, url, datasend) {
     console.log("parseDetailResponse dang xu ly: " + url);
     try {
         var cleanUrl = (url || "").split("|")[0];
         return JSON.stringify({
             url: cleanUrl,
-            isEmbed: false, // BẮT BUỘC ĐỂ false KHI playerType="embed" ĐỂ APP MỞ THẲNG WEBVIEW, KHÔNG GỌI parseEmbedResponse HAY SNIFFER!
+            isEmbed: false, // Bắt buộc false để mở trực tiếp WebView JWPlayer của trang
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 "Referer": BASEURL + "/",
                 "Origin": BASEURL,
-                "Block-Sniffer": "true", // Khóa hoàn toàn bộ bắt link m3u8 ngầm của App để giữ nguyên WebView Rophim
+                "Block-Sniffer": "true",
                 "Block-Ads": "true",
                 "Block-Redirects": "true",
                 "Custom-Js": webviewRophimJS()
@@ -507,14 +506,14 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// Script hỗ trợ trong WebView: Cấm SnifferBridge bắt link ra ngoài + Tự bật Vietsub của JWPlayer + Tự động Xoay Ngang
+// Script hỗ trợ WebView: Ép font chữ hệ thống hỗ trợ Tiếng Việt đầy đủ, khóa xoay ngang, bật Vietsub & Max Quality
 function webviewRophimJS() {
     return `(function() {
         'use strict';
         if (window.__ROPHIM_WEBVIEW_LOCK__) return;
         window.__ROPHIM_WEBVIEW_LOCK__ = true;
 
-        // 1. Vô hiệu hóa SnifferBridge.play để App TUYỆT ĐỐI KHÔNG tự rút link m3u8 ra trình phát ngoài
+        // 1. Vô hiệu hóa SnifferBridge để ép chạy trong WebView chính chủ
         try {
             if (window.SnifferBridge) {
                 window.SnifferBridge.play = function() {};
@@ -526,17 +525,18 @@ function webviewRophimJS() {
             }
         } catch (e) {}
 
-        // 2. CSS toàn màn hình + Hiển thị rõ phụ đề JWPlayer gốc của Rophim + Xoay ngang màn hình
+        // 2. CSS toàn màn hình + ÉP FONT CHỮ HỆ THỐNG CHUẨN TIẾNG VIỆT (Chống lỗi font / ô vuông chữ) + Xoay ngang
         var style = document.createElement('style');
-        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; } ' +
+        style.textContent = 'html, body, * { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; } ' +
+                            'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; } ' +
                             '.jwplayer, #player, video { width: 100% !important; height: 100% !important; object-fit: contain !important; } ' +
-                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 99999 !important; pointer-events: none !important; } ' +
+                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 99999 !important; pointer-events: none !important; font-size: 18px !important; } ' +
                             '@media screen and (orientation: portrait) { ' +
                             '  body { transform: rotate(90deg) !important; transform-origin: bottom left !important; position: absolute !important; top: -100vw !important; left: 0 !important; width: 100vh !important; height: 100vw !important; } ' +
                             '}';
         (document.head || document.documentElement).appendChild(style);
 
-        // 3. Yêu cầu hệ thống khóa xoay ngang màn hình (Landscape)
+        // 3. Yêu cầu khóa xoay ngang màn hình (Landscape)
         function lockLandscape() {
             try {
                 if (screen && screen.orientation && typeof screen.orientation.lock === 'function') {
@@ -546,7 +546,7 @@ function webviewRophimJS() {
         }
         lockLandscape();
 
-        // 4. Giữ thẻ <video> chạy inline trong WebView (ngăn iOS bung trình phát hệ thống làm mất sub JWPlayer)
+        // 4. Giữ inline trên iOS/Android + Tự động chọn Vietsub & Max Quality
         var checkCount = 0;
         var timer = setInterval(function() {
             checkCount++;
@@ -576,7 +576,7 @@ function webviewRophimJS() {
                                     vid.setAttribute('webkit-playsinline', 'true');
                                 }
 
-                                // Tự động chọn phụ đề Tiếng Việt trên JWPlayer của Rophim
+                                // Tự động bật phụ đề Tiếng Việt chuẩn
                                 var tracks = player.getCaptionsList ? player.getCaptionsList() : [];
                                 if (tracks && tracks.length > 1) {
                                     var viIdx = -1;
@@ -593,7 +593,7 @@ function webviewRophimJS() {
                                     }
                                 }
 
-                                // Tự động chọn chất lượng cao nhất
+                                // Tự động chọn độ phân giải cao nhất
                                 var levels = player.getQualityLevels ? player.getQualityLevels() : [];
                                 if (levels && levels.length > 0) {
                                     var maxIdx = 0, maxH = -1;
