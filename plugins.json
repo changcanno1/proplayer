@@ -36,6 +36,13 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
+   {
+      "id": "PhimBom",
+      "name": "PhimBom",
+      "version": "2.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
+    },
     {
       "id": "onflix",
       "name": "Onflix",
@@ -44,50 +51,36 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
     },
     {
-      "id": "PhimBom",
-      "name": "PhimBom",
-      "version": "2.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
-    },
-    {
       "id": "vicdn",
       "name": "Nguồn Vicdn",
       "version": "2.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png"
     },
-     {
-      "id": "Backup",
-      "name": "[MOVIE] Backup",
-      "version": "1.2.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup_plugin.js",
-      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
-    },
-      {
-      "id": "Backup1",
-      "name": "[MOVIE] Backup1",
+    {
+      "id": "Phimhay1",
+      "name": "[MOVIE] Phimhay1",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup1_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
-      "id": "Backup2",
-      "name": "[MOVIE] Backup2",
+      "id": "Phimhay2",
+      "name": "[MOVIE] Phimhay2",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup2_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
    {
-      "id": "Backup3",
-      "name": "[MOVIE] Backup3",
+      "id": "Phimhay3",
+      "name": "[MOVIE] Phimhay3",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup3_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
-      "id": "Backup4",
-      "name": "[MOVIE] Backup4",
+      "id": "Phimhay4",
+      "name": "[MOVIE] Phimhay4",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup4_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
