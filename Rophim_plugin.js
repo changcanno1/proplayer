@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "3.4",
+            "version": "3.5",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -457,7 +457,7 @@ function parseMovieDetail(html, url, datasend) {
             casts: "",
             director: "",
             country: country,
-            extra: "" // Giữ rỗng
+            extra: "" // Giữ rỗng để không bị auto-play khi mở chi tiết phim
         });
     } catch (e) {
         log("parseMovieDetail[err]:\n " + e);
@@ -484,7 +484,7 @@ function parseDetailResponse(html, url, datasend) {
                 "Origin": BASEURL,
                 "Block-Ads": "true",
                 "Block-Redirects": "true",
-                "Block-Sniffer": "true", // Chặn Sniffer để ép WebView chạy
+                "Block-Sniffer": "true", // Chặn Sniffer để ép WebView chạy nguyên bản
                 "Custom-Js": webviewStrictHelperJS()
             },
             subtitles: []
@@ -501,7 +501,7 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// CÔNG THỨC XOAY CSS TOÁN HỌC CHÍNH XÁC 100% CẠNH MÀN HÌNH
+// CÔNG THỨC XOAY CSS MỚI: 90% CHIỀU RỘNG & ÁP SÁT CẠNH TRÊN (TRÁNH BỊ CẮT CHỮ TRÊN IOS)
 function webviewStrictHelperJS() {
     return `(function() {
         'use strict';
@@ -512,13 +512,15 @@ function webviewStrictHelperJS() {
         meta.charset = 'UTF-8';
         (document.head || document.documentElement).appendChild(meta);
 
-        // CSS Fix Layout Xoay Ngang Chính Xác Tuyệt Đối (Không Lệch Safe Area)
+        // CSS Fix Layout Xoay Ngang Chính Xác: 
+        // 1. Áp sát hoàn toàn vào mép trên điện thoại bằng top left (x=100vw, y=0)
+        // 2. Thu hẹp tỷ lệ chiều cao còn 90vw để chừa lại 10% an toàn dưới đáy cho phụ đề
         var style = document.createElement('style');
         style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; height: 100% !important; background: #000 !important; overflow: hidden !important; } ' +
                             '.jwplayer, #player, video { width: 100% !important; height: 100% !important; object-fit: contain !important; position: absolute !important; top: 0 !important; left: 0 !important; } ' +
-                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; bottom: 40px !important; } ' +
+                            '.jw-captions, .jw-text-track-display { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; bottom: 5% !important; } ' +
                             '@media screen and (orientation: portrait) { ' +
-                            '  body { position: fixed !important; top: 0 !important; left: 100vw !important; width: 100vh !important; height: 100vw !important; transform: rotate(90deg) !important; transform-origin: top left !important; overflow: hidden !important; } ' +
+                            '  html, body { position: fixed !important; top: 0 !important; left: 100vw !important; width: 100vh !important; height: 90vw !important; transform: rotate(90deg) !important; transform-origin: top left !important; overflow: hidden !important; background: #000 !important; } ' +
                             '}';
         (document.head || document.documentElement).appendChild(style);
 
@@ -528,11 +530,6 @@ function webviewStrictHelperJS() {
                     screen.orientation.lock('landscape').catch(function() {});
                 } else if (screen && typeof screen.lockOrientation === 'function') {
                     screen.lockOrientation('landscape');
-                }
-            } catch (e) {}
-            try {
-                if (window.SnifferBridge && typeof window.SnifferBridge.setOrientation === 'function') {
-                    window.SnifferBridge.setOrientation('landscape');
                 }
             } catch (e) {}
         }
