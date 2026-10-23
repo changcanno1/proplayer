@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "3.7",
+            "version": "3.8",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -457,7 +457,7 @@ function parseMovieDetail(html, url, datasend) {
             casts: "",
             director: "",
             country: country,
-            extra: "" // Giữ rỗng để không bị auto-play khi mở chi tiết phim
+            extra: "" // Giữ rỗng để không bị auto-play
         });
     } catch (e) {
         log("parseMovieDetail[err]:\n " + e);
@@ -470,7 +470,7 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM =====
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (DÙNG WEBVIEW VÀ ÉP CSS TOÁN HỌC CHUẨN XÁC) =====
 function parseDetailResponse(html, url, datasend) {
     console.log("parseDetailResponse dang xu ly: " + url);
     try {
@@ -484,8 +484,8 @@ function parseDetailResponse(html, url, datasend) {
                 "Origin": BASEURL,
                 "Block-Ads": "true",
                 "Block-Redirects": "true",
-                "Block-Sniffer": "true", // Chặn Sniffer để ép WebView chạy
-                "Custom-Js": webviewPerfectUIHelperJS()
+                "Block-Sniffer": "true", // Chặn Sniffer để ép WebView chạy nguyên bản
+                "Custom-Js": webviewScaledHelperJS()
             },
             subtitles: []
         });
@@ -501,27 +501,34 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// KHÔNG DÙNG CSS TRANSFORM ROTATE ĐỂ CHỐNG LỖI NGƯỢC/MÉO HÌNH - CHỈ NÂNG SUB LÊN VÙNG AN TOÀN
-function webviewPerfectUIHelperJS() {
+// CSS ĐƯỢC THIẾT KẾ ĐỂ LUÔN XOAY NGANG, ÁP SÁT MÉP VÀ SCALE XUỐNG 90% CHIỀU CAO
+function webviewScaledHelperJS() {
     return `(function() {
         'use strict';
-        if (window.__ROPHIM_WEBVIEW_PERFECT_INIT__) return;
-        window.__ROPHIM_WEBVIEW_PERFECT_INIT__ = true;
+        if (window.__ROPHIM_WEBVIEW_SCALED_INIT__) return;
+        window.__ROPHIM_WEBVIEW_SCALED_INIT__ = true;
 
         var meta = document.createElement('meta');
         meta.charset = 'UTF-8';
         (document.head || document.documentElement).appendChild(meta);
 
-        // CSS chuẩn, KHÔNG dùng transform xoay DOM để tránh lỗi lật ngược, méo hình trong khung dọc
-        // Chỉ cần nâng phụ đề lên 12% để bảo vệ chữ khỏi phần tai thỏ / home indicator của iOS
+        // THUẬT TOÁN CSS: 
+        // Khi máy cầm dọc (Portrait): Xoay 90 độ, đẩy tâm xoay sang sát lề phải (left: 100vw). 
+        // Chiều dài video ăn trọn 100vh, nhưng chiều cao (sau khi xoay) bị bóp lại còn 90vw (scale nhỏ đi 10%). 
+        // Khi máy cầm ngang (Landscape): Giữ nguyên chiều dài 100vw, bóp chiều cao còn 90vh.
         var style = document.createElement('style');
-        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; height: 100% !important; background: #000 !important; overflow: hidden !important; } ' +
+        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; background: #000 !important; overflow: hidden !important; } ' +
                             '.jwplayer, #player { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; } ' +
                             'video { width: 100% !important; height: 100% !important; object-fit: contain !important; transform: none !important; } ' +
-                            '.jw-captions, .jw-text-track-display { bottom: 12% !important; z-index: 9999 !important; }';
+                            '.jw-captions, .jw-text-track-display { bottom: 5% !important; z-index: 9999 !important; } ' +
+                            '@media screen and (orientation: portrait) { ' +
+                            '  html, body { position: fixed !important; top: 0 !important; left: 100vw !important; width: 100vh !important; height: 90vw !important; transform-origin: top left !important; transform: rotate(90deg) !important; } ' +
+                            '} ' +
+                            '@media screen and (orientation: landscape) { ' +
+                            '  html, body { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 90vh !important; transform: none !important; } ' +
+                            '}';
         (document.head || document.documentElement).appendChild(style);
 
-        // Dùng API của App để giao tiếp việc tự động xoay màn hình (xoay phần cứng thay vì xoay DOM)
         function forceLandscapeOrientation() {
             try {
                 if (window.SnifferBridge && typeof window.SnifferBridge.setOrientation === 'function') {
@@ -534,7 +541,6 @@ function webviewPerfectUIHelperJS() {
                 }
             } catch (e) {}
         }
-        
         forceLandscapeOrientation();
 
         var checkCount = 0;
