@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "2.7",
+            "version": "2.8",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "embed" // ⭐ Sử dụng WebView (embed) của trang để trình duyệt tự render font chữ và phụ đề tiếng Việt chuẩn 100%
+            "playerType": "embedtoexoplay" // ⭐ Dùng EmbedSniffer để bắt link phát qua ExoPlayer chuẩn, sửa triệt để lỗi không tua được khi xoay ngang
         });
     } catch (e) {
         return JSON.stringify({
@@ -34,7 +34,7 @@ function getManifest() {
             "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
             "isEnabled": true,
             "type": "MOVIE",
-            "playerType": "embed"
+            "playerType": "exoplayer"
         });
     }
 }
@@ -470,21 +470,21 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM (DÙNG WEBVIEW EMBED ĐỂ GIỮ CHUẨN FONT & VIETSUB TRÊN TRANG) =====
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (DÙNG EMBED SNIFFER ĐỂ LẤY LINK M3U8 NẠP VÀO EXO PLAYER) =====
 function parseDetailResponse(html, url, datasend) {
     console.log("parseDetailResponse dang xu ly: " + url);
     try {
         var cleanUrl = (url || "").split("|")[0];
         return JSON.stringify({
             url: cleanUrl,
-            isEmbed: true, // ⭐ Bật cờ isEmbed: true kết hợp playerType: "embed" để App hiển thị WebView chính chủ của trang
+            isEmbed: true, // App chạy WebView ngầm qua cơ chế embedtoexoplay để dò tìm link m3u8
             headers: {
                 "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
                 "Referer": BASEURL + "/",
                 "Origin": BASEURL,
                 "Block-Ads": "true",
                 "Block-Redirects": "true",
-                "Custom-Js": webviewSubAndLandscapeHelperJS() // Script tiêm tự động ép font, tự động chọn Vietsub và Xoay ngang màn hình
+                "Custom-Js": embedSnifferHelperJS() // Script tự động bóc tách link M3U8/MP4 và gửi về App
             },
             subtitles: []
         });
@@ -500,110 +500,46 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// Script tiêm vào WebView: Tự động ép meta UTF-8 chống lỗi font, bật Vietsub, Max Quality và Tự động xoay ngang màn hình (Landscape)
-function webviewSubAndLandscapeHelperJS() {
+// Script bắt link stream trong trang embed và gọi SnifferBridge.play() để truyền sang ExoPlayer chuẩn
+function embedSnifferHelperJS() {
     return `(function() {
         'use strict';
-        if (window.__ROPHIM_WEBVIEW_EMBED_INIT__) return;
-        window.__ROPHIM_WEBVIEW_EMBED_INIT__ = true;
+        if (window.__ROPHIM_SNIFFER_INIT__) return;
+        window.__ROPHIM_SNIFFER_INIT__ = true;
 
-        // 1. Ép thẻ Meta Charset UTF-8 ngay lập tức để chống triệt để lỗi font chữ tiếng Việt
-        var meta = document.createElement('meta');
-        meta.charset = 'UTF-8';
-        (document.head || document.documentElement).appendChild(meta);
-
-        // 2. CSS định hình giao diện full màn hình + Xoay ngang màn hình (Landscape) dự phòng
-        var style = document.createElement('style');
-        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; } ' +
-                            '.jwplayer, #player, video { width: 100% !important; height: 100% !important; object-fit: contain !important; } ' +
-                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; } ' +
-                            '@media screen and (orientation: portrait) { ' +
-                            '  body { transform: rotate(90deg) !important; transform-origin: bottom left !important; position: absolute !important; top: -100vw !important; left: 0 !important; width: 100vh !important; height: 100vw !important; } ' +
-                            '}';
-        (document.head || document.documentElement).appendChild(style);
-
-        // 3. Hàm kích hoạt khóa xoay ngang màn hình (Landscape) cấp phần cứng
-        function forceLandscapeOrientation() {
-            try {
-                if (screen && screen.orientation && typeof screen.orientation.lock === 'function') {
-                    screen.orientation.lock('landscape').catch(function() {});
-                } else if (screen && typeof screen.lockOrientation === 'function') {
-                    screen.lockOrientation('landscape');
-                }
-            } catch (e) {}
-            try {
-                if (window.SnifferBridge && typeof window.SnifferBridge.setOrientation === 'function') {
-                    window.SnifferBridge.setOrientation('landscape');
-                }
-            } catch (e) {}
+        var hasSent = false;
+        function sendToPlayer(url) {
+            if (hasSent || !url) return;
+            if (url.indexOf('.m3u8') !== -1 || url.indexOf('.mp4') !== -1) {
+                hasSent = true;
+                try {
+                    if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
+                        window.SnifferBridge.play(url, JSON.stringify({
+                            "Referer": "https://www.rophim.soy/",
+                            "Origin": "https://www.rophim.soy"
+                        }));
+                    }
+                } catch(e) {}
+            }
         }
 
-        forceLandscapeOrientation();
-
-        // 4. Tự động chọn phụ đề Tiếng Việt, Max Quality trên JWPlayer của trang web
-        var checkCount = 0;
-        var timer = setInterval(function() {
-            checkCount++;
-            if (checkCount > 60) {
-                clearInterval(timer);
-                return;
+        // Bắt qua thẻ video DOM
+        setInterval(function() {
+            var v = document.querySelector('video');
+            if (v && v.src) sendToPlayer(v.src);
+            var sources = document.querySelectorAll('source');
+            for (var i = 0; i < sources.length; i++) {
+                if (sources[i].src) sendToPlayer(sources[i].src);
             }
-            if (typeof window.jwplayer === 'function') {
-                try {
-                    var player = window.jwplayer();
-                    if (player && typeof player.on === 'function') {
-                        clearInterval(timer);
+        }, 500);
 
-                        var autoSetupPlayer = function() {
-                            try {
-                                forceLandscapeOrientation();
-
-                                var v = document.querySelector('video');
-                                if (v) {
-                                    v.setAttribute('playsinline', 'true');
-                                    v.setAttribute('webkit-playsinline', 'true');
-                                }
-
-                                // Tự động bật phụ đề Tiếng Việt chuẩn
-                                var tracks = player.getCaptionsList ? player.getCaptionsList() : [];
-                                if (tracks && tracks.length > 1) {
-                                    var viIndex = -1;
-                                    for (var i = 0; i < tracks.length; i++) {
-                                        var label = (tracks[i].label || '').toLowerCase();
-                                        if (label.indexOf('việt') !== -1 || label.indexOf('viet') !== -1 || label.indexOf('vi') !== -1) {
-                                            viIndex = i;
-                                            break;
-                                        }
-                                    }
-                                    if (viIndex === -1) viIndex = 1;
-                                    if (player.getCurrentCaptions && player.getCurrentCaptions() !== viIndex) {
-                                        player.setCurrentCaptions(viIndex);
-                                    }
-                                }
-
-                                // Tự động chọn chất lượng hình ảnh cao nhất
-                                var levels = player.getQualityLevels ? player.getQualityLevels() : [];
-                                if (levels && levels.length > 0) {
-                                    var maxIdx = 0, maxH = -1;
-                                    for (var j = 0; j < levels.length; j++) {
-                                        if (levels[j].height && levels[j].height > maxH) {
-                                            maxH = levels[j].height;
-                                            maxIdx = j;
-                                        }
-                                    }
-                                    if (maxH > 0) player.setCurrentQuality(maxIdx);
-                                }
-                            } catch (err) {}
-                        };
-
-                        player.on('ready', autoSetupPlayer);
-                        player.on('firstFrame', autoSetupPlayer);
-                        player.on('captionsList', autoSetupPlayer);
-                        player.on('play', autoSetupPlayer);
-                    }
-                } catch (e) {}
-            }
-        }, 300);
+        // Hook Fetch / XHR để bắt link m3u8 ẩn
+        var origFetch = window.fetch;
+        window.fetch = function() {
+            var u = arguments[0];
+            if (typeof u === 'string') sendToPlayer(u);
+            return origFetch.apply(this, arguments);
+        };
     })();`;
 }
 
