@@ -1,7 +1,6 @@
 var iddomain = "phimbom"
-BASEURL = "https://vkey.vn/" + iddomain;
 BASEURL = "https://phimbom.us";
-
+NEWDOMAIN = true;
 var popup_html = "";
 // https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
@@ -9,7 +8,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "phimbom",
       "name": "Phim Bom [MOVIE]",
-      "version": "2.1",
+      "version": "2.2",
       "author": "Alokillgtv",
       "info": "",
       "baseUrl": BASEURL,
@@ -39,19 +38,19 @@ function getManifest() {
   }
 }
 
-if (typeof httpRequest === "function") {
-  var res = httpRequest("https://vaxplugin.alokillgtv.workers.dev/jsonStore/domain.json?debug=9780752&time=2323", {method: "POST"});
-  if (res && res.isSuccessful) {
-    var resobj = JSON.parse(res.body);
-    BASEURL = resobj[iddomain].new;   
-  } else {
-    BASEURL = "https://vkey.vn/" + iddomain;
-  }
-} else {
-  BASEURL = "https://vkey.vn/" + iddomain;
-  BASEURL = "https://phimbom.us";
-}
-
+if (NEWDOMAIN) {
+    if (typeof httpRequest === "function") {
+        var res = httpRequest("https://vaxplugin.alokillgtv.workers.dev/jsonStore/domain.json?debug=9780752&time=2323", {
+            method: "POST"
+        });
+        if (res && res.isSuccessful) {
+            var resobj = JSON.parse(res.body);
+            if (resobj[iddomain]) {
+                BASEURL = resobj[iddomain].new;
+            }
+        } 
+    } 
+} 
 BASELINK = BASEURL;
 console.log("BASEURL " + BASEURL);
 
