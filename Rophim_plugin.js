@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "auto" // ⭐ Đặt "auto" để App luôn hiển thị màn hình Chi tiết cho phép chọn tập trước khi phát
+            "playerType": "embed" // Sử dụng WebView chính chủ của trang để hiển thị Vietsub hoàn hảo
         });
     } catch (e) {
         return JSON.stringify({
@@ -34,7 +34,7 @@ function getManifest() {
             "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
             "isEnabled": true,
             "type": "MOVIE",
-            "playerType": "auto"
+            "playerType": "embed"
         });
     }
 }
@@ -58,7 +58,7 @@ function log(msg) {
     console.log(msg);
 }
 
-// Helper bóc tách dữ liệu từ quy ước dấu |data:
+// Helper bóc tách dữ liệu chuẩn quy ước |data:
 function getPipeData(rawUrl) {
     if (!rawUrl) return "";
     var idx = rawUrl.indexOf("|");
@@ -310,8 +310,6 @@ function parseListResponse(html, $url) {
                     "backdropUrl": background,
                     "year": item.year || "",
                     "lang": namelang,
-                    "isCategory": false,
-                    "isFolder": false,
                     "datasend": JSON.stringify(item)
                 });
             }
@@ -457,7 +455,7 @@ function parseMovieDetail(html, url, datasend) {
             casts: "",
             director: "",
             country: country,
-            extra: ""
+            extra: "" // Tuyệt đối để rỗng extra để App dừng ở trang Chi tiết chọn tập
         });
     } catch (e) {
         log("parseMovieDetail[err]:\n " + e);
@@ -470,21 +468,21 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM (DÙNG WEBVIEW EMBED & CĂN GIỮA TOÀN MÀN HÌNH) =====
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (WEBVIEW EMBED + XOAY NGANG + KHẮC PHỤC LỖI TUA) =====
 function parseDetailResponse(html, url, datasend) {
     console.log("parseDetailResponse dang xu ly: " + url);
     try {
         var cleanUrl = (url || "").split("|")[0];
         return JSON.stringify({
             url: cleanUrl,
-            isEmbed: true, // ⭐ Bật cờ isEmbed: true kết hợp playerType: "auto" để mở WebView đúng lúc bấm tập
+            isEmbed: true, // Mở WebView của trang
             headers: {
                 "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
                 "Referer": BASEURL + "/",
                 "Origin": BASEURL,
                 "Block-Ads": "true",
                 "Block-Redirects": "true",
-                "Custom-Js": webviewPerfectCenterAndSubHelperJS() // Script CSS căn giữa hoàn hảo, hỗ trợ xoay ngang & tua video ổn định
+                "Custom-Js": webviewLandscapeAndSeekFixJS() // Xử lý xoay ngang, hiện Vietsub và khắc phục lỗi tua video
             },
             subtitles: []
         });
@@ -500,27 +498,25 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// Script tiêm vào WebView: Căn giữa tuyệt đối, chống lỗi xoay ngang làm mất vùng bấm tua, tự động bật Vietsub & Max Quality
-function webviewPerfectCenterAndSubHelperJS() {
+// Script tối ưu cho WebView: Cho phép tua, hiển thị Vietsub hoàn hảo và Tự động xoay ngang màn hình (Landscape)
+function webviewLandscapeAndSeekFixJS() {
     return `(function() {
         'use strict';
-        if (window.__ROPHIM_WEBVIEW_PERFECT_INIT__) return;
-        window.__ROPHIM_WEBVIEW_PERFECT_INIT__ = true;
+        if (window.__ROPHIM_WEBVIEW_FIXED_INIT__) return;
+        window.__ROPHIM_WEBVIEW_FIXED_INIT__ = true;
 
-        // 1. Ép thẻ Meta Charset UTF-8 chống lỗi font chữ tiếng Việt
-        var meta = document.createElement('meta');
-        meta.charset = 'UTF-8';
-        (document.head || document.documentElement).appendChild(meta);
-
-        // 2. CSS căn giữa tuyệt đối, fit màn hình và giữ nguyên vùng timeline để tua video mượt mà 100%
+        // 1. CSS chống tràn màn hình và đảm bảo các thanh điều khiển (controls, seekbar) nhận sự kiện chạm hoàn toàn
         var style = document.createElement('style');
-        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; display: flex !important; justify-content: center !important; align-items: center !important; } ' +
-                            '.jwplayer, #player { width: 100% !important; height: 100% !important; max-width: 100vw !important; max-height: 100vh !important; display: flex !important; justify-content: center !important; align-items: center !important; } ' +
-                            'video { width: 100% !important; height: 100% !important; object-fit: contain !important; object-position: center !important; } ' +
-                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; }';
+        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; touch-action: manipulation !important; } ' +
+                            '.jwplayer, #player, video { width: 100% !important; height: 100% !important; object-fit: contain !important; } ' +
+                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; pointer-events: none !important; } ' +
+                            '.jw-controlbar, .jw-settings-menu, .jw-overlays, .jw-button-color { pointer-events: auto !important; z-index: 100000 !important; } ' +
+                            '@media screen and (orientation: portrait) { ' +
+                            '  body { transform: rotate(90deg) !important; transform-origin: bottom left !important; position: absolute !important; top: -100vw !important; left: 0 !important; width: 100vh !important; height: 100vw !important; } ' +
+                            '}';
         (document.head || document.documentElement).appendChild(style);
 
-        // 3. Yêu cầu khóa xoay ngang màn hình (Landscape) nếu thiết bị hỗ trợ
+        // 2. Yêu cầu khóa xoay ngang màn hình (Landscape)
         function forceLandscapeOrientation() {
             try {
                 if (screen && screen.orientation && typeof screen.orientation.lock === 'function') {
@@ -538,7 +534,7 @@ function webviewPerfectCenterAndSubHelperJS() {
 
         forceLandscapeOrientation();
 
-        // 4. Tự động chọn phụ đề Tiếng Việt, độ phân giải cao nhất và kích hoạt inline playsinline trên iOS
+        // 3. Tự động bật phụ đề Tiếng Việt và tối ưu hóa sự kiện tua (Seek) trên JWPlayer
         var checkCount = 0;
         var timer = setInterval(function() {
             checkCount++;
@@ -560,9 +556,11 @@ function webviewPerfectCenterAndSubHelperJS() {
                                 if (v) {
                                     v.setAttribute('playsinline', 'true');
                                     v.setAttribute('webkit-playsinline', 'true');
+                                    // Gỡ bỏ mọi thuộc tính cản trở tua video
+                                    v.style.pointerEvents = 'auto';
                                 }
 
-                                // Tự động chọn phụ đề Tiếng Việt chuẩn
+                                // Tự động chọn phụ đề Tiếng Việt
                                 var tracks = player.getCaptionsList ? player.getCaptionsList() : [];
                                 if (tracks && tracks.length > 1) {
                                     var viIndex = -1;
@@ -579,7 +577,7 @@ function webviewPerfectCenterAndSubHelperJS() {
                                     }
                                 }
 
-                                // Tự động chọn độ phân giải cao nhất
+                                // Chọn chất lượng hình ảnh cao nhất
                                 var levels = player.getQualityLevels ? player.getQualityLevels() : [];
                                 if (levels && levels.length > 0) {
                                     var maxIdx = 0, maxH = -1;
