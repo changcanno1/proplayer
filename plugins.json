@@ -79,6 +79,13 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
+      "id": "Phimhay5",
+      "name": "[MOVIE] Phimhay5",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Xem20_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
+    {
       "id": "phimngan_net",
       "name": "Phim Ngắn Net",
       "version": "2.0.0",
