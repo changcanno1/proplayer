@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "2.8",
+            "version": "2.7",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "auto" // 🌟 Đặt "auto" để App luôn mở trang Chi tiết chọn tập trước khi phát
+            "playerType": "embed" // ⭐ Sử dụng WebView (embed) của trang để trình duyệt tự render font chữ và phụ đề tiếng Việt chuẩn 100%
         });
     } catch (e) {
         return JSON.stringify({
@@ -34,7 +34,7 @@ function getManifest() {
             "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
             "isEnabled": true,
             "type": "MOVIE",
-            "playerType": "auto"
+            "playerType": "embed"
         });
     }
 }
@@ -484,7 +484,7 @@ function parseDetailResponse(html, url, datasend) {
                 "Origin": BASEURL,
                 "Block-Ads": "true",
                 "Block-Redirects": "true",
-                "Custom-Js": webviewSubAndLandscapeHelperJS() // Script tiêm tự động ép font, tự động chọn Vietsub và Cân bằng giao diện xoay ngang
+                "Custom-Js": webviewSubAndLandscapeHelperJS() // Script tiêm tự động ép font, tự động chọn Vietsub và Xoay ngang màn hình
             },
             subtitles: []
         });
@@ -500,7 +500,7 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// Script tiêm vào WebView: Tự động ép meta UTF-8 chống lỗi font, bật Vietsub, tối ưu cân bằng khung hình và Xoay ngang màn hình (Landscape)
+// Script tiêm vào WebView: Tự động ép meta UTF-8 chống lỗi font, bật Vietsub, Max Quality và Tự động xoay ngang màn hình (Landscape)
 function webviewSubAndLandscapeHelperJS() {
     return `(function() {
         'use strict';
@@ -512,10 +512,10 @@ function webviewSubAndLandscapeHelperJS() {
         meta.charset = 'UTF-8';
         (document.head || document.documentElement).appendChild(meta);
 
-        // 2. CSS cân bằng giao diện WebView: Chống lệch khung, hiển thị full màn hình 100vw/100vh chuẩn object-fit
+        // 2. CSS định hình giao diện full màn hình + Xoay ngang màn hình (Landscape) dự phòng
         var style = document.createElement('style');
-        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; display: flex !important; justify-content: center !important; align-items: center !important; } ' +
-                            '.jwplayer, #player, video, iframe { width: 100% !important; height: 100% !important; object-fit: contain !important; max-width: 100vw !important; max-height: 100vh !important; } ' +
+        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; } ' +
+                            '.jwplayer, #player, video { width: 100% !important; height: 100% !important; object-fit: contain !important; } ' +
                             '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; } ' +
                             '@media screen and (orientation: portrait) { ' +
                             '  body { transform: rotate(90deg) !important; transform-origin: bottom left !important; position: absolute !important; top: -100vw !important; left: 0 !important; width: 100vh !important; height: 100vw !important; } ' +
@@ -562,7 +562,6 @@ function webviewSubAndLandscapeHelperJS() {
                                 if (v) {
                                     v.setAttribute('playsinline', 'true');
                                     v.setAttribute('webkit-playsinline', 'true');
-                                    v.style.objectFit = 'contain';
                                 }
 
                                 // Tự động bật phụ đề Tiếng Việt chuẩn
