@@ -61,36 +61,36 @@
       "id": "Backup",
       "name": "[MOVIE] Backup",
       "version": "1.2.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup_plugin.js",
-      "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup1_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
       {
       "id": "Backup1",
       "name": "[MOVIE] Backup1",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup1_plugin.js",
-      "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
       "id": "Backup2",
       "name": "[MOVIE] Backup2",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup2_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
    {
       "id": "Backup3",
       "name": "[MOVIE] Backup3",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup3_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
       "id": "Backup4",
       "name": "[MOVIE] Backup4",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup4_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
       "id": "phimngan_net",
