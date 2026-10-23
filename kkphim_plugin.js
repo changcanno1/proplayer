@@ -1,15 +1,17 @@
 // =============================================================================
 // CONFIGURATION & METADATA
 // =============================================================================
+var popup_html = "";
 function getManifest() {
     return JSON.stringify({
         "id": "kkphim",
         "name": "KKPhim",
-        "version": "1.0.9",
+        "version": "2.1",
         "baseUrl": "https://phimapi.com",
-        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png",
+        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/kkphim.png",
         "isEnabled": true,
         "author": "Youngbi",
+        popup_html: popup_html,
         "type": "MOVIE"
     });
 }
@@ -107,6 +109,22 @@ function getUrlDetail(slug) {
 function getUrlCategories() { return "https://phimapi.com/the-loai"; }
 function getUrlCountries() { return "https://phimapi.com/quoc-gia"; }
 function getUrlYears() {
+    // KKPhim doesn't seem to have a 'list years' API in the doc, but implies support (1970-now).
+    // We can return empty or a hardcoded generator if needed. 
+    // But the Kotlin generic logic expects a URL.
+    // User instruction: GET https://phimapi.com/v1/api/nam/{type_list}
+    // But how to get the LIST of years?
+    // User didn't provide "GET list years". Just "GET detailed year".
+    // I will return empty string to signal "No dynamic years list", 
+    // OR I can return a dummy API and parse it manually if I want to simulate it,
+    // but better to just let Kotlin handle fallback if connection fails. 
+    // Actually, I can construct a local JSON response if I implement a specific "local" parser?
+    // No, let's stick to API. 
+    // User provided: "Năm: GET https://phimapi.com/v1/api/nam/{type_list}"
+    // But didn't provide "GET all years".
+    // I will omit it for now or return a known valid one if found.
+    // Re-reading user prompt: "Năm phát hành của phim (1970 - hiện tại)."
+    // It's a range.
     return "";
 }
 
@@ -274,6 +292,7 @@ function parseCountriesResponse(apiResponseJson) {
 }
 
 function parseYearsResponse(apiResponseJson) {
+    // If I returned "" for getUrlYears, this won't be called.
     return "[]";
 }
 
