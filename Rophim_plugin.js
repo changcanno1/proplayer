@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "2.8",
+            "version": "2.9",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "auto" // ⭐ Đặt "auto" để App luôn vào trang Chi tiết chọn tập trước, không bị load nhầm vào tập 1
+            "playerType": "auto" // ⭐ Đặt "auto" để vào trang Chi tiết chọn tập, tránh tự động chạy ngay tập 1
         });
     } catch (e) {
         return JSON.stringify({
@@ -470,14 +470,14 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM (DÙNG WEBVIEW EMBED + FIX LỆCH GIAO DIỆN) =====
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (DÙNG WEBVIEW EMBED CHỐNG LỆCH & LỖI FONT) =====
 function parseDetailResponse(html, url, datasend) {
     console.log("parseDetailResponse dang xu ly: " + url);
     try {
         var cleanUrl = (url || "").split("|")[0];
         return JSON.stringify({
             url: cleanUrl,
-            isEmbed: true, // ⭐ Bật WebView để hiển thị đúng sub tiếng Việt chuẩn từ JWPlayer
+            isEmbed: true, // ⭐ Bật WebView để hiển thị chuẩn phụ đề và font tiếng Việt từ JWPlayer
             headers: {
                 "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
                 "Referer": BASEURL + "/",
