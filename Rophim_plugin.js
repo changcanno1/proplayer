@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "embed" // Sử dụng WebView chính chủ của trang để hiển thị Vietsub hoàn hảo
+            "playerType": "auto" // Đặt "auto" để dừng ở trang Chi tiết chọn tập, không tự động phát khi bấm vào phim[cite: 3, 6, 7, 10]
         });
     } catch (e) {
         return JSON.stringify({
@@ -34,7 +34,7 @@ function getManifest() {
             "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
             "isEnabled": true,
             "type": "MOVIE",
-            "playerType": "embed"
+            "playerType": "auto"
         });
     }
 }
@@ -58,7 +58,7 @@ function log(msg) {
     console.log(msg);
 }
 
-// Helper bóc tách dữ liệu chuẩn quy ước |data:
+// Helper bóc tách dữ liệu từ quy ước dấu |data:[cite: 8]
 function getPipeData(rawUrl) {
     if (!rawUrl) return "";
     var idx = rawUrl.indexOf("|");
@@ -310,6 +310,8 @@ function parseListResponse(html, $url) {
                     "backdropUrl": background,
                     "year": item.year || "",
                     "lang": namelang,
+                    "isCategory": false,
+                    "isFolder": false,
                     "datasend": JSON.stringify(item)
                 });
             }
@@ -455,7 +457,7 @@ function parseMovieDetail(html, url, datasend) {
             casts: "",
             director: "",
             country: country,
-            extra: "" // Tuyệt đối để rỗng extra để App dừng ở trang Chi tiết chọn tập
+            extra: ""
         });
     } catch (e) {
         log("parseMovieDetail[err]:\n " + e);
@@ -468,21 +470,21 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM (WEBVIEW EMBED + XOAY NGANG + KHẮC PHỤC LỖI TUA) =====
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (WEBVIEW PLAYER + TỰ ĐỘNG XOAY NGANG & TUA VIDEO) =====
 function parseDetailResponse(html, url, datasend) {
     console.log("parseDetailResponse dang xu ly: " + url);
     try {
         var cleanUrl = (url || "").split("|")[0];
         return JSON.stringify({
             url: cleanUrl,
-            isEmbed: true, // Mở WebView của trang
+            isEmbed: true, // Mở WebView của trang để trình duyệt tự render phụ đề chuẩn 100%[cite: 1, 7]
             headers: {
                 "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
                 "Referer": BASEURL + "/",
                 "Origin": BASEURL,
                 "Block-Ads": "true",
                 "Block-Redirects": "true",
-                "Custom-Js": webviewLandscapeAndSeekFixJS() // Xử lý xoay ngang, hiện Vietsub và khắc phục lỗi tua video
+                "Custom-Js": webviewSubAndLandscapeHelperJS()
             },
             subtitles: []
         });
@@ -498,25 +500,31 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// Script tối ưu cho WebView: Cho phép tua, hiển thị Vietsub hoàn hảo và Tự động xoay ngang màn hình (Landscape)
-function webviewLandscapeAndSeekFixJS() {
+// Script tiêm vào WebView: Chống lỗi font UTF-8, tự bật Vietsub, giữ nguyên tỉ lệ video và tự động xoay ngang phần cứng (Landscape)
+function webviewSubAndLandscapeHelperJS() {
     return `(function() {
         'use strict';
-        if (window.__ROPHIM_WEBVIEW_FIXED_INIT__) return;
-        window.__ROPHIM_WEBVIEW_FIXED_INIT__ = true;
+        if (window.__ROPHIM_WEBVIEW_EMBED_INIT__) return;
+        window.__ROPHIM_WEBVIEW_EMBED_INIT__ = true;
 
-        // 1. CSS chống tràn màn hình và đảm bảo các thanh điều khiển (controls, seekbar) nhận sự kiện chạm hoàn toàn
+        // 1. Thêm viewport và meta charset UTF-8 để đảm bảo hiển thị đúng font chữ và không bị vỡ giao diện
+        var metaCharset = document.createElement('meta');
+        metaCharset.charset = 'UTF-8';
+        (document.head || document.documentElement).appendChild(metaCharset);
+
+        var metaViewport = document.createElement('meta');
+        metaViewport.name = 'viewport';
+        metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+        (document.head || document.documentElement).appendChild(metaViewport);
+
+        // 2. CSS căn chỉnh full màn hình, bảo toàn khung điều khiển (tua, play/pause) của JWPlayer
         var style = document.createElement('style');
-        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; touch-action: manipulation !important; } ' +
+        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; } ' +
                             '.jwplayer, #player, video { width: 100% !important; height: 100% !important; object-fit: contain !important; } ' +
-                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; pointer-events: none !important; } ' +
-                            '.jw-controlbar, .jw-settings-menu, .jw-overlays, .jw-button-color { pointer-events: auto !important; z-index: 100000 !important; } ' +
-                            '@media screen and (orientation: portrait) { ' +
-                            '  body { transform: rotate(90deg) !important; transform-origin: bottom left !important; position: absolute !important; top: -100vw !important; left: 0 !important; width: 100vh !important; height: 100vw !important; } ' +
-                            '}';
+                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; }';
         (document.head || document.documentElement).appendChild(style);
 
-        // 2. Yêu cầu khóa xoay ngang màn hình (Landscape)
+        // 3. Yêu cầu hệ thống tự động xoay ngang màn hình (Landscape)
         function forceLandscapeOrientation() {
             try {
                 if (screen && screen.orientation && typeof screen.orientation.lock === 'function') {
@@ -534,7 +542,7 @@ function webviewLandscapeAndSeekFixJS() {
 
         forceLandscapeOrientation();
 
-        // 3. Tự động bật phụ đề Tiếng Việt và tối ưu hóa sự kiện tua (Seek) trên JWPlayer
+        // 4. Tự động bật phụ đề Tiếng Việt, Max Quality và ép kích hoạt Landscape trên JWPlayer
         var checkCount = 0;
         var timer = setInterval(function() {
             checkCount++;
@@ -556,8 +564,6 @@ function webviewLandscapeAndSeekFixJS() {
                                 if (v) {
                                     v.setAttribute('playsinline', 'true');
                                     v.setAttribute('webkit-playsinline', 'true');
-                                    // Gỡ bỏ mọi thuộc tính cản trở tua video
-                                    v.style.pointerEvents = 'auto';
                                 }
 
                                 // Tự động chọn phụ đề Tiếng Việt
@@ -577,7 +583,7 @@ function webviewLandscapeAndSeekFixJS() {
                                     }
                                 }
 
-                                // Chọn chất lượng hình ảnh cao nhất
+                                // Tự động chọn chất lượng cao nhất
                                 var levels = player.getQualityLevels ? player.getQualityLevels() : [];
                                 if (levels && levels.length > 0) {
                                     var maxIdx = 0, maxH = -1;
