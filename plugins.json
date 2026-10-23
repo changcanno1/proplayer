@@ -51,6 +51,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
     },
     {
+      "id": "hdvnn",
+      "name": "HDVNN [MOVIE]",
+      "version": "2.4.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HDVNN_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/hdvnn.png"
+    },
+    {
       "id": "Phimhay1",
       "name": "[MOVIE] Phimhay1",
       "version": "1.0.0",
