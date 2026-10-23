@@ -100,14 +100,6 @@
       "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75"
     },
     {
-      "id": "shortflix",
-      "name": "shortflix",
-      "version": "1.4.2",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortflixupda_plugin.js",
-      "iconUrl": "https://m.media-amazon.com/images/I/61fJ78I23IL.png",
-      "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
-    },
-    {
       "id": "netshort",
       "name": "Netshort [SHORT]",
       "version": "2.1",
@@ -122,18 +114,19 @@
       "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
     },
     {
+      "id": "shortflix",
+      "name": "shortflix",
+      "version": "1.4.2",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortflixupda_plugin.js",
+      "iconUrl": "https://m.media-amazon.com/images/I/61fJ78I23IL.png",
+      "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
+    },
+    {
       "id": "yini",
       "name": "YiniTV [SHORT]",
       "version": "1.1.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/YiniTV_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yini.png"
-    },
-    {
-      "id": "nartodrama",
-      "name": "[SHORT] Narto",
-      "version": "1.2.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/Nartodrama_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nartodrama.png"
     },
     {
       "id": "yanhh3d",
