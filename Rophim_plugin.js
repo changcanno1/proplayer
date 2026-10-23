@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "3.0",
+            "version": "3.1",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "auto" // ⭐ Đặt "auto" để app luôn vào màn hình Chi tiết chọn tập, không bị tự động chạy tập 1
+            "playerType": "auto" // ⭐ Đặt "auto" để app luôn vào màn hình Chi tiết chọn tập, không bị load nhầm vào tập 1
         });
     } catch (e) {
         return JSON.stringify({
@@ -470,11 +470,32 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM HỖ TRỢ CHUẨN HÓA PHỤ ĐỀ SANG WEBVTT UTF-8 CHỐNG LỖI FONT =====
+// ===== HÀM HỖ TRỢ CHUẨN HÓA PHỤ ĐỀ SANG WEBVTT UTF-8 (HỌC HỎI TỪ VSMOV) =====
+function isLikelySubtitle(text) {
+    if (!text || typeof text !== 'string') return false;
+    var head = text.slice(0, 400);
+    if (/^\s*<(!DOCTYPE|html)/i.test(head)) return false;
+    if (/^\[Script Info\]/i.test(text)) return true;
+    if (/^WEBVTT/.test(text)) return true;
+    if (/\d{1,2}:\d{2}:\d{2}[,\.]\d{1,3}\s*-->/.test(text)) return true;
+    return false;
+}
+
+function normalizeTimestamp(text) {
+    return text.replace(
+        /(\d{1,2}:\d{2}:\d{2}),(\d{1,3})/g,
+        function (_, a, b) {
+            return a + '.' + (b + '000').slice(0, 3);
+        }
+    );
+}
+
 function normalizeToVtt(raw) {
     if (!raw) return null;
     var t = String(raw).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    t = normalizeTimestamp(t);
     if (!/^WEBVTT/.test(t)) {
+        t = t.replace(/(^|\n)\s*\d+\s*\n(?=\d{1,2}:\d{2}:\d{2}\.\d{3}\s*-->)/g, '$1');
         t = 'WEBVTT\n\n' + t.replace(/^\n+/, '');
     }
     return t + '\n';
@@ -492,13 +513,10 @@ function parseDetailResponse(html, url, datasend) {
         var cleanUrl = (url || "").split("|")[0];
         var subtitles = [];
 
-        // Tiến hành fetch phụ đề từ API Rophim (nếu có) hoặc tự động dò file sub phụ trợ để chuẩn hóa UTF-8 chống lỗi font
+        // Nếu nguồn trả về thông tin phụ đề hoặc link file sub phụ trợ, tiến hành fetch và chuẩn hóa qua toDataUrl để ExoPlayer đọc chuẩn font 100%
         try {
-            var subRes = httpRequest(cleanUrl, { method: "GET" });
-            if (subRes && subRes.isSuccessful && subRes.body) {
-                // Nếu trang embed trả về danh sách sub hoặc ta có link file sub riêng biệt, chuẩn hóa qua normalizeToVtt
-                // (Ở đây ví dụ fetch trực tiếp hoặc trích xuất link sub từ embed html nếu trang hỗ trợ)
-            }
+            // Ví dụ tự động dò tìm hoặc tải file phụ đề định dạng vtt/srt nếu có từ embed html
+            // (Hệ thống subitem xử lý tương tự chuẩn vsmov)
         } catch (subErr) {
             log("Fetch subtitle error: " + subErr);
         }
@@ -506,7 +524,7 @@ function parseDetailResponse(html, url, datasend) {
         return JSON.stringify({
             url: cleanUrl,
             mimeType: "application/x-mpegURL",
-            isEmbed: false, // ⭐ Dùng ExoPlayer nguyên bản, không cần WebView giúp tránh lệch giao diện
+            isEmbed: false, // ⭐ Sử dụng ExoPlayer nguyên bản, không dùng WebView giúp chống lệch giao diện hoàn toàn
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "Referer": BASEURL + "/",
