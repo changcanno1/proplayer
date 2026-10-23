@@ -1,9 +1,3 @@
-Chào bạn, hình ảnh bạn cung cấp đã chỉ ra chính xác nguyên nhân cốt lõi: Việc dùng CSS (transform: rotate(90deg)) để ép xoay ngang đã gây ra lỗi xoay khung hình bên trong một WebView đang ở chế độ dọc (Portrait). Do ứng dụng chỉ cấp cho WebView một nửa màn hình trên, khi CSS xoay video 90 độ, nó bị lật ngược, tràn khung và vỡ layout hoàn toàn.
-Để sửa lỗi hình bị ngược, scale sai và chữ bị khuyết (mất Vietsub) một cách chuẩn xác nhất, chúng ta sẽ:
- * Loại bỏ hoàn toàn CSS ép xoay (Transform): Trả lại kích thước chuẩn 100% cho trình duyệt. Video sẽ không bao giờ bị ngược hay méo tỷ lệ nữa. Việc xoay ngang màn hình sẽ được giao hoàn toàn cho Hệ điều hành và App xử lý thông qua lệnh gọi window.SnifferBridge.setOrientation('landscape').
- * Nâng phụ đề lên vùng an toàn (Safe Area): Để chữ không bị lẹm vào "tai thỏ" (notch) hay thanh gạt dưới cùng của iOS, ta chỉ cần thêm 1 dòng CSS siêu nhẹ đẩy khung Vietsub lên 12% so với đáy màn hình (bottom: 12% !important). Khung hình video vẫn to đẹp, vừa vặn 100%, mà chữ thì không bao giờ bị cắt.
-Dưới đây là phiên bản 3.7 (Hoàn Hảo) đã dọn sạch các lỗi giao diện:
-Mã nguồn hoàn chỉnh (rophim_perfect_ui.js)
 var iddomain = "rophim";
 var BASEURL = "https://www.rophim.soy";
 var BASEAPI = "https://rophim.alokillgtv.workers.dev";
@@ -698,4 +692,3 @@ function webviewPerfectUIHelperJS() {
     }
 }
 // ==== HIDEMENU ====
-
