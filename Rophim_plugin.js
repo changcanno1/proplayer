@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "2.8",
+            "version": "2.9",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "embedtoexoplay" // ⭐ Dùng EmbedSniffer để bắt link phát qua ExoPlayer chuẩn, sửa triệt để lỗi không tua được khi xoay ngang
+            "playerType": "exoplayer" // Dùng ExoPlayer mượt mà, hỗ trợ tua và xoay ngang chuẩn
         });
     } catch (e) {
         return JSON.stringify({
@@ -68,6 +68,23 @@ function getPipeData(rawUrl) {
         s = s.substring(5);
     }
     return s;
+}
+
+// ===== HÀM CHUẨN HÓA VÀ FIX LỖI FONT PHỤ ĐỀ (CÁCH 1) =====
+function normalizeToVtt(raw) {
+    if (!raw) return null;
+    var t = String(raw).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    
+    // Nếu chưa có header WEBVTT, tự động bổ sung tiêu chuẩn định dạng
+    if (!/^WEBVTT/.test(t)) {
+        t = 'WEBVTT\n\n' + t.replace(/^\n+/, '');
+    }
+    return t + '\n';
+}
+
+function toDataUrl(text, mime) {
+    var b64 = BASE64.encode(text);
+    return 'data:' + mime + ';base64,' + b64;
 }
 
 // ===== HÀM MENU LIST =====
@@ -470,21 +487,21 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM (DÙNG EMBED SNIFFER ĐỂ LẤY LINK M3U8 NẠP VÀO EXO PLAYER) =====
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (DÙNG EMBED SNIFFER VÀ FIX FONT SUB VỚI WEBVTT) =====
 function parseDetailResponse(html, url, datasend) {
     console.log("parseDetailResponse dang xu ly: " + url);
     try {
         var cleanUrl = (url || "").split("|")[0];
         return JSON.stringify({
             url: cleanUrl,
-            isEmbed: true, // App chạy WebView ngầm qua cơ chế embedtoexoplay để dò tìm link m3u8
+            isEmbed: true,
             headers: {
                 "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
                 "Referer": BASEURL + "/",
                 "Origin": BASEURL,
                 "Block-Ads": "true",
                 "Block-Redirects": "true",
-                "Custom-Js": embedSnifferHelperJS() // Script tự động bóc tách link M3U8/MP4 và gửi về App
+                "Custom-Js": embedSnifferWithSubFixJS()
             },
             subtitles: []
         });
@@ -500,46 +517,126 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// Script bắt link stream trong trang embed và gọi SnifferBridge.play() để truyền sang ExoPlayer chuẩn
-function embedSnifferHelperJS() {
+// Script bắt link m3u8, tự động fetch file phụ đề, chuẩn hóa UTF-8 sang WebVTT Data URL và truyền sang ExoPlayer chuẩn qua SnifferBridge
+function embedSnifferWithSubFixJS() {
     return `(function() {
         'use strict';
-        if (window.__ROPHIM_SNIFFER_INIT__) return;
-        window.__ROPHIM_SNIFFER_INIT__ = true;
+        if (window.__ROPHIM_SNIFFER_SUB_INIT__) return;
+        window.__ROPHIM_SNIFFER_SUB_INIT__ = true;
 
         var hasSent = false;
-        function sendToPlayer(url) {
-            if (hasSent || !url) return;
-            if (url.indexOf('.m3u8') !== -1 || url.indexOf('.mp4') !== -1) {
+        var capturedSubs = [];
+
+        // Hàm chuẩn hóa phụ đề sang WebVTT UTF-8 sạch chống lỗi font
+        function normalizeToVtt(raw) {
+            if (!raw) return null;
+            var t = String(raw).replace(/^\\uFEFF/, '').replace(/\\r\\n?/g, '\\n');
+            if (!/^WEBVTT/.test(t)) {
+                t = 'WEBVTT\\n\\n' + t.replace(/^\\n+/, '');
+            }
+            return t + '\\n';
+        }
+
+        function toDataUrl(text, mime) {
+            try {
+                var b64 = btoa(unescape(encodeURIComponent(text)));
+                return 'data:' + mime + ';base64,' + b64;
+            } catch(e) {
+                return '';
+            }
+        }
+
+        async function processSubtitlesAndSend(streamUrl) {
+            if (hasSent || !streamUrl) return;
+            if (streamUrl.indexOf('.m3u8') !== -1 || streamUrl.indexOf('.mp4') !== -1) {
                 hasSent = true;
+
+                // Vét phụ đề từ JWPlayer nếu có sẵn trong trang
+                try {
+                    if (typeof window.jwplayer === 'function') {
+                        var inst = window.jwplayer();
+                        var playlist = inst.getPlaylist ? inst.getPlaylist() : [];
+                        var item = playlist[0] || {};
+                        var tracks = item.tracks || (inst.getCaptionsList ? inst.getCaptionsList() : []) || [];
+                        tracks.forEach(function(t) {
+                            var u = t.file || t.src || t.url;
+                            if (u && t.kind !== 'thumbnails' && capturedSubs.indexOf(u) === -1) {
+                                capturedSubs.push(u);
+                            }
+                        });
+                    }
+                } catch(e) {}
+
+                var finalSubtitles = [];
+                for (var i = 0; i < capturedSubs.length; i++) {
+                    try {
+                        var res = await fetch(capturedSubs[i]);
+                        if (res.ok) {
+                            var text = await res.text();
+                            if (text && !text.includes('#xywh=')) {
+                                var vttText = normalizeToVtt(text);
+                                var dataUrl = toDataUrl(vttText, 'text/vtt');
+                                if (dataUrl) {
+                                    finalSubtitles.push({
+                                        lang: "Tiếng Việt",
+                                        url: dataUrl,
+                                        mimeType: "text/vtt"
+                                    });
+                                }
+                            }
+                        }
+                    } catch(err) {}
+                }
+
                 try {
                     if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
-                        window.SnifferBridge.play(url, JSON.stringify({
+                        var headersObj = {
                             "Referer": "https://www.rophim.soy/",
                             "Origin": "https://www.rophim.soy"
-                        }));
+                        };
+                        if (finalSubtitles.length > 0) {
+                            headersObj["subtitles"] = JSON.stringify(finalSubtitles);
+                        }
+                        window.SnifferBridge.play(streamUrl, JSON.stringify(headersObj));
                     }
                 } catch(e) {}
             }
         }
 
-        // Bắt qua thẻ video DOM
-        setInterval(function() {
-            var v = document.querySelector('video');
-            if (v && v.src) sendToPlayer(v.src);
-            var sources = document.querySelectorAll('source');
-            for (var i = 0; i < sources.length; i++) {
-                if (sources[i].src) sendToPlayer(sources[i].src);
-            }
-        }, 500);
-
-        // Hook Fetch / XHR để bắt link m3u8 ẩn
+        // Bắt các file phụ đề .vtt / .srt qua fetch & XHR
         var origFetch = window.fetch;
-        window.fetch = function() {
-            var u = arguments[0];
-            if (typeof u === 'string') sendToPlayer(u);
+        window.fetch = async function(...args) {
+            var url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url ? args[0].url : '');
+            if (url) {
+                if (url.indexOf('.vtt') !== -1 || url.indexOf('.srt') !== -1 || url.indexOf('subtitle') !== -1) {
+                    if (capturedSubs.indexOf(url) === -1) capturedSubs.push(url);
+                }
+                if (url.indexOf('.m3u8') !== -1 || url.indexOf('.mp4') !== -1) {
+                    processSubtitlesAndSend(url);
+                }
+            }
             return origFetch.apply(this, arguments);
         };
+
+        var origOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url) {
+            if (typeof url === 'string') {
+                if (url.indexOf('.vtt') !== -1 || url.indexOf('.srt') !== -1 || url.indexOf('subtitle') !== -1) {
+                    if (capturedSubs.indexOf(url) === -1) capturedSubs.push(url);
+                }
+                if (url.indexOf('.m3u8') !== -1 || url.indexOf('.mp4') !== -1) {
+                    processSubtitlesAndSend(url);
+                }
+            }
+            return origOpen.apply(this, arguments);
+        };
+
+        // Quét thẻ video DOM định kỳ
+        setInterval(function() {
+            var v = document.querySelector('video');
+            if (v && v.src) processSubtitlesAndSend(v.src);
+        }, 500);
+
     })();`;
 }
 
