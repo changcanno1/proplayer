@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "3.1",
+            "version": "3.2",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "auto" // ⭐ Đặt "auto" để app luôn vào màn hình Chi tiết chọn tập, không bị load nhầm vào tập 1
+            "playerType": "auto" // Giữ "auto" để vào trang chọn tập, không bị load ngay tập 1
         });
     } catch (e) {
         return JSON.stringify({
@@ -457,7 +457,7 @@ function parseMovieDetail(html, url, datasend) {
             casts: "",
             director: "",
             country: country,
-            extra: "" // ⭐ Giữ rỗng để không bị auto-play khi mở chi tiết phim
+            extra: "" // Giữ rỗng để không bị auto-play khi mở chi tiết phim
         });
     } catch (e) {
         log("parseMovieDetail[err]:\n " + e);
@@ -470,67 +470,23 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM HỖ TRỢ CHUẨN HÓA PHỤ ĐỀ SANG WEBVTT UTF-8 (HỌC HỎI TỪ VSMOV) =====
-function isLikelySubtitle(text) {
-    if (!text || typeof text !== 'string') return false;
-    var head = text.slice(0, 400);
-    if (/^\s*<(!DOCTYPE|html)/i.test(head)) return false;
-    if (/^\[Script Info\]/i.test(text)) return true;
-    if (/^WEBVTT/.test(text)) return true;
-    if (/\d{1,2}:\d{2}:\d{2}[,\.]\d{1,3}\s*-->/.test(text)) return true;
-    return false;
-}
-
-function normalizeTimestamp(text) {
-    return text.replace(
-        /(\d{1,2}:\d{2}:\d{2}),(\d{1,3})/g,
-        function (_, a, b) {
-            return a + '.' + (b + '000').slice(0, 3);
-        }
-    );
-}
-
-function normalizeToVtt(raw) {
-    if (!raw) return null;
-    var t = String(raw).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
-    t = normalizeTimestamp(t);
-    if (!/^WEBVTT/.test(t)) {
-        t = t.replace(/(^|\n)\s*\d+\s*\n(?=\d{1,2}:\d{2}:\d{2}\.\d{3}\s*-->)/g, '$1');
-        t = 'WEBVTT\n\n' + t.replace(/^\n+/, '');
-    }
-    return t + '\n';
-}
-
-function toDataUrl(text, mime) {
-    var b64 = BASE64.encode(text);
-    return 'data:' + mime + ';base64,' + b64;
-}
-
-// ===== HÀM XỬ LÝ STREAM PHIM (DÙNG EXOPLAYER TRỰC TIẾP + CHUẨN HÓA SUB UTF-8) =====
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (DÙNG WEBVIEW EMBED CHỐNG LỖI FONT, KHÔNG ÉP CỨNG LAYOUT LÀM TRƯỢT GIAO DIỆN) =====
 function parseDetailResponse(html, url, datasend) {
     console.log("parseDetailResponse dang xu ly: " + url);
     try {
         var cleanUrl = (url || "").split("|")[0];
-        var subtitles = [];
-
-        // Nếu nguồn trả về thông tin phụ đề hoặc link file sub phụ trợ, tiến hành fetch và chuẩn hóa qua toDataUrl để ExoPlayer đọc chuẩn font 100%
-        try {
-            // Ví dụ tự động dò tìm hoặc tải file phụ đề định dạng vtt/srt nếu có từ embed html
-            // (Hệ thống subitem xử lý tương tự chuẩn vsmov)
-        } catch (subErr) {
-            log("Fetch subtitle error: " + subErr);
-        }
-
         return JSON.stringify({
             url: cleanUrl,
-            mimeType: "application/x-mpegURL",
-            isEmbed: false, // ⭐ Sử dụng ExoPlayer nguyên bản, không dùng WebView giúp chống lệch giao diện hoàn toàn
+            isEmbed: true, // Ép dùng WebView để giữ Vietsub chuẩn không bị lỗi mã hóa
             headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
                 "Referer": BASEURL + "/",
-                "Origin": BASEURL
+                "Origin": BASEURL,
+                "Block-Ads": "true",
+                "Block-Redirects": "true",
+                "Custom-Js": webviewSimpleHelperJS()
             },
-            subtitles: subtitles
+            subtitles: []
         });
     } catch (e) {
         console.log("parseDetailResponse[err]:\n " + e);
@@ -542,6 +498,90 @@ function parseDetailResponse(html, url, datasend) {
             subtitles: []
         });
     }
+}
+
+// Script tiêm vào WebView: Chống lỗi font chữ bằng meta UTF-8, cấu trúc CSS nhẹ nhàng vừa màn hình (không ép fixed/100vw gây trượt layout) và tự động bật Vietsub/Max Quality
+function webviewSimpleHelperJS() {
+    return `(function() {
+        'use strict';
+        if (window.__ROPHIM_WEBVIEW_SIMPLE_INIT__) return;
+        window.__ROPHIM_WEBVIEW_SIMPLE_INIT__ = true;
+
+        // 1. Ép thẻ Meta Charset UTF-8 chống lỗi font chữ tiếng Việt
+        var meta = document.createElement('meta');
+        meta.charset = 'UTF-8';
+        (document.head || document.documentElement).appendChild(meta);
+
+        // 2. CSS làm sạch giao diện nhưng KHÔNG ép fixed/100vw gây lệch (tránh trượt)
+        var style = document.createElement('style');
+        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100%; height: 100%; background: #000 !important; overflow: hidden !important; } ' +
+                            '.jwplayer, #player, video { width: 100% !important; height: 100% !important; object-fit: contain !important; } ' +
+                            '.jw-captions { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; }';
+        (document.head || document.documentElement).appendChild(style);
+
+        // 3. Tự động chọn phụ đề Tiếng Việt và chất lượng cao nhất trên JWPlayer
+        var checkCount = 0;
+        var timer = setInterval(function() {
+            checkCount++;
+            if (checkCount > 60) {
+                clearInterval(timer);
+                return;
+            }
+            if (typeof window.jwplayer === 'function') {
+                try {
+                    var player = window.jwplayer();
+                    if (player && typeof player.on === 'function') {
+                        clearInterval(timer);
+
+                        var autoSetupPlayer = function() {
+                            try {
+                                var v = document.querySelector('video');
+                                if (v) {
+                                    v.setAttribute('playsinline', 'true');
+                                    v.setAttribute('webkit-playsinline', 'true');
+                                }
+
+                                // Tự động chọn phụ đề Tiếng Việt
+                                var tracks = player.getCaptionsList ? player.getCaptionsList() : [];
+                                if (tracks && tracks.length > 1) {
+                                    var viIndex = -1;
+                                    for (var i = 0; i < tracks.length; i++) {
+                                        var label = (tracks[i].label || '').toLowerCase();
+                                        if (label.indexOf('việt') !== -1 || label.indexOf('viet') !== -1 || label.indexOf('vi') !== -1) {
+                                            viIndex = i;
+                                            break;
+                                        }
+                                    }
+                                    if (viIndex === -1) viIndex = 1;
+                                    if (player.getCurrentCaptions && player.getCurrentCaptions() !== viIndex) {
+                                        player.setCurrentCaptions(viIndex);
+                                    }
+                                }
+
+                                // Tự động chọn độ phân giải cao nhất
+                                var levels = player.getQualityLevels ? player.getQualityLevels() : [];
+                                if (levels && levels.length > 0) {
+                                    var maxIdx = 0, maxH = -1;
+                                    for (var j = 0; j < levels.length; j++) {
+                                        if (levels[j].height && levels[j].height > maxH) {
+                                            maxH = levels[j].height;
+                                            maxIdx = j;
+                                        }
+                                    }
+                                    if (maxH > 0) player.setCurrentQuality(maxIdx);
+                                }
+                            } catch (err) {}
+                        };
+
+                        player.on('ready', autoSetupPlayer);
+                        player.on('firstFrame', autoSetupPlayer);
+                        player.on('captionsList', autoSetupPlayer);
+                        player.on('play', autoSetupPlayer);
+                    }
+                } catch (e) {}
+            }
+        }, 300);
+    })();`;
 }
 
 // ==== HIDEMENU ====
