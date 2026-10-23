@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "3.5",
+            "version": "3.6",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -22,7 +22,7 @@ function getManifest() {
             "layoutType": "VERTICAL",
             "subtitleCat": false,
             "popup_html": popup_html,
-            "playerType": "auto" // Giữ "auto" để vào màn hình Chọn tập
+            "playerType": "auto" // Giữ "auto" để vào màn hình Chọn tập, tránh tự động chạy
         });
     } catch (e) {
         return JSON.stringify({
@@ -457,7 +457,7 @@ function parseMovieDetail(html, url, datasend) {
             casts: "",
             director: "",
             country: country,
-            extra: "" // Giữ rỗng để không bị auto-play khi mở chi tiết phim
+            extra: "" 
         });
     } catch (e) {
         log("parseMovieDetail[err]:\n " + e);
@@ -470,7 +470,7 @@ function parseMovieDetail(html, url, datasend) {
     }
 }
 
-// ===== HÀM TẠO XỬ LÝ STREAM PHIM =====
+// ===== HÀM TẠO XỬ LÝ STREAM PHIM (DÙNG WEBVIEW EMBED CHỐNG LỖI FONT, CHỐNG SNIFFER & CHỐNG SCALE LỆCH HÌNH) =====
 function parseDetailResponse(html, url, datasend) {
     console.log("parseDetailResponse dang xu ly: " + url);
     try {
@@ -484,7 +484,7 @@ function parseDetailResponse(html, url, datasend) {
                 "Origin": BASEURL,
                 "Block-Ads": "true",
                 "Block-Redirects": "true",
-                "Block-Sniffer": "true", // Chặn Sniffer để ép WebView chạy nguyên bản
+                "Block-Sniffer": "true", // Chặn tuyệt đối Sniffer bắt link
                 "Custom-Js": webviewStrictHelperJS()
             },
             subtitles: []
@@ -501,7 +501,7 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// CÔNG THỨC XOAY CSS MỚI: 90% CHIỀU RỘNG & ÁP SÁT CẠNH TRÊN (TRÁNH BỊ CẮT CHỮ TRÊN IOS)
+// CSS ĐƯỢC THIẾT KẾ ĐỂ VÔ HIỆU HÓA TÍNH NĂNG TỰ ĐỘNG SCALE CỦA JWPLAYER & ÁP SÁT LỀ TRÊN
 function webviewStrictHelperJS() {
     return `(function() {
         'use strict';
@@ -512,15 +512,19 @@ function webviewStrictHelperJS() {
         meta.charset = 'UTF-8';
         (document.head || document.documentElement).appendChild(meta);
 
-        // CSS Fix Layout Xoay Ngang Chính Xác: 
-        // 1. Áp sát hoàn toàn vào mép trên điện thoại bằng top left (x=100vw, y=0)
-        // 2. Thu hẹp tỷ lệ chiều cao còn 90vw để chừa lại 10% an toàn dưới đáy cho phụ đề
+        // 1. Vô hiệu hóa việc tự động tính toán kích thước của JWPlayer làm dãn/scale video
+        // 2. Ép video luôn hiển thị theo chuẩn object-fit: contain (không bao giờ méo)
         var style = document.createElement('style');
-        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; height: 100% !important; background: #000 !important; overflow: hidden !important; } ' +
-                            '.jwplayer, #player, video { width: 100% !important; height: 100% !important; object-fit: contain !important; position: absolute !important; top: 0 !important; left: 0 !important; } ' +
-                            '.jw-captions, .jw-text-track-display { display: block !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; bottom: 5% !important; } ' +
+        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; background: #000 !important; overflow: hidden !important; } ' +
+                            '.jwplayer, #player { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; } ' +
+                            '.jwplayer video, #player video, video { width: 100% !important; height: 100% !important; object-fit: contain !important; transform: none !important; } ' + // ⭐ Bắt buộc transform: none để chặn JWPlayer tự scale sai tỷ lệ
+                            '.jw-captions, .jw-text-track-display { bottom: 5% !important; z-index: 9999 !important; } ' +
                             '@media screen and (orientation: portrait) { ' +
-                            '  html, body { position: fixed !important; top: 0 !important; left: 100vw !important; width: 100vh !important; height: 90vw !important; transform: rotate(90deg) !important; transform-origin: top left !important; overflow: hidden !important; background: #000 !important; } ' +
+                            '  html, body { width: 100vh !important; height: 100vw !important; position: fixed !important; top: 0 !important; left: 100vw !important; transform: rotate(90deg) !important; transform-origin: top left !important; overflow: hidden !important; background: #000 !important; } ' +
+                            '  .jwplayer, #player { width: 100vh !important; height: 90vw !important; } ' + // ⭐ Chiều cao bằng 90% màn hình để nhường lề đáy an toàn cho Vietsub
+                            '} ' +
+                            '@media screen and (orientation: landscape) { ' +
+                            '  html, body, .jwplayer, #player { width: 100vw !important; height: 100vh !important; } ' +
                             '}';
         (document.head || document.documentElement).appendChild(style);
 
