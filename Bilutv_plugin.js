@@ -16,7 +16,6 @@ function getManifest() {
         "isEnabled": true,
         "author": "Alokillgtv",
         "type": "MOVIE",
-        popup_html: popup_html,
         "playerType": "auto"
     });
 }
@@ -49,7 +48,6 @@ function log(msg) {
 function getHomeSections() {
     try {
         var listurl = `
-/the-loai/phim-18@@Phim 18+@@false
 /danh-sach/phim-bo@@Phim Bộ@@false
 /danh-sach/phim-le@@Phim Lẻ@@false
 /danh-sach/phim-chieu-rap@@Phim Chiếu Rạp@@false
