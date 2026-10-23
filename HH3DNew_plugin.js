@@ -10,8 +10,8 @@ function getManifest() {
         "id": "yanhh3d",
         "name": "Yanhh3d [ANIME]",
         "description": "Trang xem phim Hoạt Hình siêu hay.",
-      	"info":"",
-        "version": "2.3",
+      	"info":"Update 3.4 fix lỗi không xem được phim.",
+        "version": "3.4",
         "baseUrl": BASEURL,
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/yanhh3d.png",
         "isEnabled": true,
@@ -29,6 +29,157 @@ function log(msg) {
     } else if (typeof console !== 'undefined' && console.log) {
         console.log(msg);
     }
+}
+
+// =============================================================================
+// GHI CHÚ SỰ CỐ (fix 2026-10-21) - đọc trước khi sửa luồng lấy stream
+// -----------------------------------------------------------------------------
+// 1. Các link server trong trang tập (data-src) KHÔNG phải m3u8 thật. URL dạng
+//    https://scontent-sin2-X-xx.streamrpt1.site/o2/.../<uuid>.m3u8
+//    thực chất trả về trang HTML player (~1715B) chứa <div id="player" data-obf="...">.
+//    data-obf (base64 JSON) có: sU = playlist mã hóa #ENC-AESGCM (bỏ), pU = playlist thật
+//    dạng .../<uuid>.m3u8/stream-plain?t=<token>.
+//
+// 2. httpRequest trực tiếp tới URL .m3u8 trả HTTP 200 nhưng res.body RỖNG
+//    (app can thiệp URL stream / không giải nén được zstd). vax.local/fetch và
+//    vax.local/p cũng rỗng trong thực tế -> đừng chỉ dựa vào chúng.
+//
+// 3. streamfile worker /proxy cũng hỏng với URL chứa ".m3u8": worker nhảy vào
+//    nhánh rewrite playlist, đọc stream 1 lần rồi trả "ReadableStream disturbed".
+//    Cách né: mask ".m3u8" -> "%2Em3u8" trong chuỗi url= (server vẫn hiểu đúng
+//    path sau khi decode, worker thì không match ".m3u8" nữa) -> nhận nguyên HTML.
+//    Đây là đường duy nhất hoạt động trên máy thật (log: "worker ok len=1715").
+//
+// 4. pU (stream-plain) fetch trực tiếp được (log: "direct ok len=..."), KHÔNG cần mask.
+//
+// 5. Segment trong playlist pU không phải TS thuần: mỗi file .png =
+//    120B PNG (1x1) + 151B header + TS thật, TS bắt đầu ở offset 271 (hằng số,
+//    đã kiểm tra nhiều segment). ExoPlayer đọc từ byte 0 nên sniff fail.
+//    Fix: chèn #EXT-X-BYTERANGE:<len>@271 và đẩy segment qua streamfile /proxy
+//    với mime=video/mp2t; worker forward header Range nên trả 206 + TS sạch.
+//    (đã test: 206, content-type video/mp2t, bytes 47 40 ...)
+//
+// 6. Trả m3u8Content + baseUrl để app phát qua local server 127.0.0.1 (không dùng
+//    Custom-Js). headers phải có Referer/Origin/User-Agent/Accept-Encoding=identity.
+//
+// Log chẩn đoán: [yanFetch] direct/vax/p/worker ok len=..., [resolve] data-obf ->,
+// [verify] m3u8, [yanRange] đã chèn BYTERANGE@271, [playlist] m3u8Content len=...
+// =============================================================================
+var YAN_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+var YAN_REF = "https://yanhh3d.mom";
+
+function yanFetchPage(target, referer) {
+    var ref = referer || YAN_REF;
+    var origin = ref.replace(/\/+$/, "");
+    var r = null;
+    try {
+        r = httpRequest(target, {
+            method: "GET",
+            headers: {
+                "Referer": ref,
+                "Origin": origin,
+                "User-Agent": YAN_UA,
+                "Accept-Encoding": "identity"
+            }
+        });
+    } catch (e) {
+        log("[yanFetch] direct err: " + e);
+    }
+    if (r && r.body && String(r.body).length > 0) {
+        log("[yanFetch] direct ok len=" + String(r.body).length);
+        return String(r.body);
+    }
+    log("[yanFetch] direct body rỗng -> vax.local");
+    try {
+        var payload = {
+            url: target,
+            headers: {
+                "Referer": ref,
+                "Origin": origin,
+                "User-Agent": YAN_UA,
+                "Accept-Encoding": "identity"
+            },
+            fallback: true
+        };
+        var b64 = BASE64.encode(JSON.stringify(payload)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        var vx = "https://vax.local/p?d=" + b64;
+        var r2 = httpRequest(vx, { method: "GET" });
+        if (r2 && r2.body && String(r2.body).length > 0) {
+            log("[yanFetch] vax/p ok len=" + String(r2.body).length);
+            return String(r2.body);
+        }
+        log("[yanFetch] vax/p body rỗng");
+    } catch (e2) {
+        log("[yanFetch] vax err: " + e2);
+    }
+    // 3) Worker proxy: mask ".m3u8" -> "%2Em3u8" để worker không rơi vào nhánh rewrite playlist
+    try {
+        var masked = target.replace(/\.m3u8/gi, "%2Em3u8");
+        var wp = "https://streamfile.alokillgtv04.workers.dev/proxy?url=" + encodeURIComponent(masked)
+            + "&referer=" + encodeURIComponent(ref)
+            + "&origin=" + encodeURIComponent(origin)
+            + "&ua=" + encodeURIComponent(YAN_UA);
+        var r3 = httpRequest(wp, { method: "GET" });
+        if (r3 && r3.body && String(r3.body).length > 0) {
+            log("[yanFetch] worker ok len=" + String(r3.body).length);
+            return String(r3.body);
+        }
+        log("[yanFetch] worker body rỗng");
+    } catch (e3) {
+        log("[yanFetch] worker err: " + e3);
+    }
+    return "";
+}
+
+// Segment .png của yanhh3d = 120-byte PNG + 151-byte header + TS thật (offset 271).
+// Offset 271 là HẰNG SỐ cho mọi segment (đã verify 5 segment: 1,2,10,50,100).
+// Dùng EXT-X-BYTERANGE để ExoPlayer tự Range từ 271 -> đọc được TS nguyên vẹn.
+// Segment được đẩy qua streamfile worker để có Content-Type video/mp2t (worker forward Range).
+// LƯU Ý: nếu sau này CDN đổi định dạng, kiểm tra lại bằng cách tải 1 segment:
+//   byte 0..7 = 89 50 4E 47 0D 0A 1A 0A (PNG), tìm offset có 0x47 lặp mỗi 188B.
+var YAN_SEG_OFFSET = 271;
+var YAN_STREAM_PROXY = "https://streamfile.alokillgtv04.workers.dev/proxy";
+
+function yanProxySeg(seg) {
+    return YAN_STREAM_PROXY
+        + "?url=" + encodeURIComponent(seg)
+        + "&referer=" + encodeURIComponent(YAN_REF + "/")
+        + "&origin=" + encodeURIComponent(YAN_REF)
+        + "&ua=" + encodeURIComponent(YAN_UA)
+        + "&mime=video%2Fmp2t";
+}
+
+function yanRangeM3u8(txt) {
+    if (!txt || txt.indexOf("#EXTM3U") < 0) return txt;
+    if (txt.indexOf("#EXT-X-STREAM-INF") > -1) {
+        log("[yanRange] master playlist, giữ nguyên");
+        return txt;
+    }
+    var lines = String(txt).replace(/\r/g, "").split("\n");
+    if (!/\.png([\s?#%]|$)/i.test(txt)) {
+        log("[yanRange] segment không phải .png, giữ nguyên");
+        return txt;
+    }
+    var out = [];
+    for (var j = 0; j < lines.length; j++) {
+        var l = lines[j];
+        if (l.indexOf("#EXT-X-VERSION") === 0) { out.push("#EXT-X-VERSION:4"); continue; }
+        if (l && l.charAt(0) !== "#" && /^https?:/i.test(l)) {
+            var segUrl = l.replace(/\s+$/, "");
+            var mMatch = segUrl.match(/[?&]url=([^&]+)/);
+            if (segUrl.indexOf("vax.local") > -1 && mMatch) {
+                try { segUrl = decodeURIComponent(mMatch[1]); } catch (eSeg) {}
+            }
+            out.push("#EXT-X-BYTERANGE:20000000@" + YAN_SEG_OFFSET);
+            out.push(yanProxySeg(segUrl));
+            continue;
+        }
+        out.push(l);
+    }
+    var res = out.join("\n");
+    if (res.indexOf("#EXT-X-VERSION") < 0) res = res.replace("#EXTM3U", "#EXTM3U\n#EXT-X-VERSION:4");
+    log("[yanRange] đã chèn BYTERANGE@" + YAN_SEG_OFFSET + " cho segment png");
+    return res;
 }
 
 
@@ -305,7 +456,7 @@ function parseMovieDetail(htmlContent, url) {
     try {
         log("parseMovieDetail[url]: \n" + url);
 
-        // === BƯỚC 1: ĐỒNG NHẤT ID PHIM BẰNG REGEX META (Y hệt tác giả) ===
+        // === BƯỚC 1: ĐỒNG NHẤT ID ===
         var idMatch = /<link\s+rel="canonical"\s+href="([^"]+)"/i.exec(htmlContent) ||
             /<meta\s+property="og:url"\s+content="([^"]+)"/i.exec(htmlContent);
         var id = idMatch ? idMatch[1] : (url || "");
@@ -321,17 +472,8 @@ function parseMovieDetail(htmlContent, url) {
         }
 
         // === BƯỚC 2: TRÍCH XUẤT THÔNG TIN PHIM ===
-        var lurl = "";
-        var limg = "";
-        var lname = "Đang cập nhật...";
-        var ldes = "Không có mô tả.";
-        var ldirec = "";
-        var lactor = "";
-        var lduran = "";
-        var status = "";
-        var category = "";
-        var episode_current = "";
-        var year = "";
+        var lurl = "", limg = "", lname = "Đang cập nhật...", ldes = "Không có mô tả.";
+        var ldirec = "", lactor = "", lduran = "", status = "", category = "", episode_current = "", year = "";
 
         var rmatch = htmlContent.match(/meta\s+property="og:url"\s+content="([^"]+)"/i);
         if (rmatch && rmatch[1]) lurl = rmatch[1];
@@ -353,81 +495,205 @@ function parseMovieDetail(htmlContent, url) {
         category = _$(htmlContent).find("span:content('Thể loại:')").parent().text(", ").replace('Thể loại:, ', '');
         episode_current = _$(htmlContent).find("span:content('Tập mới nhất:')").next().text();
 
-        var servers = [];
+        // ================================================================
+        // BƯỚC 3: HELPERS
+        // ================================================================
+
+        // Chuẩn hoá tên base server (bỏ hậu tố [4K], [1080+], ...)
+        function getBaseServerName(nameServer) {
+            return String(nameServer)
+                .replace(/\s*\[4K\]\s*/gi, " ")
+                .replace(/\s*\[2160p?\]\s*/gi, " ")
+                .replace(/\s*\[1080\+\]\s*/gi, " ")
+                .replace(/\s*\[1080-\]\s*/gi, " ")
+                .replace(/\s*\[1080p\]\s*/gi, " ")
+                .replace(/\s*\(4K\)\s*/gi, " ")
+                .replace(/\s*\(2160p?\)\s*/gi, " ")
+                .replace(/\s*\(1080\+\)\s*/gi, " ")
+                .replace(/\s*\(1080-\)\s*/gi, " ")
+                .replace(/\s*\(1080p\)\s*/gi, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        // Phân loại quality từ tên server
+        function classifyQuality(nameServer) {
+            var s = String(nameServer).toLowerCase();
+            if (/\b4k\b|2160/.test(s))  return "4K";
+            if (/1080\s*\+/.test(s))    return "1080+";
+            if (/1080\s*-/.test(s))     return "1080-";
+            if (/1080/.test(s))         return "1080+"; // mặc định 1080 -> 1080+
+            return "Khác";
+        }
+
+        // Số tập từ tên
+        function getEpisodeNumber(name) {
+            var m = String(name).match(/\d+/);
+            return m ? parseInt(m[0], 10) : 0;
+        }
+
+        // Thêm query vào href
+        function appendQuery(href, qs) {
+            if (!qs) return href;
+            return href + (href.indexOf("?") > -1 ? "&" : "?") + qs;
+        }
+
+        // ================================================================
+        // BƯỚC 4: GOM TẬP THEO BASE SERVER
+        // ================================================================
+        // serverMap[baseName].episodes[epNum] = { name, qualities: { "4K": href, ... } }
+        var serverMap  = {};
+        var serverOrder = [];
+
         var $parent = _$(htmlContent).find('.detail-infor-content');
-        var $child = $parent.find("li");
+        var $child  = $parent.find("li");
+
         $child.find("a").each(function() {
-            var nameServer = this.text();
-            var idserver = this.attr("href");
-            var items = [];
-            var items4k = [];
+            var nameServer = this.text().trim();
+            var idserver   = this.attr("href");
+            if (!idserver || idserver.charAt(0) !== "#") return;
+
+            var baseName = getBaseServerName(nameServer);
+            var quality  = classifyQuality(nameServer);
+            if (!baseName) return;
+
+            if (!serverMap[baseName]) {
+                serverMap[baseName] = { episodes: {} };
+                serverOrder.push(baseName);
+            }
+
+            // Duyệt từng tập trong server này
             $parent.find(idserver).find("a").each(function() {
-                var name = this.find("div").text();
-                var item = {
-                    id: this.attr("href"),
-                    name: name,
-                    slug: "tap-" + name.replace(/\s/, "-")
-                };
-                items.push(item);
-                
-                var item4k = {
-                    id: this.attr("href") + "?type=4k",
-                    name: name,
-                    slug: "tap-" + name.replace(/\s/, "-")
-                };
-                items4k.push(item4k);
-            });
-            servers.push({
-                name: nameServer,
-                episodes: items
-            });
-            servers.push({
-                name: nameServer + " [4K]",
-                episodes: items4k
+                var epName = this.find("div").text().trim();
+                var epHref = this.attr("href");
+                var epNum  = getEpisodeNumber(epName);
+
+                if (!epNum || !epHref) return;
+
+                if (!serverMap[baseName].episodes[epNum]) {
+                    serverMap[baseName].episodes[epNum] = {
+                        name: epName,
+                        qualities: {}
+                    };
+                }
+
+                // Append query để phân biệt quality
+                var finalHref = epHref;
+                if (quality === "4K") {
+                    finalHref = appendQuery(epHref, "type=4k");
+                } else if (quality === "1080-") {
+                    finalHref = appendQuery(epHref, "type=1080m");
+                } else if (quality === "Khác") {
+                    finalHref = appendQuery(epHref, "type=other");
+                }
+                // 1080+ không cần query (default)
+
+                serverMap[baseName].episodes[epNum].qualities[quality] = finalHref;
             });
         });
 
-        function getEpisodeNumber(name) {
-            const match = name.match(/\d+/);
-            return match ? parseInt(match[0], 10) : 0;
+        // ================================================================
+        // BƯỚC 5: BUILD SERVERS VỚI IDS[]
+        // ================================================================
+        // ================================================================
+        // BƯỚC 5: BUILD SERVERS VỚI IDS[] — LUÔN ĐỦ 4 OPTION
+        // ================================================================
+        var servers = [];
+        var QUALITY_ORDER = ["4K", "1080+", "1080-", "Khác"];
+
+        // Map quality -> query string
+        function qualityToQuery(q) {
+            if (q === "4K")    return "4k";
+            if (q === "1080-") return "1080m";
+            if (q === "Khác")  return "other";
+            return ""; // 1080+ default, không cần query
         }
 
-        // Duyệt qua từng server để sort mảng episodes bên trong
-        servers.forEach(server => {
-            if (server.episodes && Array.isArray(server.episodes)) {
-                server.episodes.sort((a, b) => {
-                    return getEpisodeNumber(a.name) - getEpisodeNumber(b.name);
+        // Bỏ mọi ?type=xxx khỏi URL để lấy base
+        function stripTypeQuery(href) {
+            return String(href)
+                .replace(/([?&])type=[^&]*/g, "$1")
+                .replace(/[?&]$/, "")
+                .replace(/\?&/, "?");
+        }
+
+        serverOrder.forEach(function(baseName) {
+            var epMap  = serverMap[baseName].episodes;
+            var epNums = Object.keys(epMap).map(Number).sort(function(a, b){ return a - b; });
+
+            var episodes = [];
+
+            epNums.forEach(function(epNum, idx) {
+                var epData    = epMap[epNum];
+                var qualities = epData.qualities;
+
+                // Tìm base URL từ bất kỳ quality nào có sẵn
+                var baseHref = null;
+                for (var qi = 0; qi < QUALITY_ORDER.length; qi++) {
+                    if (qualities[QUALITY_ORDER[qi]]) {
+                        baseHref = stripTypeQuery(qualities[QUALITY_ORDER[qi]]);
+                        break;
+                    }
+                }
+                if (!baseHref) return;
+
+                // Build ĐỦ 4 option
+                var ids = [];
+                QUALITY_ORDER.forEach(function(q) {
+                    var url;
+                    if (qualities[q]) {
+                        url = qualities[q]; // có link thật
+                    } else {
+                        // Link giả: base + ?type= để parseDetailResponse biết user chọn gì
+                        var qs = qualityToQuery(q);
+                        url = qs ? appendQuery(baseHref, "type=" + qs) : baseHref;
+                    }
+                    ids.push({ name: q, url: url });
+                });
+
+                episodes.push({
+                    name: epData.name,
+                    slug: "tap-" + (idx + 1),
+                    id:   ids[0].url,   // fallback cho app cũ
+                    ids:  ids
+                });
+            });
+
+            if (episodes.length > 0) {
+                servers.push({
+                    name: baseName,
+                    episodes: episodes
                 });
             }
         });
 
+        // ================================================================
+        // BƯỚC 6: EXTRA (nút play)
+        // ================================================================
         var extra = "";
         var isPlayPage = /\/tap-/.test(id);
-
         if (!isPlayPage) {
             var playBtnMatch = _$(htmlContent).find(".film-buttons").find("a").attr("href");
-            if (playBtnMatch) {
-                extra = playBtnMatch;
-            }
+            if (playBtnMatch) extra = playBtnMatch;
         }
 
         return JSON.stringify({
-            id: id,
-            title: lname,
-            posterUrl: limg,
-            backdropUrl: limg,
-            description: ldes,
-            quality: "HD",
-            year: year,
-            rating: 8.5,
-            status: status,
-            category: category,
+            id:              id,
+            title:           lname,
+            posterUrl:       limg,
+            backdropUrl:     limg,
+            description:     ldes,
+            quality:         "HD",
+            year:            year,
+            rating:          8.5,
+            status:          status,
+            category:        category,
             episode_current: episode_current,
-            servers: servers,
-            duration: lduran || "",
-            casts: lactor || "",
-            director: ldirec || "",
-            extra: extra
+            servers:         servers,
+            duration:        lduran || "",
+            casts:           lactor || "",
+            director:        ldirec || "",
+            extra:           extra
         });
 
     } catch (e) {
@@ -502,6 +768,20 @@ function parseDetailResponse(html, url) {
 function parseDetailResponse(html, url) {
     try {
         log("parseDetailResponse[url]: \n" + url);
+
+        // ================================================================
+        // [1] Xác định quality user đã chọn từ URL
+        // ================================================================
+        var userQuality = "1080+"; // default
+        if (url.indexOf("type=4k") > -1)          userQuality = "4K";
+        else if (url.indexOf("type=1080m") > -1)  userQuality = "1080-";
+        else if (url.indexOf("type=other") > -1)  userQuality = "Khác";
+
+        log("[user] Quality chọn: " + userQuality);
+
+        // ================================================================
+        // [2] Parse list server
+        // ================================================================
         var allLink = [];
         _$(html).find('div[class*="list-severs"]').find("a").each(function() {
             var name = this.text();
@@ -509,81 +789,241 @@ function parseDetailResponse(html, url) {
             allLink.push({ link: link, name: name });
         });
 
-        let selectedLink = null;
-        const pool = { k4: null, hd: null, anyM3u8: null, anyEmbed: null };
-        allLink.forEach((item) => {
-            if (item.name.match(/4k/i) && item.link.endsWith('.m3u8')) {
-                pool.k4 = item.link;
-            } else if (item.name.match(/1080/i) && item.link.endsWith('.m3u8')) {
-                pool.hd = item.link;
-            } else if (item.link.endsWith('.m3u8')) {
-                pool.anyM3u8 = item.link;
-            } else if (item.link.includes('abyss')) {
-                pool.anyEmbed = item.link;
+        function classifyQualityFromName(name) {
+            var s = String(name).toLowerCase();
+            if (/\b4k\b|2160/.test(s))  return "4K";
+            if (/1080\s*\+/.test(s))    return "1080+";
+            if (/1080\s*-/.test(s))     return "1080-";
+            if (/1080/.test(s))         return "1080+";
+            return "Khác";
+        }
+
+        // ================================================================
+        // [3] Phân pool theo quality
+        // ================================================================
+        var pool = { "4K": [], "1080+": [], "1080-": [], "Khác": [], abyss: [] };
+
+        allLink.forEach(function(item) {
+            if (!item.link) return;
+            if (item.link.indexOf('abysscdn') > -1 || item.link.indexOf('abyss') > -1) {
+                pool.abyss.push(item.link);
+                return;
             }
+            if (!item.link.endsWith('.m3u8')) return;
+            var q = classifyQualityFromName(item.name);
+            pool[q].push(item.link);
         });
 
-        selectedLink = pool.hd || pool.k4 || pool.anyM3u8 || pool.anyEmbed;
-        if (url.indexOf("type=4k") > -1) {
-            selectedLink = pool.k4 || pool.hd || pool.anyM3u8 || pool.anyEmbed;
-            log("parseDetailResponse[url]: \nĐã chọn 4K: " + selectedLink);
+        log("[pool] 4K=" + pool["4K"].length
+            + " | 1080+=" + pool["1080+"].length
+            + " | 1080-=" + pool["1080-"].length
+            + " | Khác=" + pool["Khác"].length
+            + " | abyss=" + pool.abyss.length);
+
+        // ================================================================
+        // [4] Build thứ tự ưu tiên theo quality user chọn
+        // ================================================================
+        var priorityOrder;
+        if (userQuality === "4K") {
+            priorityOrder = ["4K", "1080+", "1080-", "Khác"];
+        } else if (userQuality === "1080+") {
+            priorityOrder = ["1080+", "1080-", "4K", "Khác"];
+        } else if (userQuality === "1080-") {
+            priorityOrder = ["1080-", "Khác", "1080+", "4K"];
+        } else {
+            priorityOrder = ["Khác", "1080-", "1080+", "4K"];
+        }
+        log("[priority] " + priorityOrder.join(" > "));
+
+        var orderedCandidates = [];
+        var seenLink = {};
+        priorityOrder.forEach(function(q) {
+            pool[q].forEach(function(l) {
+                if (!seenLink[l]) {
+                    seenLink[l] = true;
+                    orderedCandidates.push({ link: l, quality: q });
+                }
+            });
+        });
+
+        if (orderedCandidates.length === 0 && pool.abyss.length === 0) {
+            log("[fallback] Không có link nào trong pool");
+            toast("Link stream tập này toàn bộ bị lỗi, vui lòng xem tập khác");
+            return JSON.stringify({
+                url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4",
+                isEmbed: false,
+                mimeType: "video/mp4",
+                headers: {}
+            });
         }
 
-       var streamlink = selectedLink
-       var res = httpRequest(streamlink, {
-            method: "GET",
-            headers: {
-                "Referer": "https://yanhh3d.mom"
+        // ================================================================
+        // [5] Helper: resolve link (decode data-obf / var cccc)
+        // ================================================================
+        function resolveLink(candidateLink) {
+            var page = yanFetchPage(candidateLink, YAN_REF);
+            if (!page) {
+                log("[resolve] body rỗng (cả vax.local)");
+                return null;
             }
-        }); 
-        
-        if(res.body.indexOf("body") > -1){
-          if(res.body.indexOf("data-obf") > -1){
-            var $doc = _$(res.body);
-            var key = $doc.find("#player").attr("data-obf");
-            var decode = BASE64.decode(key);
-            var $data = JSON.parse(decode);
-            streamlink = $data.pU;
-            console.log("raw_m3u8_base64:\n" + streamlink);
-            
-          }
-          if(res.body.indexOf("var cccc") > -1){
-            // var cccc = "https://scontent-sin2-3-xx.streamrpt.xyz/stream/m3u8/9fb0d469-9cfc-4a97-91f4-fc74615b8d11.m3u8"
-            streamlink = res.body.match(/var cccc[^'"]+["']([^'"]+)["']/i)
-            if(streamlink && streamlink[1]){
-              streamlink = streamlink[1];
-              console.log("raw_m3u8_var:\n" + streamlink);
+            var body = page;
+
+            var resolved = candidateLink;
+
+            if (body.indexOf("body") > -1) {
+                if (body.indexOf("data-obf") > -1) {
+                    var $doc = _$(body);
+                    var key = $doc.find("#player").attr("data-obf");
+                    if (key) {
+                        try {
+                            var decode = BASE64.decode(key);
+                            var $data = JSON.parse(decode);
+                            if ($data && $data.pU) {
+                                resolved = $data.pU;
+                                log("[resolve] data-obf -> " + resolved);
+                            }
+                        } catch (eDecode) {
+                            log("[resolve] data-obf decode fail: " + eDecode);
+                        }
+                    }
+                }
+
+                if (body.indexOf("var cccc") > -1) {
+                    var match = body.match(/var cccc[^'"]+["']([^'"]+)["']/i);
+                    if (match && match[1]) {
+                        resolved = match[1];
+                        log("[resolve] var cccc -> " + resolved);
+                    }
+                }
             }
-            else{
-              console.log("raw_m3u8_replace 1:\n" + res.body)
+
+            // Verify m3u8
+            try {
+                var vbody = yanFetchPage(resolved, YAN_REF);
+                if (!vbody) {
+                    log("[verify] body rỗng: " + resolved);
+                    return null;
+                }
+
+                var bodyTrim = vbody.trim();
+
+                if (bodyTrim.indexOf("#EXTM3U") > -1) {
+                    log("[verify] ✅ m3u8: " + resolved + " len=" + vbody.length);
+                    return resolved;
+                }
+
+                log("[verify] ❌ Không phải m3u8: " + bodyTrim.substring(0, 120));
+                return null;
+            } catch (eV) {
+                log("[verify] fetch fail: " + eV);
+                return null;
             }
-          }
-          else{
-            console.log("raw_m3u8_replace 2:\n" + res.body)
-          }
-          
         }
-          
-        return JSON.stringify({
-            "url": streamlink,
-            mimeType: 'application/x-mpegURL',
+
+        // ================================================================
+        // [6] Loop candidates theo priority
+        // ================================================================
+        var finalStream = null;
+
+        for (var i = 0; i < orderedCandidates.length; i++) {
+            var candidate = orderedCandidates[i];
+            log("[try] #" + (i + 1) + "/" + orderedCandidates.length
+                + " [" + candidate.quality + "]: " + candidate.link);
+
+            var resolved = resolveLink(candidate.link);
+            if (resolved) {
+                finalStream = resolved;
+                if (i > 0) {
+                    toast("Link stream bạn chọn đang lỗi, sẽ chuyển sang link stream khác của tập này để phát");
+                }
+                break;
+            }
+            log("[try] ❌ fail, thử tiếp...");
+        }
+
+        // ================================================================
+        // [7] Fallback abyss (transform sang ?v=)
+        // ================================================================
+        if (!finalStream && pool.abyss.length > 0) {
+            log("[fallback] m3u8 hết, chuyển sang abyss...");
+
+            for (var j = 0; j < pool.abyss.length; j++) {
+                var abyssOrig = pool.abyss[j];
+                var m = abyssOrig.match(/^https?:\/\/abysscdn\.com\/([A-Za-z0-9]+)\/?$/i);
+                var abyssLink = (m && m[1])
+                    ? "https://abysscdn.com/?v=" + m[1]
+                    : abyssOrig;
+
+                log("[abyss] " + abyssOrig + " -> " + abyssLink);
+                toast("Link stream bạn chọn đang lỗi, sẽ chuyển sang link stream khác của tập này để phát");
+
+                return JSON.stringify({
+                    url: abyssLink,
+                    mimeType: "video/mp4",
+                    isEmbed: false,
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                    }
+                });
+            }
+        }
+
+        // ================================================================
+        // [8] Tất cả fail
+        // ================================================================
+        if (!finalStream) {
+            log("[fallback] ❌ Toàn bộ link đều fail");
+            toast("Link stream tập này toàn bộ bị lỗi, vui lòng xem tập khác");
+            return JSON.stringify({
+                url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4",
+                isEmbed: false,
+                mimeType: "video/mp4",
+                headers: {}
+            });
+        }
+
+        // ================================================================
+        // [9] Return m3u8 OK
+        // ================================================================
+        log("[OK] streamlink cuối: " + finalStream);
+
+        var rawPl = "";
+        try { rawPl = yanFetchPage(finalStream, YAN_REF); } catch (ePl) { log("[playlist] err: " + ePl); }
+        var rangedPl = rawPl ? yanRangeM3u8(rawPl) : "";
+        if (rangedPl) log("[playlist] m3u8Content len=" + rangedPl.length);
+
+        var out = {
+            "url": finalStream,
+            mimeType: "application/x-mpegURL",
             "isEmbed": false,
             "headers": {
-                "Referer": "https://yanhh3d.mom",
-                "Origin": "https://yanhh3d.mom",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                "Referer": YAN_REF + "/",
+                "Origin": YAN_REF,
+                "User-Agent": YAN_UA,
+                "Accept-Encoding": "identity"
             }
-        });
+        };
+        if (rangedPl && rangedPl.indexOf("#EXTM3U") > -1) {
+            out["m3u8Content"] = rangedPl;
+            out["baseUrl"] = finalStream;
+        }
+        return JSON.stringify(out);
 
     } catch (e) {
         log("parseDetailResponse[err]:\n " + e);
-        return JSON.stringify({ "url": "", "headers": {} });
+        toast("Link stream tập này toàn bộ bị lỗi, vui lòng xem tập khác");
+        return JSON.stringify({
+            url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4",
+            isEmbed: false,
+            mimeType: "video/mp4",
+            headers: {}
+        });
     }
 }
 
 
 function parseEmbedResponse(html, url, datasend) {
-  console.log("embed Raw:\n" + html)
+ // console.log("embed Raw:\n" + html)
   try {
       var $data = JSON.parse(html);
       var stream = $data.streams[0].url;
