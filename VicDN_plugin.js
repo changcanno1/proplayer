@@ -15,7 +15,7 @@ function getManifest() {
     "adblock": false,
     type: "MOVIE",
     "author": "Alokillgtv",
-    playerType: "embedtoexoplay",
+     playerType: "embedtoexoplay",
   });
 }
 
@@ -53,10 +53,75 @@ function getFilterConfig() {
     }
 }
 
+// =============================================================================
+// HELPER: CURSOR BASE64 ENCODE / DECODE
+// =============================================================================
+
+BASE64 = {
+  encode: function (str) {
+    try {
+      if (!str) return "";
+      var utf8Bytes = [];
+      for (var i = 0; i < str.length; i++) {
+        var code = str.charCodeAt(i);
+        if (code < 128) {
+          utf8Bytes.push(code);
+        } else if (code < 2048) {
+          utf8Bytes.push((code >> 6) | 192, (code & 63) | 128);
+        } else if (
+          (code & 0xfc00) === 0xd800 &&
+          i + 1 < str.length &&
+          (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00
+        ) {
+          code =
+            0x10000 + ((code & 0x03ff) << 10) + (str.charCodeAt(++i) & 0x03ff);
+          utf8Bytes.push(
+            (code >> 18) | 240,
+            ((code >> 12) & 63) | 128,
+            ((code >> 6) & 63) | 128,
+            (code & 63) | 128
+          );
+        } else {
+          utf8Bytes.push(
+            (code >> 12) | 224,
+            ((code >> 6) & 63) | 128,
+            (code & 63) | 128
+          );
+        }
+      }
+      var chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+      var encoded = "";
+      var byte1, byte2, byte3;
+      var b1, b2, b3, b4;
+      for (var j = 0; j < utf8Bytes.length; j += 3) {
+        byte1 = utf8Bytes[j];
+        byte2 = j + 1 < utf8Bytes.length ? utf8Bytes[j + 1] : NaN;
+        byte3 = j + 2 < utf8Bytes.length ? utf8Bytes[j + 2] : NaN;
+        b1 = byte1 >> 2;
+        b2 = ((byte1 & 3) << 4) | (isNaN(byte2) ? 0 : byte2 >> 4);
+        b3 = isNaN(byte2)
+          ? 64
+          : ((byte2 & 15) << 2) | (isNaN(byte3) ? 0 : byte3 >> 6);
+        b4 = isNaN(byte3) ? 64 : byte3 & 63;
+        encoded +=
+          chars.charAt(b1) +
+          chars.charAt(b2) +
+          chars.charAt(b3) +
+          chars.charAt(b4);
+      }
+      return encoded;
+    } catch (e) {
+      return "";
+    }
+  }
+};
+
 function getUrlList(slug, filtersJson) {
     try {
         log("getUrlList[url]: \n" + slug);
 
+        // 1. Kiểm tra nếu slug là link tuyệt đối (chứa http)
         if (slug && slug.indexOf("http") > -1) {
             if (slug.indexOf("search") > -1 && filtersJson) {
                 var fixedJson1 = filtersJson
@@ -81,6 +146,7 @@ function getUrlList(slug, filtersJson) {
         var page = 1;
         var path = slug || "";
 
+        // 2. Xử lý an toàn filtersJson cho link tương đối
         if (filtersJson) {
             var fixedJson2 = filtersJson
                 .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
@@ -100,15 +166,18 @@ function getUrlList(slug, filtersJson) {
             } catch (jsonErr) {}
         }
 
+        // 3. Ghép URL an toàn với BASEURL
         var resultUrl = BASEAPI;
         if (path) {
             resultUrl += (path.indexOf("/") === 0 ? "" : "/") + path;
         }
 
+        // 4. Ghép tham số phân trang page (tự động nhận biết ? hay &)
         if (page > 0 && resultUrl.indexOf("page=") === -1) {
             resultUrl += page;
         }
 
+        // 5. Làm sạch dấu // thừa ở path (giữ nguyên https://)
         var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
         log("getUrlList[url]: \n" + finalUrl);
         return finalUrl;
@@ -130,6 +199,7 @@ function getUrlSearch(keyword, filtersJson) {
     try {
         var page = 1;
 
+        // 1. Giải mã filtersJson lấy trang đúng chuẩn hàm gốc
         if (filtersJson) {
             var fixedJson = filtersJson
                 .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
@@ -141,9 +211,11 @@ function getUrlSearch(keyword, filtersJson) {
             } catch (jsonErr) {}
         }
 
+        // 2. Khởi tạo URL tìm kiếm kèm cấu trúc /search?lang=vi-VN&q=
         var encodedKeyword = encodeURIComponent(keyword || "");
         var resultUrl = BASEURL + "/?q=" + encodedKeyword;
 
+        // 3. Nếu page > 1 thì nối thêm &page=
         if (page > 1) {
             resultUrl += "&page=" + page;
         }
@@ -185,21 +257,42 @@ function getUrlCategories() {
     }
 }
 
-function getUrlCountries() { return ""; }
-function getUrlYears() { return ""; }
+function getUrlCountries() { 
+    try {
+        return ""; 
+    } catch (e) {
+        log("getUrlCountries[err]:\n " + e);
+        return "";
+    }
+}
+
+function getUrlYears() { 
+    try {
+        return ""; 
+    } catch (e) {
+        log("getUrlYears[err]:\n " + e);
+        return "";
+    }
+}
+
+// =============================================================================
+// PARSERS
+// =============================================================================
 
 function parseListResponse(html, $url) {
     try {
         log("parseListResponse[url]: \n" + $url);
         if ($url.indexOf("/?q=") > -1) {
-            var script = _$(html).find("script:content('const|allData')").html();
+            var script = _$(html).find("script:content('const|allData')").html()
+
             var $obj = script.match(/\[\s*\{[\s\S]*?\}\s*\]/i);
             if ($obj) {
-                var $data = JSON.parse($obj[0]);
+                $data = JSON.parse($obj[0]);
                 return domfetch($data, $url);
             }
         } else {
-            var $allData = JSON.parse(html);
+            var $allData = JSON.parse(html)
+
             return domfetch($allData.data, $url);
         }
     } catch (e) {
@@ -211,33 +304,42 @@ function parseListResponse(html, $url) {
                 "posterUrl": "",
                 "backdropUrl": ""
             }],
-            "pagination": { "currentPage": 1, "totalPages": 1 }
+            "pagination": {
+                "currentPage": 1,
+                "totalPages": 1
+            }
         });
     }
 }
 
 function parseJSDataIsolated(str) {
-    var code = str.replace(/^(const|let|var)\s+\w+\s*=\s*/, '');
-    return new Function('"use strict"; return (' + code + ');')();
+    const code = str.replace(/^(const|let|var)\s+\w+\s*=\s*/, '');
+    return new Function(`"use strict"; return (${code});`)();
 }
 
 function domfetch($data, $url) {
+
     var items = [];
     for (var $j = 0; $j < $data.length; $j++) {
         var item = $data[$j];
         items.push({
-            "id": BASEAPI + "/info/" + item.slug,
+            "id": BASEAPI + "/info/" + item.slug, 
             "title": item.vname,
-            "posterUrl": "https://image.tmdb.org/t/p/w130_and_h195_face/" + item.poster + ".jpg",
-            "backdropUrl": "https://image.tmdb.org/t/p/w533_and_h300_face/" + item.banner + ".jpg",
+            "posterUrl": "https://image.tmdb.org/t/p/w130_and_h195_face/" + item.poster + ".jpg", 
+            "backdropUrl": "https://image.tmdb.org/t/p/w533_and_h300_face/" + item.banner + ".jpg", 
             "quality": item.type.toUpperCase(),
             "episode_current": "Tập " + item.stt + "/" + item.total
         });
+
     }
     return JSON.stringify({
         "items": items,
-        "pagination": { "currentPage": 1, "totalPages": 999 }
+        "pagination": {
+            "currentPage": 1,
+            "totalPages": 999
+        }
     });
+
 }
 
 function parseSearchResponse(html, url) {
@@ -246,15 +348,20 @@ function parseSearchResponse(html, url) {
         return parseListResponse(html, url);
     } catch (e) {
         log("parseSearchResponse[err]:\n " + e);
-        return JSON.stringify({ "items": [], "pagination": { "currentPage": 1, "totalPages": 1 } });
+        return JSON.stringify({
+            "items": [],
+            "pagination": {
+                "currentPage": 1,
+                "totalPages": 1
+            }
+        });
     }
 }
 
 function decodeHTMLEntities(str) {
     try {
         if (!str) return "";
-        // Đã sửa thành hàm ẩn danh ES5 tiêu chuẩn tương thích iOS
-        return str.replace(/&#(\d+);|&#x([0-9a-fA-F]+);/g, function(match, dec, hex) {
+        return str.replace(/&#(\d+);|&#x([0-9a-fA-F]+);/g, (match, dec, hex) => {
             if (dec) {
                 return String.fromCharCode(parseInt(dec, 10));
             }
@@ -273,18 +380,30 @@ function parseMovieDetail(html, url) {
         log("parseMovieDetail[url]: \n" + url);
         var $jsdata = JSON.parse(html);
         var $data = $jsdata.data;
-        var limg = $data.banner;
-        var lname = $data.vname;
-        var ldes = $data.content;
-        var lactor = $data.cast.join(" - ");
-        var lduran = $data.duration + " phút";
-        var status = "Tập " + $data.stt + "/" + $data.total;
-        var category = $data.genre.join(" - ");
-        var episode_current = "Tập " + $data.stt;
-        var year = $data.year;
+        // === BƯỚC 2: TRÍCH XUẤT THÔNG TIN PHIM ===
+        var lurl = "";
+        var limg = "";
+        var lname = "Đang cập nhật...";
+        var ldes = "Không có mô tả.";
+        var ldirec = "";
+        var lactor = "";
+        var lduran = "";
+        var status = "";
+        var category = "";
+        var episode_current = "";
+        var year = 2026;
+        var extra = "";
+        limg = $data.banner;
+        lname = $data.vname;
+        ldes = $data.content;
+        lactor = $data.cast.join(" - ");
+        lduran = $data.duration + " phút";
+        status = "Tập " + $data.stt + "/" + $data.total;
+        category = $data.genre.join(" - ");
+        episode_current = "Tập " + $data.stt;
+        year = $data.year;
         var servers = [];
         var episodes = [];
-        
         for (var $j = 0; $j < $data.list_episodes.length; $j++) {
             var item = $data.list_episodes[$j];
             var split = item.split("|");
@@ -302,13 +421,12 @@ function parseMovieDetail(html, url) {
                   url: url + "?current=" + split[0] + "&tm=tm2",
                   name: "Vietsub (Thuyết Minh Nam)"
                 }]
-            });
+            })
         }
         servers.push({
             name: "Server",
             episodes: episodes
-        });
-        
+        })
         return JSON.stringify({
             id: url,
             title: lname,
@@ -324,14 +442,14 @@ function parseMovieDetail(html, url) {
             servers: servers,
             duration: lduran || "",
             casts: lactor || "",
-            director: "",
-            extra: ""
+            director: ldirec || "",
+            extra: extra
         });
 
     } catch (e) {
         log("parseMovieDetail[err]:\n " + e);
         return JSON.stringify({
-            id: url || "error",
+            id: url || url || "error",
             title: "error",
             servers: []
         });
@@ -341,6 +459,7 @@ function parseMovieDetail(html, url) {
 function checkRaw(scriptStr, returnFixed) {
   try {
     if (!scriptStr || typeof scriptStr !== 'string') {
+      console.log("[Lỗi escape runJS]\r\n\t Dữ liệu đầu vào không phải là chuỗi hợp lệ!");
       return scriptStr || "";
     }
 
@@ -350,18 +469,35 @@ function checkRaw(scriptStr, returnFixed) {
 
     for (var i = 0; i < lines.length; i++) {
       var currentLine = lines[i];
+      var lineNum = i + 1;
       var lineErrorFound = false;
 
-      if (/([^\\]|^)(\r\n|\r|\n)/.test(currentLine)) { lineErrorFound = true; }
-      if (/\t/.test(currentLine) && !/\\t/.test(currentLine)) { lineErrorFound = true; }
-      if (/([^\\])\\$/.test(currentLine)) { lineErrorFound = true; }
+      if (/([^\\]|^)(\r\n|\r|\n)/.test(currentLine)) {
+        console.log("[Lỗi escape runJS]\r\n\t Phát hiện xuống dòng chưa escape ở Dòng " + lineNum + ": " + currentLine.trim());
+        lineErrorFound = true;
+      }
 
-      if (lineErrorFound) { hasError = true; }
+      if (/\t/.test(currentLine) && !/\\t/.test(currentLine)) {
+        console.log("[Lỗi escape runJS]\r\n\t Phát hiện ký tự Tab trần ở Dòng " + lineNum + ": " + currentLine.trim());
+        lineErrorFound = true;
+      }
+
+      if (/([^\\])\\$/.test(currentLine)) {
+        console.log("[Lỗi escape runJS]\r\n\t Dấu Backslash (\\) cô đơn ở cuối Dòng " + lineNum + ": " + currentLine.trim());
+        lineErrorFound = true;
+      }
+
+      if (lineErrorFound) {
+        hasError = true;
+      }
 
       var fixedLine = currentLine;
       if (returnFixed) {
-        fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  ");
+        fixedLine = fixedLine
+          .replace(/\r/g, "")
+          .replace(/\t/g, "  ");
       }
+
       fixedLines.push(fixedLine);
     }
 
@@ -369,14 +505,21 @@ function checkRaw(scriptStr, returnFixed) {
       new Function(scriptStr);
     } catch (syntaxErr) {
       hasError = true;
+      console.log("[Lỗi escape runJS]\r\n\t 💥 LỖI CÚ PHÁP (SyntaxError) toàn cục: " + syntaxErr.message);
+    }
+
+    if (!hasError) {
+      console.log("[checkRaw] 🟢 Chuỗi Raw JS hoàn toàn sạch lỗi!");
     }
 
     return returnFixed ? fixedLines.join('\n') : scriptStr;
 
   } catch (e) {
-    return scriptStr;
+    console.log("[Lỗi escape runJS]\r\n\t Lỗi ngoại lệ trong hàm checkRaw: " + e.message);
+    return scriptStr; 
   }
 }
+
 
 function parseDetailResponse(html, url) {
   try {
@@ -393,29 +536,55 @@ function parseDetailResponse(html, url) {
               stream = split[1] + "?episodes=" + url;
         }
     }
-    var customJS = checkRaw(rawJS(stream), true);
+    var customJS = checkRaw(rawJS(stream),true);
     
     var idvd = url.match(/^https:\/\/vicdn\.cc\/api\/info\/([^\?]+)/i);
     var epi = url.match(/current=(\d+)&tm=(\w+)/i);
-    var sub = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-vi.vtt";
-    var subeng = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-en.vtt";
-    
+    var subUrlVi = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-vi.vtt";
+    var subUrlEn = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-en.vtt";
+
+    // ⚡ CHUYỂN ĐỔI SUB TITLE SANG DATA URI BASE64 ĐỂ FIX LỖI IOS ⚡
+    var finalSubVi = subUrlVi;
+    var finalSubEn = subUrlEn;
+
+    try {
+        var resVi = httpRequest(subUrlVi, {
+            method: "GET",
+            headers: { "Referer": BASEURL }
+        });
+        if (resVi && resVi.isSuccessful && resVi.body) {
+            finalSubVi = "data:text/vtt;base64," + BASE64.encode(resVi.body);
+        }
+    } catch(e) {}
+
+    try {
+        var resEn = httpRequest(subUrlEn, {
+            method: "GET",
+            headers: { "Referer": BASEURL }
+        });
+        if (resEn && resEn.isSuccessful && resEn.body) {
+            finalSubEn = "data:text/vtt;base64," + BASE64.encode(resEn.body);
+        }
+    } catch(e) {}
+
     log("Embed: " + stream);
+    
     return JSON.stringify({
       url: stream,
       isEmbed: false,
       headers: {
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Referer: BASEURL,
         "Block-Ads": false,
         "Custom-Js": rawJS(BASEURL, epi[2])
       },
       subtitles: [{
-        url: sub,
+        url: finalSubVi,
         lang: "Vietsub",
         mimeType: "text/vtt"
       },{
-        url: subeng,
+        url: finalSubEn,
         lang: "English",
         mimeType: "text/vtt"
       }],
@@ -430,8 +599,9 @@ function parseDetailResponse(html, url) {
   }
 }
 
+
 function rawJS(referer, tm) {
-return \`
+return `
 (function ensureHls(){
   if (typeof window.hls !== 'undefined' || typeof window.Hls !== 'undefined') return;
   var s = document.createElement('script');
@@ -439,7 +609,6 @@ return \`
   s.onload = function(){ try { if (window.Hls && !window.hls) window.hls = window.Hls; } catch(e){} };
   (document.head || document.documentElement).appendChild(s);
 })();
-
 function bridgeLog(msg, check) {
     try {
       if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
@@ -453,6 +622,7 @@ function bridgeLog(msg, check) {
     } catch(e) {}
 }
 
+/* ═══ MODE: null = chưa biết, 'web' = parent web, 'native' = parent native ═══ */
 var __vaxMode = null;
 var __modeTimer = setTimeout(function() {
   if (__vaxMode === null) {
@@ -461,8 +631,10 @@ var __modeTimer = setTimeout(function() {
   }
 }, 800);
 
+/* Báo parent biết mình ready */
 try { window.parent.postMessage({ type: 'vax_ready' }, '*'); } catch(e){}
 
+/* Lắng nghe lệnh từ parent */
 window.addEventListener('message', function(ev) {
   var d = ev.data || {};
   if (!d || !d.vaxCmd) return;
@@ -473,9 +645,11 @@ window.addEventListener('message', function(ev) {
     if (__vaxMode === 'web') bindJwCtrl();
     return;
   }
+  /* JW control commands — chỉ khi web mode */
   if (__vaxMode === 'web') {
     jwCmd(d.vaxCmd, d.val);
   } else {
+    /* native mode: cho phép toggle/seek/etc điều khiển <video> như cũ */
     var v = document.querySelector('video');
     if (!v) return;
     if (d.vaxCmd === 'toggle') { if (v.paused) v.play().catch(function(){}); else v.pause(); }
@@ -487,6 +661,7 @@ window.addEventListener('message', function(ev) {
   }
 }, false);
 
+/* CSS: chỉ che nhẹ để JW hiện được */
 (function injectCSS() {
   try {
     var cssStyle = 'html,body{margin:0!important;padding:0!important;background:#000!important;overflow:hidden!important;width:100%!important;height:100%!important}#ssPlay,.jw-wrapper{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:9!important}';
@@ -500,6 +675,7 @@ window.addEventListener('message', function(ev) {
   } catch (e) { bridgeLog('CSS err: ' + e.message); }
 })();
 
+/* ⭐ Block devtoolsDetector (nếu không bị block sẽ redirect about:blank) */
 try {
   var _fakeDtd = { launch:function(){}, addListener:function(){}, on:function(){}, isOpen:function(){ return false; } };
   Object.defineProperty(window, 'devtoolsDetector', {
@@ -507,8 +683,13 @@ try {
     get: function(){ return _fakeDtd; },
     set: function(){}
   });
-} catch(e) {}
+  bridgeLog('🚫 devtoolsDetector blocked');
+} catch(e) { bridgeLog('dtd block fail: ' + e.message); }
 
+/* ═══════════════════════════════════════════════════════════════
+   SNIFFER — giữ nguyên logic cũ cho native
+   Chỉ dispatch khi mode === 'native' (hoặc chưa biết → default native)
+   ═══════════════════════════════════════════════════════════════ */
 (function initLocalBlobSniffer() {
   if (window.__BLOB_SNIFFER_INITIALIZED__) return;
   window.__BLOB_SNIFFER_INITIALIZED__ = 1;
@@ -521,6 +702,8 @@ try {
   timeoutTimer = setTimeout(function() {
     if (hasDispatchedAny === 0 && isFinished === 0 && __vaxMode !== 'web') {
       isFinished = 1;
+      bridgeLog("❌ [TIMEOUT] không tìm thấy Blob M3U8!", false);
+      bridgeLog("Không tìm thấy link video (Hết thời gian 20s).", true);
       if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
         window.SnifferBridge.play("https://google.com", "");
       }
@@ -534,45 +717,87 @@ try {
   function isValidM3U8(content) {
     if (typeof content !== 'string') return false;
     var t = content.trim();
-    return t.indexOf('#EXTM3U') === 0 && (t.indexOf('#EXTINF') !== -1 || t.indexOf('#EXT-X-STREAM-INF') !== -1);
+    return t.indexOf('#EXTM3U') === 0 &&
+          (t.indexOf('#EXTINF') !== -1 || t.indexOf('#EXT-X-STREAM-INF') !== -1);
   }
 
-  function getServerMapping() {
-    var mapping = {};
+function getServerMapping() {
+  var mapping = {};
+  try {
+    var rawHtml = document.documentElement.outerHTML || document.body.innerHTML || "";
+
+    // ⭐ DEBUG: dump tất cả mã xNNN/XNNN tìm được, không giới hạn \b
+    var all = rawHtml.match(/x\\d{2,4}/gi) || [];
+    var uniq = [];
+    var seen = {};
+    for (var k = 0; k < all.length; k++) {
+      var c = all[k].toLowerCase();
+      if (!seen[c]) { seen[c] = 1; uniq.push(c); }
+    }
+    bridgeLog('🔍 HTML x-codes: ' + JSON.stringify(uniq));
+    bridgeLog('📄 HTML size: ' + rawHtml.length);
+
+    // ⭐ DEBUG: dump các <script> chứa x-code (thường server map nằm ở đây)
     try {
-      var rawHtml = document.documentElement.outerHTML || document.body.innerHTML || "";
-      var all = rawHtml.match(/x\\d{2,4}/gi) || [];
-      for (var i = 0; i < all.length; i++) {
-        var code = all[i].toLowerCase();
-        if (/^x30\\d/i.test(code)) { mapping['tm2'] = code; mapping['nam'] = code; }
-        else if (/^x20\\d/i.test(code)) { mapping['tm1'] = code; mapping['nu'] = code; }
-        else if (/^x10\\d/i.test(code)) { mapping['raw'] = code; mapping['origin'] = code; }
+      var scripts = document.querySelectorAll('script');
+      for (var s = 0; s < scripts.length; s++) {
+        var txt = scripts[s].textContent || '';
+        var hits = txt.match(/x\\d{2,4}/gi);
+        if (hits && hits.length) {
+          bridgeLog('📜 script[' + s + '] codes: ' + JSON.stringify([...new Set(hits.map(x=>x.toLowerCase()))]));
+        }
       }
-    } catch (e) {}
-    return mapping;
-  }
+    } catch(e){}
+
+    for (var i = 0; i < all.length; i++) {
+      var code = all[i].toLowerCase();
+      if (/^x30\d/i.test(code)) { mapping['tm2'] = code; mapping['nam'] = code; }
+      else if (/^x20\\d/i.test(code)) { mapping['tm1'] = code; mapping['nu'] = code; }
+      else if (/^x10\\d/i.test(code)) { mapping['raw'] = code; mapping['origin'] = code; }
+    }
+  } catch (e) { bridgeLog('MAP err: ' + e.message); }
+  bridgeLog('MAP final: ' + JSON.stringify(mapping));
+  return mapping;
+}
 
   function processAndReplaceM3u8Server(m3u8Content, requestedTm) {
     if (!requestedTm) return m3u8Content;
     var mapping = getServerMapping();
-    var targetServerCode = mapping[requestedTm.toLowerCase()];
-    if (!targetServerCode) return m3u8Content;
+    var targetKey = requestedTm.toLowerCase();
+    var targetServerCode = mapping[targetKey];
+    bridgeLog('MAP: ' + JSON.stringify(mapping));
+    if (!targetServerCode) {
+      bridgeLog('Không tìm thấy server khớp "' + requestedTm + '"');
+      return m3u8Content;
+    }
+    var currentMatch = m3u8Content.match(/(x\\d+)\\.vicdn\\.cc/i);
+    var currentServerCode = currentMatch ? currentMatch[1] : null;
+    if (currentServerCode) {
+      bridgeLog('🔄 Đổi: ' + currentServerCode + ' ➡️ ' + targetServerCode + ' (' + requestedTm + ')');
+    }
     return m3u8Content.replace(/(x\\d+)(\\.vicdn\\.cc)/gi, targetServerCode + '$2');
   }
 
   function dispatchM3u8ToApp(m3u8Content) {
-    if (__vaxMode === 'web') return;
+    /* ⭐ Chỉ dispatch khi native (web giữ iframe JW điều khiển) */
+    if (__vaxMode === 'web') {
+      bridgeLog('Web mode → bỏ qua sniffer dispatch');
+      return;
+    }
     if (!m3u8Content || hasDispatchedAny === 1) return;
     hasDispatchedAny = 1;
     isFinished = 1;
     stopTimeout();
-    var requestedTm = "\${tm || 'raw'}";
+    bridgeLog('🎯 [LOCAL-DISPATCH] Bắt M3U8! Đổi server...');
+    var requestedTm = "${tm || 'raw'}";
     var finalM3u8 = processAndReplaceM3u8Server(m3u8Content, requestedTm);
+    bridgeLog("🎯 Đang gửi native...", true);
     try {
-      SnifferBridge.playM3u8Content(finalM3u8, JSON.stringify({"Origin":"https://phim.nguonc.com","Referer":"\${referer}"}));
-    } catch(e) {}
+      SnifferBridge.playM3u8Content(finalM3u8, JSON.stringify({"Origin":"https://phim.nguonc.com","Referer":"${referer}"}));
+    } catch(e) { bridgeLog('❌ dispatch err: ' + e.message); }
   }
 
+  /* Hook URL.createObjectURL */
   try {
     if (typeof URL !== 'undefined' && URL.createObjectURL) {
       var origCOU = URL.createObjectURL;
@@ -592,10 +817,15 @@ try {
         }
         return blobUrl;
       };
+      bridgeLog('🚀 Hook URL.createObjectURL OK');
     }
-  } catch (e) {}
+  } catch (e) { bridgeLog('INIT err: ' + e.message); }
 })();
-
+/* ═══════════════════════════════════════════════════════════════
+   PROXY FETCH — bypass CORS cho file mã hóa .html
+   Player fetch vicdn.cc/hls/*.html và /subtitle/*.html để decrypt.
+   Từ iframe sandbox → CORS block. Rewrite qua worker proxy.
+   ═══════════════════════════════════════════════════════════════ */
 (function initProxyFetch() {
   if (window.__VAX_PROXY_FETCH__) return;
   window.__VAX_PROXY_FETCH__ = 1;
@@ -603,44 +833,60 @@ try {
   var PROXY = 'https://streamfile.alokillgtv04.workers.dev/proxy';
   var REF = 'https://vicdn.cc';
 
-  function shouldProxy(u) {
-    if (!u || typeof u !== 'string') return false;
-    if (!/vicdn\\.cc\\//i.test(u)) return false;
-    if (/\\.(js|mjs|css|json|png|jpg|jpeg|gif|webp|svg|woff2?|ttf)(\\?|#|$)/i.test(u)) return false;
-    if (/vicdn\\.cc\\/hls\\/[^?#]+\\.html/i.test(u))     return true;
-    if (/vicdn\\.cc\\/subtitle\\/[^?#]+\\.html/i.test(u)) return true;
-    if (/vicdn\\.cc\\/vtt\\/[^?#]+\\.vtt/i.test(u))      return true;
-    return false;
-  }
+ function shouldProxy(u) {
+  if (!u || typeof u !== 'string') return false;
+  if (!/vicdn\\.cc\\//i.test(u)) return false;
+
+  // Bỏ qua JS/CSS/JSON — không được đụng vào, sẽ làm chết player của site
+  if (/\\.(js|mjs|css|json|png|jpg|jpeg|gif|webp|svg|woff2?|ttf)(\\?|#|$)/i.test(u)) return false;
+
+  // CHỈ proxy file decrypt (.html) và subtitle (.vtt)
+  if (/vicdn\\.cc\\/hls\\/[^?#]+\\.html/i.test(u))     return true;
+  if (/vicdn\\.cc\\/subtitle\\/[^?#]+\\.html/i.test(u)) return true;
+  if (/vicdn\\.cc\\/vtt\\/[^?#]+\\.vtt/i.test(u))      return true;
+
+  return false;
+}
   function toProxy(u) {
     return PROXY + '?url=' + encodeURIComponent(u) + '&referer=' + REF;
   }
 
+  /* Hook fetch */
   try {
     var rawFetch = window.fetch;
     window.fetch = function(input, init) {
       var u = typeof input === 'string' ? input : (input && input.url);
       if (shouldProxy(u)) {
         var newU = toProxy(u);
+        bridgeLog('🌐 [PROXY-FETCH] ' + u.slice(-70));
         if (typeof input === 'string') return rawFetch.call(this, newU, init);
         try { return rawFetch.call(this, new Request(newU, input)); }
         catch(e) { return rawFetch.call(this, newU, init); }
       }
       return rawFetch.apply(this, arguments);
     };
-  } catch(e) {}
+    bridgeLog('🚀 [PROXY] Hook fetch OK');
+  } catch(e) { bridgeLog('❌ proxy fetch hook: ' + e.message); }
 
+  /* Hook XHR */
   try {
     var rawOpen = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function(method, url) {
       if (shouldProxy(url)) {
-        arguments[1] = toProxy(url);
+        var newU = toProxy(url);
+        bridgeLog('🌐 [PROXY-XHR] ' + url.slice(-70));
+        arguments[1] = newU;
       }
       return rawOpen.apply(this, arguments);
     };
-  } catch(e) {}
+    bridgeLog('🚀 [PROXY] Hook XHR OK');
+  } catch(e) { bridgeLog('❌ proxy xhr hook: ' + e.message); }
 })();
 
+
+/* ═══════════════════════════════════════════════════════════════
+   JW PLAYER CONTROL — chỉ bật khi web mode
+   ═══════════════════════════════════════════════════════════════ */
 var __jwPlayer = null;
 var __jwBound = false;
 
@@ -652,6 +898,7 @@ function bindJwCtrl() {
   if (!p || !p.on) return false;
   __jwPlayer = p;
   __jwBound = true;
+  bridgeLog('✅ Bound JW Player (web mode)', true);
 
   function post(type, d) { try { window.parent.postMessage(Object.assign({type:type}, d||{}), '*'); } catch(e){} }
 
@@ -675,9 +922,21 @@ function jwCmd(c, val) {
     else if (c === 'vol+') { p.setVolume(Math.min(100, (p.getVolume()||0) + 10)); }
     else if (c === 'vol-') { p.setVolume(Math.max(0, (p.getVolume()||0) - 10)); }
     else if (c === 'blur') { try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); window.blur(); } catch(e){} }
-  } catch(e) {}
+    else if (c === 'scale') { /* no-op cho JW */ }
+  } catch(e) { bridgeLog('jwCmd err: ' + e.message); }
 }
-\`;
+
+/* Nếu vì lý do nào đó parent không gửi setMode nhưng đã web (window.parent có VaxSub)
+   thì vẫn bind JW sau timeout dự phòng */
+setTimeout(function() {
+  if (__vaxMode === 'web' && !__jwBound) {
+    var tries = 0;
+    var iv = setInterval(function() {
+      if (bindJwCtrl() || ++tries > 50) clearInterval(iv);
+    }, 200);
+  }
+}, 1500);
+  `
 }
 
 function sortEpisodesByName(data) {
@@ -713,11 +972,26 @@ function parseCategoriesResponse(apiResponseJson) {
     }
 }
 
-function parseCountriesResponse(html) { return "[]"; }
-function parseYearsResponse(html) { return "[]"; }
+function parseCountriesResponse(html) {
+    try {
+        return "[]";
+    } catch (e) {
+        log("parseCountriesResponse[err]:\n " + e);
+        return "[]";
+    }
+}
+
+function parseYearsResponse(html) {
+    try {
+        return "[]";
+    } catch (e) {
+        log("parseYearsResponse[err]:\n " + e);
+        return "[]";
+    }
+}
 
 function getLISTmenu() {
-    return '[{"link":"/type/hoat-hinh/","name":"Hoạt Hình"},{"link":"/type/vien-tuong/","name":"Viễn Tưởng"},{"link":"/type/hinh-su/","name":"Hình Sự"},{"link":"/type/bi-an/","name":"Bí Ẩn"},{"link":"/type/hanh-dong/","name":"Hành Động"}]';
+    return `[{\"link\":\"/type/hoat-hinh/\",\"name\":\"Hoạt Hình\"},{\"link\":\"/type/vien-tuong/\",\"name\":\"Viễn Tưởng\"},{\"link\":\"/type/hinh-su/\",\"name\":\"Hình Sự\"},{\"link\":\"/type/bi-an/\",\"name\":\"Bí Ẩn\"},{\"link\":\"/type/hanh-dong/\",\"name\":\"Hành Động\"}]`;
 }
 
 function buildMenu(menuStr, type) { 
@@ -744,7 +1018,11 @@ function buildMenu(menuStr, type) {
     return menulist; 
 }
 
+
 function _$(param) {
+    // -------------------------------------------------------------
+    // 1. HELPER PARSER & UTILS
+    // -------------------------------------------------------------
     function parseHTML(htmlString) {
         let nodes = [];
         let root = { id: 0, tag: "ROOT", attrs: {}, childrenIds: [], parentId: null };
@@ -830,12 +1108,18 @@ function _$(param) {
         return text.trim();
     }
 
+    // -------------------------------------------------------------
+    // 2. QUERY ENGINE & SELECTOR MATCHING
+    // -------------------------------------------------------------
     function matchSingleSelector(node, sel, nodes) {
         if (!node || node.tag === "#text" || node.tag === "ROOT") return false;
 
         let cleanSel = sel;
+        
+        // 1. Tách pseudo positional (:first, :last, :eq)
         cleanSel = cleanSel.replace(/:first|:last|:eq\([0-9]+\)/gi, "").trim();
 
+        // 2. Tách pseudo :content(...)
         let pseudoContentArg = null;
         let contentMatch = cleanSel.match(/:content\((['"]?)(.*?)\1\)/i);
         if (contentMatch) {
@@ -843,6 +1127,7 @@ function _$(param) {
             cleanSel = cleanSel.replace(contentMatch[0], "").trim();
         }
 
+        // 3. Khớp Selector gốc
         if (cleanSel && cleanSel !== "*") {
             let tagMatch = cleanSel.match(/^[a-zA-Z0-9_-]+/);
             if (tagMatch && node.tag !== tagMatch[0].toLowerCase()) return false;
@@ -850,6 +1135,7 @@ function _$(param) {
             let idMatch = cleanSel.match(/#([a-zA-Z0-9_-]+)/);
             if (idMatch && (!node.attrs || node.attrs.id !== idMatch[1])) return false;
 
+            // Class matching (hỗ trợ Tailwind)
             let classMatches = cleanSel.match(/\.([a-zA-Z0-9_\-\/\\:]+)/g);
             if (classMatches) {
                 if (!node.attrs || !node.attrs.class) return false;
@@ -952,6 +1238,9 @@ function _$(param) {
         }
     }
 
+    // -------------------------------------------------------------
+    // 3. MINIJQ CLASS CONSTRUCTOR & PROTOTYPE
+    // -------------------------------------------------------------
     function MiniJQ(elements, nodesStore) {
         this.elements = Array.isArray(elements) ? elements : (elements ? [elements] : []);
         this.nodes = nodesStore || [];
@@ -1113,6 +1402,9 @@ function _$(param) {
         }
     };
 
+    // -------------------------------------------------------------
+    // 4. MAIN ENTRY POINT LOGIC FOR _$
+    // -------------------------------------------------------------
     try {
         if (!param) return new MiniJQ([], []);
         if (param instanceof MiniJQ) return param;
