@@ -44,13 +44,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
     {
-      "id": "novahd",
-      "name": "[MOVIE] Nova HD",
-      "version": "2.3.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Super4K_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
-    },
-    {
       "id": "onflix",
       "name": "Onflix",
       "version": "1.2.3",
@@ -65,22 +58,29 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vicdn.png"
     },
     {
-      "id": "phimlongtieng",
-      "name": "[MOVIE] Phim Lồng Tiếng",
+      "id": "Backup4",
+      "name": "[MOVIE] Backup4",
+      "version": "2.3.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Super4K_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/supermv.png"
+    },
+    {
+      "id": "Backup3",
+      "name": "[MOVIE] Backup3",
       "version": "1.1.6",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/1phim23_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimlongtieng.png"
     },
     {
-      "id": "bilutv",
-      "name": "[MOVIE] Bilutv",
+      "id": "Backup2",
+      "name": "[MOVIE] Backup2",
       "version": "1.5.6",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Bilutv_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/bilutv.png"
     },
     {
-      "id": "phimfun",
-      "name": "Nguồn Phim Fun",
+      "id": "Backup1",
+      "name": "[MOVIE] Backup1",
       "version": "1.1.8",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimfunHT_plugin.js",
       "iconUrl": "https://phimfun.net/Content/PhimFun/Imgs/phimfun.png"
