@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "3.8",
+            "version": "3.9",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -263,7 +263,7 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// CỐ ĐỊNH XOAY NGANG VÀ THU NHỎ BẰNG DOM TRANSFORM
+// CỐ ĐỊNH XOAY NGANG BẰNG CÁCH GHI TỌA ĐỘ TRUNG TÂM (FIX LỖI LỆCH KHUNG)
 function webviewPerfectUIHelperJS() {
     return `(function() {
         'use strict';
@@ -274,21 +274,13 @@ function webviewPerfectUIHelperJS() {
         meta.charset = 'UTF-8';
         (document.head || document.documentElement).appendChild(meta);
 
-        // CSS: Dùng rotate(90deg) để xoay ngang DOM và đảo ngược width/height (100vh / 100vw)
+        // CSS: Căn giữa tuyệt đối bằng top/left 50% và translate(-50%, -50%) rồi mới xoay và scale
         var style = document.createElement('style');
-        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; display: flex !important; justify-content: center !important; align-items: center !important; } ' +
-                            '.jwplayer, #player, .player-wrapper { position: absolute !important; width: 100vh !important; height: 100vw !important; transform: rotate(90deg) scale(0.9) !important; transform-origin: center center !important; } ' +
-                            'video { width: 100% !important; height: 100% !important; object-fit: contain !important; transform: none !important; } ' +
-                            '.jw-captions, .jw-text-track-display { bottom: 12% !important; z-index: 9999 !important; }';
+        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; position: fixed !important; top: 0 !important; left: 0 !important; } ' +
+                            '.jwplayer, #player, .player-wrapper, iframe { position: fixed !important; top: 50% !important; left: 50% !important; width: 100vh !important; height: 100vw !important; transform: translate(-50%, -50%) rotate(90deg) scale(0.9) !important; transform-origin: center center !important; z-index: 9999 !important; box-sizing: border-box !important; } ' +
+                            'video { width: 100% !important; height: 100% !important; object-fit: contain !important; transform: none !important; margin: 0 !important; padding: 0 !important; } ' +
+                            '.jw-captions, .jw-text-track-display { bottom: 12% !important; z-index: 10000 !important; }';
         (document.head || document.documentElement).appendChild(style);
-
-        // Giữ API App (nếu được hỗ trợ)
-        function forceLandscapeOrientation() {
-            try { if (window.SnifferBridge && typeof window.SnifferBridge.setOrientation === 'function') window.SnifferBridge.setOrientation('landscape'); } catch (e) {}
-            try { if (screen && screen.orientation && typeof screen.orientation.lock === 'function') screen.orientation.lock('landscape').catch(function() {}); } catch (e) {}
-        }
-        
-        forceLandscapeOrientation();
 
         var checkCount = 0;
         var timer = setInterval(function() {
@@ -301,7 +293,6 @@ function webviewPerfectUIHelperJS() {
                         clearInterval(timer);
                         var autoSetupPlayer = function() {
                             try {
-                                forceLandscapeOrientation();
                                 var v = document.querySelector('video');
                                 if (v) { v.setAttribute('playsinline', 'true'); v.setAttribute('webkit-playsinline', 'true'); }
                                 
