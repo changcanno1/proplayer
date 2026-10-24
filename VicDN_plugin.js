@@ -7,7 +7,7 @@ function getManifest() {
     id: "vicdn",
     name: "Nguồn Vicdn",
     description: "Nguồn phim Vicdn.",
-    "version": "2.4",
+    "version": "2.3",
     info: "Nguồn phim vietsub và thuyết minh mới.\n\n Hỗ trợ lồng tiếng và có tốc độ phát rất nhanh.",
     baseUrl: "https://vicdn.cc",
     iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/icon/vicdn.png",
@@ -18,6 +18,7 @@ function getManifest() {
      playerType: "embedtoexoplay",
   });
 }
+//     popup_html: popup_html,
 
 function log(msg) {
   	console.log(msg);
@@ -56,67 +57,6 @@ function getFilterConfig() {
 // =============================================================================
 // HELPER: CURSOR BASE64 ENCODE / DECODE
 // =============================================================================
-
-BASE64 = {
-  encode: function (str) {
-    try {
-      if (!str) return "";
-      var utf8Bytes = [];
-      for (var i = 0; i < str.length; i++) {
-        var code = str.charCodeAt(i);
-        if (code < 128) {
-          utf8Bytes.push(code);
-        } else if (code < 2048) {
-          utf8Bytes.push((code >> 6) | 192, (code & 63) | 128);
-        } else if (
-          (code & 0xfc00) === 0xd800 &&
-          i + 1 < str.length &&
-          (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00
-        ) {
-          code =
-            0x10000 + ((code & 0x03ff) << 10) + (str.charCodeAt(++i) & 0x03ff);
-          utf8Bytes.push(
-            (code >> 18) | 240,
-            ((code >> 12) & 63) | 128,
-            ((code >> 6) & 63) | 128,
-            (code & 63) | 128
-          );
-        } else {
-          utf8Bytes.push(
-            (code >> 12) | 224,
-            ((code >> 6) & 63) | 128,
-            (code & 63) | 128
-          );
-        }
-      }
-      var chars =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-      var encoded = "";
-      var byte1, byte2, byte3;
-      var b1, b2, b3, b4;
-      for (var j = 0; j < utf8Bytes.length; j += 3) {
-        byte1 = utf8Bytes[j];
-        byte2 = j + 1 < utf8Bytes.length ? utf8Bytes[j + 1] : NaN;
-        byte3 = j + 2 < utf8Bytes.length ? utf8Bytes[j + 2] : NaN;
-        b1 = byte1 >> 2;
-        b2 = ((byte1 & 3) << 4) | (isNaN(byte2) ? 0 : byte2 >> 4);
-        b3 = isNaN(byte2)
-          ? 64
-          : ((byte2 & 15) << 2) | (isNaN(byte3) ? 0 : byte3 >> 6);
-        b4 = isNaN(byte3) ? 64 : byte3 & 63;
-        encoded +=
-          chars.charAt(b1) +
-          chars.charAt(b2) +
-          chars.charAt(b3) +
-          chars.charAt(b4);
-      }
-      return encoded;
-    } catch (e) {
-      return "";
-    }
-  }
-};
-
 function getUrlList(slug, filtersJson) {
     try {
         log("getUrlList[url]: \n" + slug);
@@ -232,6 +172,11 @@ function getUrlSearch(keyword, filtersJson) {
         return finalFallback;
     }
 }
+// /type/hoat-hinh/
+//filtersJson = "{page:5}"
+//getUrlList("/type/hoat-hinh/", filtersJson)
+//getUrlSearch("girl", filtersJson)
+
 
 function getUrlDetail(slug) {
     try {
@@ -256,6 +201,7 @@ function getUrlCategories() {
         return "";
     }
 }
+
 
 function getUrlCountries() { 
     try {
@@ -313,7 +259,10 @@ function parseListResponse(html, $url) {
 }
 
 function parseJSDataIsolated(str) {
+    // Loại bỏ phần khai báo biến nếu có, chỉ giữ lại phần mảng/object
     const code = str.replace(/^(const|let|var)\s+\w+\s*=\s*/, '');
+
+    // Trả về dữ liệu bằng cách bọc trong return
     return new Function(`"use strict"; return (${code});`)();
 }
 
@@ -323,10 +272,10 @@ function domfetch($data, $url) {
     for (var $j = 0; $j < $data.length; $j++) {
         var item = $data[$j];
         items.push({
-            "id": BASEAPI + "/info/" + item.slug, 
+            "id": BASEAPI + "/info/" + item.slug, // https://vicdn.cc/api/info/tv-278275-1
             "title": item.vname,
-            "posterUrl": "https://image.tmdb.org/t/p/w130_and_h195_face/" + item.poster + ".jpg", 
-            "backdropUrl": "https://image.tmdb.org/t/p/w533_and_h300_face/" + item.banner + ".jpg", 
+            "posterUrl": "https://image.tmdb.org/t/p/w130_and_h195_face/" + item.poster + ".jpg", // https://image.tmdb.org/t/p/w130_and_h195_face/qWx7w7Af5qvqmTmjwjxIWMIBHPB.jpg
+            "backdropUrl": "https://image.tmdb.org/t/p/w533_and_h300_face/" + item.banner + ".jpg", // https://image.tmdb.org/t/p/w533_and_h300_face/t5uqDBIYtxKtWeJjXAZd4l919hF.jpg
             "quality": item.type.toUpperCase(),
             "episode_current": "Tập " + item.stt + "/" + item.total
         });
@@ -341,7 +290,12 @@ function domfetch($data, $url) {
     });
 
 }
+//html = sourceHTML;
+// https://vicdn.cc/api/type/hoat-hinh/1
+// https://vicdn.cc/?q=ta
+//JSON.parse(parseListResponse(sourceHTML, "https://vicdn.cc/api/type/hoat-hinh/1"))
 
+//$data = parseJSDataIsolated(script);
 function parseSearchResponse(html, url) {
     try {
         log("parseSearchResponse[url]: \n" + url);
@@ -455,7 +409,11 @@ function parseMovieDetail(html, url) {
         });
     }
 }
+//var html = sourceHTML;
+//var url = "https://hentaivietsub.com/hentai/enjo-kouhai-tap-11?//current=1&maxEpi=11"
+//JSON.parse(parseMovieDetail(sourceHTML, "https://vicdn.cc/api/info/tv-278275-1"))
 
+//$data = JSON.parse(sourceHTML)
 function checkRaw(scriptStr, returnFixed) {
   try {
     if (!scriptStr || typeof scriptStr !== 'string') {
@@ -472,16 +430,20 @@ function checkRaw(scriptStr, returnFixed) {
       var lineNum = i + 1;
       var lineErrorFound = false;
 
+      // 1. Kiểm tra lỗi escape newline/tab nguy hiểm nằm trần trong chuỗi quote
+      // Trường hợp chưa được escape dạng '\\n' hoặc '\\t' trong chuỗi ghép
       if (/([^\\]|^)(\r\n|\r|\n)/.test(currentLine)) {
         console.log("[Lỗi escape runJS]\r\n\t Phát hiện xuống dòng chưa escape ở Dòng " + lineNum + ": " + currentLine.trim());
         lineErrorFound = true;
       }
 
+      // 2. Kiểm tra lỗi quên escape ký tự Tab trần không hợp lệ
       if (/\t/.test(currentLine) && !/\\t/.test(currentLine)) {
         console.log("[Lỗi escape runJS]\r\n\t Phát hiện ký tự Tab trần ở Dòng " + lineNum + ": " + currentLine.trim());
         lineErrorFound = true;
       }
 
+      // 3. Kiểm tra dấu xược ngược single trailing backlash ở cuối dòng (dễ làm gãy chuỗi)
       if (/([^\\])\\$/.test(currentLine)) {
         console.log("[Lỗi escape runJS]\r\n\t Dấu Backslash (\\) cô đơn ở cuối Dòng " + lineNum + ": " + currentLine.trim());
         lineErrorFound = true;
@@ -491,16 +453,19 @@ function checkRaw(scriptStr, returnFixed) {
         hasError = true;
       }
 
+      // Tiến hành SỬA LỖI tự động nếu tham số returnFixed = true
       var fixedLine = currentLine;
       if (returnFixed) {
+        // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
         fixedLine = fixedLine
           .replace(/\r/g, "")
-          .replace(/\t/g, "  ");
+          .replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
       }
 
       fixedLines.push(fixedLine);
     }
 
+    // 4. Kiểm tra cú pháp nhanh xem toàn bộ chuỗi có parse được JS không
     try {
       new Function(scriptStr);
     } catch (syntaxErr) {
@@ -512,11 +477,12 @@ function checkRaw(scriptStr, returnFixed) {
       console.log("[checkRaw] 🟢 Chuỗi Raw JS hoàn toàn sạch lỗi!");
     }
 
+    // Trả về bản đã fix hoặc bản gốc theo tham số returnFixed
     return returnFixed ? fixedLines.join('\n') : scriptStr;
 
   } catch (e) {
     console.log("[Lỗi escape runJS]\r\n\t Lỗi ngoại lệ trong hàm checkRaw: " + e.message);
-    return scriptStr; 
+    return scriptStr; // Luôn an toàn: Fallback trả về chuỗi gốc chứ không làm sập script
   }
 }
 
@@ -537,38 +503,16 @@ function parseDetailResponse(html, url) {
         }
     }
     var customJS = checkRaw(rawJS(stream),true);
-    
-    var idvd = url.match(/^https:\/\/vicdn\.cc\/api\/info\/([^\?]+)/i);
-    var epi = url.match(/current=(\d+)&tm=(\w+)/i);
-    var subUrlVi = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-vi.vtt";
-    var subUrlEn = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-en.vtt";
-
-    // ⚡ CHUYỂN ĐỔI SUB TITLE SANG DATA URI BASE64 ĐỂ FIX LỖI IOS ⚡
-    var finalSubVi = subUrlVi;
-    var finalSubEn = subUrlEn;
-
-    try {
-        var resVi = httpRequest(subUrlVi, {
-            method: "GET",
-            headers: { "Referer": BASEURL }
-        });
-        if (resVi && resVi.isSuccessful && resVi.body) {
-            finalSubVi = "data:text/vtt;base64," + BASE64.encode(resVi.body);
-        }
-    } catch(e) {}
-
-    try {
-        var resEn = httpRequest(subUrlEn, {
-            method: "GET",
-            headers: { "Referer": BASEURL }
-        });
-        if (resEn && resEn.isSuccessful && resEn.body) {
-            finalSubEn = "data:text/vtt;base64," + BASE64.encode(resEn.body);
-        }
-    } catch(e) {}
-
-    log("Embed: " + stream);
-    
+    // 
+// https://vicdn.cc/tv-297826-1-9?episodes=https://vicdn.cc/api/info/tv-297826-1?current=9
+//https://vicdn.cc/tv-297826-1-1
+//https://vicdn.cc/vtt/tv-297826-1-1-vi.vtt
+var idvd = url.match(/^https:\/\/vicdn\.cc\/api\/info\/([^\?]+)/i)
+var epi = url.match(/current=(\d+)&tm=(\w+)/i);
+sub = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-vi.vtt"
+subeng = "https://vicdn.cc/vtt/" + idvd[1] + "-" + epi[1] + "-en.vtt"
+console.log("TM: "+epi[2]+" sub\n" + sub)    
+    log("Embed: " + stream)
     return JSON.stringify({
       url: stream,
       isEmbed: false,
@@ -577,14 +521,14 @@ function parseDetailResponse(html, url) {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Referer: BASEURL,
         "Block-Ads": false,
-        "Custom-Js": rawJS(BASEURL, epi[2])
+        "Custom-Js": rawJS(BASEURL,epi[2])
       },
       subtitles: [{
-        url: finalSubVi,
+        url: sub,
         lang: "Vietsub",
         mimeType: "text/vtt"
       },{
-        url: finalSubEn,
+        url: subeng,
         lang: "English",
         mimeType: "text/vtt"
       }],
@@ -939,6 +883,16 @@ setTimeout(function() {
   `
 }
 
+
+
+
+
+
+
+
+
+
+
 function sortEpisodesByName(data) {
     try {
         if (data && Array.isArray(data)) {
@@ -989,6 +943,8 @@ function parseYearsResponse(html) {
         return "[]";
     }
 }
+
+
 
 function getLISTmenu() {
     return `[{\"link\":\"/type/hoat-hinh/\",\"name\":\"Hoạt Hình\"},{\"link\":\"/type/vien-tuong/\",\"name\":\"Viễn Tưởng\"},{\"link\":\"/type/hinh-su/\",\"name\":\"Hình Sự\"},{\"link\":\"/type/bi-an/\",\"name\":\"Bí Ẩn\"},{\"link\":\"/type/hanh-dong/\",\"name\":\"Hành Động\"}]`;
