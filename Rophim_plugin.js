@@ -501,7 +501,7 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// KHÔNG DÙNG CSS TRANSFORM ROTATE ĐỂ CHỐNG LỖI NGƯỢC/MÉO HÌNH - CHỈ NÂNG SUB LÊN VÙNG AN TOÀN
+// CỐ ĐỊNH XOAY NGANG (LANDSCAPE) VÀ THU NHỎ WEBVIEW 10% ĐỂ CHỐNG LẸM UI
 function webviewPerfectUIHelperJS() {
     return `(function() {
         'use strict';
@@ -512,16 +512,15 @@ function webviewPerfectUIHelperJS() {
         meta.charset = 'UTF-8';
         (document.head || document.documentElement).appendChild(meta);
 
-        // CSS chuẩn, KHÔNG dùng transform xoay DOM để tránh lỗi lật ngược, méo hình trong khung dọc
-        // Chỉ cần nâng phụ đề lên 12% để bảo vệ chữ khỏi phần tai thỏ / home indicator của iOS
+        // CSS: Flexbox để căn giữa tuyệt đối, scale(0.9) để thu nhỏ toàn bộ player đi 10%
         var style = document.createElement('style');
-        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; height: 100% !important; background: #000 !important; overflow: hidden !important; } ' +
-                            '.jwplayer, #player { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; } ' +
+        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; display: flex !important; justify-content: center !important; align-items: center !important; } ' +
+                            '.jwplayer, #player, .player-wrapper { position: absolute !important; width: 100% !important; height: 100% !important; transform: scale(0.9) !important; transform-origin: center center !important; } ' +
                             'video { width: 100% !important; height: 100% !important; object-fit: contain !important; transform: none !important; } ' +
                             '.jw-captions, .jw-text-track-display { bottom: 12% !important; z-index: 9999 !important; }';
         (document.head || document.documentElement).appendChild(style);
 
-        // Dùng API của App để giao tiếp việc tự động xoay màn hình (xoay phần cứng thay vì xoay DOM)
+        // Dùng API của App để ép hệ điều hành xoay phần cứng sang ngang (giống embedexoplay)
         function forceLandscapeOrientation() {
             try {
                 if (window.SnifferBridge && typeof window.SnifferBridge.setOrientation === 'function') {
