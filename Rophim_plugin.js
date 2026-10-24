@@ -11,7 +11,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "rophim",
             "name": "RP Mới [MOVIE]",
-            "version": "3.9",
+            "version": "3.10",
             "author": "Alokillgtv",
             "baseUrl": BASEURL,
             "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/rophim.png",
@@ -263,7 +263,7 @@ function parseDetailResponse(html, url, datasend) {
     }
 }
 
-// CỐ ĐỊNH XOAY NGANG BẰNG CÁCH GHI TỌA ĐỘ TRUNG TÂM (FIX LỖI LỆCH KHUNG)
+// XỬ LÍ DỨT ĐIỂM: BỎ XOAY DOM ẢO, DÙNG FULLSCREEN CHUẨN CỦA IOS + SCALE 90%
 function webviewPerfectUIHelperJS() {
     return `(function() {
         'use strict';
@@ -274,10 +274,10 @@ function webviewPerfectUIHelperJS() {
         meta.charset = 'UTF-8';
         (document.head || document.documentElement).appendChild(meta);
 
-        // CSS: Căn giữa tuyệt đối bằng top/left 50% và translate(-50%, -50%) rồi mới xoay và scale
+        // Giữ Scale 90% để tránh tai thỏ, nhưng KHÔNG dùng rotate để tránh lỗi mất nút và liệt cảm ứng
         var style = document.createElement('style');
-        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; position: fixed !important; top: 0 !important; left: 0 !important; } ' +
-                            '.jwplayer, #player, .player-wrapper, iframe { position: fixed !important; top: 50% !important; left: 50% !important; width: 100vh !important; height: 100vw !important; transform: translate(-50%, -50%) rotate(90deg) scale(0.9) !important; transform-origin: center center !important; z-index: 9999 !important; box-sizing: border-box !important; } ' +
+        style.textContent = 'html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; overflow: hidden !important; display: flex !important; justify-content: center !important; align-items: center !important; } ' +
+                            '.jwplayer, #player, .player-wrapper, iframe { width: 100% !important; height: 100% !important; transform: scale(0.9) !important; transform-origin: center center !important; } ' +
                             'video { width: 100% !important; height: 100% !important; object-fit: contain !important; transform: none !important; margin: 0 !important; padding: 0 !important; } ' +
                             '.jw-captions, .jw-text-track-display { bottom: 12% !important; z-index: 10000 !important; }';
         (document.head || document.documentElement).appendChild(style);
@@ -294,7 +294,21 @@ function webviewPerfectUIHelperJS() {
                         var autoSetupPlayer = function() {
                             try {
                                 var v = document.querySelector('video');
-                                if (v) { v.setAttribute('playsinline', 'true'); v.setAttribute('webkit-playsinline', 'true'); }
+                                if (v) { 
+                                    // Cho phép video tự động gọi trình phát Fullscreen chuẩn của thiết bị
+                                    v.setAttribute('playsinline', 'false'); 
+                                    v.setAttribute('webkit-playsinline', 'false'); 
+                                    
+                                    // Tự động mở toàn màn hình (sẽ giải quyết mọi lỗi hướng và UI)
+                                    if (typeof v.webkitEnterFullscreen === 'function') {
+                                        setTimeout(function() { v.webkitEnterFullscreen(); }, 500);
+                                    }
+                                }
+                                
+                                // Ép player tự động bung fullscreen thông qua API nội bộ nếu có
+                                if (typeof player.setFullscreen === 'function') {
+                                    setTimeout(function() { player.setFullscreen(true); }, 500);
+                                }
                                 
                                 var tracks = player.getCaptionsList ? player.getCaptionsList() : [];
                                 if (tracks && tracks.length > 1) {
@@ -308,9 +322,9 @@ function webviewPerfectUIHelperJS() {
                                 }
                             } catch (err) {}
                         };
+                        
                         player.on('ready', autoSetupPlayer);
                         player.on('firstFrame', autoSetupPlayer);
-                        player.on('captionsList', autoSetupPlayer);
                         player.on('play', autoSetupPlayer);
                     }
                 } catch (e) {}
