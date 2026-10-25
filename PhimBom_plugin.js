@@ -8,7 +8,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "phimbom",
       "name": "Phim Bom [MOVIE]",
-      "version": "2.2",
+      "version": "2.3",
       "author": "Alokillgtv",
       "info": "",
       "baseUrl": BASEURL,
