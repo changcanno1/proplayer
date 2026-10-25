@@ -1,14 +1,15 @@
 BASEURL = "https://onflix.lat";
 BASEAPI = "https://k8s.onflixcdn.com/api";
+var popup_html = "";
 function getManifest() {
 	return JSON.stringify({
 		"id": "onflix",
 		"name": "Onflix",
 		"description": "Trang xem phim siêu hay.",
-		"version": "1.9.8",
+		"version": "2.1",
 		"baseUrl": "https://onflix.lat",
     "info": "",
-		"iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png",
+		"iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/onflix.png",
 		"isEnabled": true,
 		"type": "MOVIE",
     "author": "Alokillgtv",
