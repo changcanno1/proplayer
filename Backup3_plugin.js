@@ -6,7 +6,7 @@ var popup_html = "";
 function getManifest() {
   return JSON.stringify({
     id: "novahd",
-    name: "Nguồn NovaHD",
+    name: "Nova-Pick VSub 2",
     description: "Nguồn phim NovaHD",
     "version": "2.6",
     "author": "Alokillgtv",
