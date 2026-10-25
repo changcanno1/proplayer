@@ -18,7 +18,6 @@ function getManifest() {
       "adblock": false,
       "type": "MOVIE",
       "subtitleCat": false,
-      popup_html: popup_html,
       "playerType": "embedtoexoplay"
     });
   }
