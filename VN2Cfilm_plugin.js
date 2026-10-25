@@ -1,23 +1,24 @@
 var BASEURL = "https://www.vn2c.my";
 var BASEAPI = "https://www.vn2c.my";
 var BASELINK = BASEURL;
-
+var popup_html = "";
 // https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
 function getManifest() {
   try{
     return JSON.stringify({
       "id": "vn2c",
-      "name": "Nguồn VN2C",
-      "version": "1.3",
+      "name": "VN2C [MOVIE]",
+      "version": "2.1",
       "author": "Alokillgtv",
       "info": "",
       "baseUrl": BASEURL,
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vn2c.png",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/vn2c.png",
       "isEnabled": true,
       "isAdult": false,
       "adblock": false,
       "type": "MOVIE",
       "subtitleCat": false,
+      popup_html: popup_html,
       "playerType": "embedtoexoplay"
     });
   }
@@ -26,7 +27,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "loiapp",
       "name": "Plugin bị lỗi cài đặt",
-      "version": "1.0",
+      "version": "2.0",
       "info": "Plugin đang bị lỗi: \n" + e,
       "baseUrl": "http://vkey.vn/",
       "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
@@ -43,34 +44,10 @@ function getManifest() {
   function getHomeSections() {
       localStorage.clear();
       return JSON.stringify([
-          {"slug": "/the-loai/hanh-dong-1","title": "Hành Động","type": "Horizontal"},
-          {"slug": "/the-loai/tinh-cam-19","title": "Tình Cảm","type": "Horizontal"},
-          {"slug": "/the-loai/co-trang-tong-hop-26","title": "Cổ Trang Tổng Hợp","type": "Horizontal"},
-          {"slug": "/the-loai/ngon-tinh-xuyen-khong-4","title": "Ngôn Tình Xuyên Không","type": "Horizontal"},
-          {"slug": "/the-loai/tinh-cam-hai-huoc-20","title": "Tình Cảm Hài Hước","type": "Horizontal"},
-          {"slug": "/the-loai/tinh-cam-hanh-dong-5","title": "Tình Cảm Hành Động","type": "Horizontal"},
-          {"slug": "/the-loai/co-bac-xa-hoi-den-16","title": "Cờ Bạc Xã Hội Đen","type": "Horizontal"},
-          {"slug": "/the-loai/hanh-dong-hinh-su-22","title": "Hành Động Hình Sự","type": "Horizontal"},
-          {"slug": "/the-loai/hanh-dong-hai-huoc-24","title": "Hành Động Hài Hước","type": "Horizontal"},
-          {"slug": "/the-loai/vo-thuat-17","title": "Võ Thuật","type": "Horizontal"},
-          {"slug": "/the-loai/vo-thuat-kiem-hiep-6","title": "Võ Thuật Kiếm Hiệp","type": "Horizontal"},
-          {"slug": "/the-loai/bi-an-kinh-di-27","title": "Bí Ẩn - Kinh Dị","type": "Horizontal"},
-          {"slug": "/the-loai/phim-le-hay-31","title": "Phim Lẻ Hay","type": "Horizontal"},
+          {"slug": "/phim-hay-vn2-duoc-xem-nhieu/top","title": "Xem Nhiều","type": "Horizontal"},
           {"slug": "/the-loai/phim-le-33","title": "Phim Lẻ","type": "Horizontal"},
-          {"slug": "/the-loai/hoat-hinh-anime-29","title": "Hoạt Hình - Anime","type": "Horizontal"},
-          {"slug": "/danh-muc/trung-quoc-7","title": "Trung Quốc","type": "Horizontal"},
-          {"slug": "/danh-muc/han-quoc-10","title": "Hàn Quốc","type": "Horizontal"},
-          {"slug": "/danh-muc/thai-lan-8","title": "Thái Lan","type": "Horizontal"},
-          {"slug": "/danh-muc/hong-kong-9","title": "Hồng Kông","type": "Horizontal"},
-          {"slug": "/danh-muc/my-2","title": "Mỹ","type": "Horizontal"},
-          {"slug": "/danh-muc/viet-nam-1","title": "Việt Nam","type": "Horizontal"},
-          {"slug": "/danh-muc/nhat-ban-11","title": "Nhật Bản","type": "Horizontal"},
-          {"slug": "/danh-muc/nhieu-quoc-gia-17","title": "Nhiều Quốc Gia","type": "Horizontal"},
-          {"slug": "/danh-muc/chieu-rap-23","title": "Chiếu Rạp","type": "Horizontal"},
-          {"slug": "/danh-muc/le-de-cu-20","title": "Lẻ Đề Cử","type": "Horizontal"},
-          {"slug": "/danh-muc/le-tong-hop-16","title": "Lẻ Tổng Hợp","type": "Horizontal"},
-          {"slug": "/danh-muc/ca-nhac-hai-cuoi-21","title": "Ca Nhạc - Hài Cười","type": "Horizontal"},
-          {"slug": "/danh-muc/thieu-nhi-kinh-phat-26","title": "Thiếu Nhi - Kinh Phật","type": "Horizontal"},
+          {"slug": "/the-loai2/hoat-hinh-anime-29","title": "Phim Hoạt Hình","type": "Horizontal"},
+          {"slug": "/the-loai3/top-drama-youtube-35","title": "Phim Ngắn","type": "Horizontal"},
           {"slug": "/danh-sach-phim/","title": "Phim Mới","type": "Grid"}
       ]);
   }
@@ -78,7 +55,7 @@ function getManifest() {
   // Hàm khởi tạo thẻ chủ đề
   function getLISTmenu() {
     try{
-      return `[{"link":"/the-loai/hanh-dong-1","name":"Hành Động"},{"link":"/the-loai/tinh-cam-19","name":"Tình Cảm"},{"link":"/the-loai/co-trang-tong-hop-26","name":"Cổ Trang Tổng Hợp"},{"link":"/the-loai/ngon-tinh-xuyen-khong-4","name":"Ngôn Tình Xuyên Không"},{"link":"/the-loai/tinh-cam-hai-huoc-20","name":"Tình Cảm Hài Hước"},{"link":"/the-loai/tinh-cam-hanh-dong-5","name":"Tình cảm Hành động"},{"link":"/the-loai/co-bac-xa-hoi-den-16","name":"Cờ Bạc Xã Hội Đen"},{"link":"/the-loai/hanh-dong-hinh-su-22","name":"Hành Động Hình Sự"},{"link":"/the-loai/hanh-dong-hai-huoc-24","name":"Hành động Hài Hước"},{"link":"/the-loai/vo-thuat-17","name":"Võ Thuật"},{"link":"/the-loai/vo-thuat-kiem-hiep-6","name":"Võ Thuật Kiếm Hiệp"},{"link":"/the-loai/bi-an-kinh-di-27","name":"Bí ẩn - Kinh dị"},{"link":"/the-loai/phim-le-hay-31","name":"Phim Lẻ Hay"},{"link":"/the-loai/phim-le-33","name":"Phim Lẻ"},{"link":"/the-loai/hoat-hinh-anime-29","name":"HOẠT HÌNH - ANIME"},{"link":"/danh-muc/trung-quoc-7","name":"Trung Quốc"},{"link":"/danh-muc/han-quoc-10","name":"Hàn Quốc"},{"link":"/danh-muc/thai-lan-8","name":"Thái Lan"},{"link":"/danh-muc/hong-kong-9","name":"Hồng Kông"},{"link":"/danh-muc/my-2","name":"Mỹ"},{"link":"/danh-muc/viet-nam-1","name":"Việt Nam"},{"link":"/danh-muc/nhat-ban-11","name":"Nhật Bản"},{"link":"/danh-muc/nhieu-quoc-gia-17","name":"Nhiều quốc gia"},{"link":"/danh-muc/chieu-rap-23","name":"Chiếu rạp"},{"link":"/danh-muc/le-de-cu-20","name":"Lẻ Đề Cử"},{"link":"/danh-muc/le-tong-hop-16","name":"LẺ Tổng Hợp"},{"link":"/danh-muc/ca-nhac-hai-cuoi-21","name":"Ca Nhạc - Hài Cười"},{"link":"/danh-muc/thieu-nhi-kinh-phat-26","name":"Thiếu nhi - Kinh Phật"}]`;
+      return `[{"link":"/the-loai/hanh-dong-1","name":"Hành Động"},{"link":"/the-loai/tinh-cam-19","name":"Tình Cảm"},{"link":"/the-loai/co-trang-tong-hop-26","name":"Cổ Trang Tổng Hợp"},{"link":"/the-loai/ngon-tinh-xuyen-khong-4","name":"Ngôn Tình Xuyên Không"},{"link":"/the-loai/tinh-cam-hai-huoc-20","name":"Tình Cảm Hài Hước"},{"link":"/the-loai/tinh-cam-hanh-dong-5","name":"Tình cảm Hành động"},{"link":"/the-loai/co-bac-xa-hoi-den-16","name":"Cờ Bạc Xã Hội Đen"},{"link":"/the-loai/hanh-dong-hinh-su-22","name":"Hành Động Hình Sự"},{"link":"/the-loai/hanh-dong-hai-huoc-24","name":"Hành động Hài Hước"},{"link":"/the-loai/vo-thuat-17","name":"Võ Thuật"},{"link":"/the-loai/vo-thuat-kiem-hiep-6","name":"Võ Thuật Kiếm Hiệp"},{"link":"/the-loai/bi-an-kinh-di-27","name":"Bí ẩn - Kinh dị"},{"link":"/the-loai/phim-le-hay-31","name":"Phim Lẻ Hay"},{"link":"/the-loai/phim-le-33","name":"Phim Lẻ"},{"link":"/the-loai/hoat-hinh-anime-29","name":"HOẠT HÌNH - ANIME"},{"link":"/the-loai/ca-nhac-32","name":"Ca Nhạc"},{"link":"/the-loai3/top-drama-youtube-35","name":"TOP Drama YOUTUBE"},{"link":"/danh-muc/trung-quoc-7","name":"Trung Quốc"},{"link":"/danh-muc/han-quoc-10","name":"Hàn Quốc"},{"link":"/danh-muc/thai-lan-8","name":"Thái Lan"},{"link":"/danh-muc/hong-kong-9","name":"Hồng Kông"},{"link":"/danh-muc/my-2","name":"Mỹ"},{"link":"/danh-muc/viet-nam-1","name":"Việt Nam"},{"link":"/danh-muc/nhat-ban-11","name":"Nhật Bản"},{"link":"/danh-muc/nhieu-quoc-gia-17","name":"Nhiều quốc gia"},{"link":"/danh-muc/chieu-rap-23","name":"Chiếu rạp"},{"link":"/danh-muc/le-de-cu-20","name":"Lẻ Đề Cử"},{"link":"/danh-muc/le-tong-hop-16","name":"LẺ Tổng Hợp"},{"link":"/danh-muc/ca-nhac-hai-cuoi-21","name":"Ca Nhạc - Hài Cười"},{"link":"/danh-muc/thieu-nhi-kinh-phat-26","name":"Thiếu nhi - Kinh Phật"},{"link":"/danh-muc2/phim-drama-tiktok-19","name":"Phim Drama TikTok"},{"link":"/danh-muc2/top-ca-nhac-28","name":"TOP CA NHẠC"}]`;
     } catch(e){
       log("getLISTmenu[err]:\n " + e);
       return `[
@@ -426,6 +403,11 @@ function parseMovieDetail(html, url) {
         });
     }
 }
+//var url = "https://novahd.cc/api/show/1413"
+//var url = "http://vkey.vn/novahd/api/show/1413"
+// https://novahd.cc/api/shows/1413
+//var html = sourceHTML;
+//JSON.parse(parseMovieDetail(sourceHTML, url))
 // ===== HÀM TẠO KHỐI CHI TIẾT PHIM END ======
 
 // ===== HÀM TẠO XỬ LÝ STREAM PHIM BEGIN ======
@@ -434,6 +416,7 @@ function parseMovieDetail(html, url) {
      console.log("parseDetailResponse dang xu ly: " + url);
     try {
       var stream = url;
+      // Mimetype application/x-mpegURL video/mp4
       console.log("parseDetailResponse fetch\n" + stream);
       var $return = JSON.stringify({
         url: stream,
@@ -466,10 +449,11 @@ function parseMovieDetail(html, url) {
   }
   
   function parseEmbedResponse(html, url) {
-    log("parseEmbedResponse [url]: " + url);
+    log("parseEmbedResponse [url]: " + url); //console.log("parseEmbedResponse [Raw]: " + html);
     try {
       var stream = "";
       var customJS = clearJS(rawJS);
+      // Mimetype application/x-mpegURL video/mp4
       console.log("parseEmbedResponse fetch\n" + stream);
   
       var $return = JSON.stringify({
@@ -503,7 +487,7 @@ function parseMovieDetail(html, url) {
 } // parseDetailResnse, parseEmbedResponse
 // ===== HÀM TẠO XỬ LÝ STREAM PHIM END ======
 
-// ==== HÀM TẠO CUSTOM SCRIPT BEGIN ====
+// ==== HÀM TẠO CUSTOMpo SCRIPT BEGIN ====
 function customJS(initialLink) {
   return `
   (function () {
@@ -526,6 +510,7 @@ function customJS(initialLink) {
         if (!url || typeof url !== 'string') return false;
         if (url.startsWith('blob:') || url.startsWith('data:')) return false;
 
+        // Chỉ nhận diện link media thực sự, BỎ QUA link embed/player như play.php
         const cleanUrl = url.split('?')[0].toLowerCase();
         return cleanUrl.endsWith('.m3u8') || cleanUrl.endsWith('.mp4') || cleanUrl.endsWith('.mpd') || url.includes('.m3u8?') || url.includes('.mp4?');
       }
@@ -533,6 +518,7 @@ function customJS(initialLink) {
       function sendToNativeBridge(playUrl) {
         if (hasSentToBridge) return;
 
+        // Nếu phát hiện ở IFRAME, chuyển tin nhắn ra TOP-WINDOW
         if (!IS_TOP) {
             console.log(CONTEXT_TAG + " 📤 Sending STREAM from IFRAME to TOP:", playUrl);
             try {
@@ -618,11 +604,13 @@ function customJS(initialLink) {
       function scanDOM() {
           if (hasSentToBridge) return;
 
+          // Quét thẻ video / source
           document.querySelectorAll('video, source, object, embed').forEach(el => {
               const src = el.src || el.getAttribute('src');
               if (src) processDetectedUrl(src, 'DOM-Video');
           });
 
+          // Thử đi xuyên vào DOM của Iframe (Nếu Same-Origin hoặc WebView mở cấp quyền)
           document.querySelectorAll('iframe').forEach(iframe => {
               try {
                   if (iframe.contentDocument) {
@@ -632,6 +620,7 @@ function customJS(initialLink) {
                       });
                   }
               } catch(e) {
+                  // Cross-Origin sẽ bị chặn ở đây nếu WebView không cho phép
               }
           });
       }
@@ -639,6 +628,7 @@ function customJS(initialLink) {
       const domObserver = new MutationObserver(() => scanDOM());
       domObserver.observe(document.documentElement, { childList: true, subtree: true });
 
+      // Quét định kỳ bổ sung
       setInterval(scanDOM, 1000);
 
   })();
@@ -785,6 +775,9 @@ function iframe64(url){
       return menulist; 
   }
   function _$(param) {
+      // -------------------------------------------------------------
+      // 1. HELPER PARSER & UTILS
+      // -------------------------------------------------------------
       function parseHTML(htmlString) {
           let nodes = [];
           let root = { id: 0, tag: "ROOT", attrs: {}, childrenIds: [], parentId: null };
@@ -870,13 +863,18 @@ function iframe64(url){
           return text.trim();
       }
   
+      // -------------------------------------------------------------
+      // 2. QUERY ENGINE & SELECTOR MATCHING
+      // -------------------------------------------------------------
       function matchSingleSelector(node, sel, nodes) {
           if (!node || node.tag === "#text" || node.tag === "ROOT") return false;
   
           let cleanSel = sel;
           
+          // 1. Tách pseudo positional (:first, :last, :eq)
           cleanSel = cleanSel.replace(/:first|:last|:eq\([0-9]+\)/gi, "").trim();
   
+          // 2. Tách pseudo :content(...)
           let pseudoContentArg = null;
           let contentMatch = cleanSel.match(/:content\((['"]?)(.*?)\1\)/i);
           if (contentMatch) {
@@ -884,6 +882,7 @@ function iframe64(url){
               cleanSel = cleanSel.replace(contentMatch[0], "").trim();
           }
   
+          // 3. Khớp Selector gốc
           if (cleanSel && cleanSel !== "*") {
               let tagMatch = cleanSel.match(/^[a-zA-Z0-9_-]+/);
               if (tagMatch && node.tag !== tagMatch[0].toLowerCase()) return false;
@@ -891,6 +890,7 @@ function iframe64(url){
               let idMatch = cleanSel.match(/#([a-zA-Z0-9_-]+)/);
               if (idMatch && (!node.attrs || node.attrs.id !== idMatch[1])) return false;
   
+              // Class matching (hỗ trợ Tailwind)
               let classMatches = cleanSel.match(/\.([a-zA-Z0-9_\-\/\\:]+)/g);
               if (classMatches) {
                   if (!node.attrs || !node.attrs.class) return false;
@@ -993,6 +993,9 @@ function iframe64(url){
           }
       }
   
+      // -------------------------------------------------------------
+      // 3. MINIJQ CLASS CONSTRUCTOR & PROTOTYPE
+      // -------------------------------------------------------------
       function MiniJQ(elements, nodesStore) {
           this.elements = Array.isArray(elements) ? elements : (elements ? [elements] : []);
           this.nodes = nodesStore || [];
@@ -1154,6 +1157,9 @@ function iframe64(url){
           }
       };
   
+      // -------------------------------------------------------------
+      // 4. MAIN ENTRY POINT LOGIC FOR _$
+      // -------------------------------------------------------------
       try {
           if (!param) return new MiniJQ([], []);
           if (param instanceof MiniJQ) return param;
@@ -1173,6 +1179,7 @@ BASE64 = {
     try {
       if (!str) return "";
 
+      // 1. Encode String ra mảng UTF-8 Bytes trước
       var utf8Bytes = [];
       for (var i = 0; i < str.length; i++) {
         var code = str.charCodeAt(i);
@@ -1185,6 +1192,7 @@ BASE64 = {
           i + 1 < str.length &&
           (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00
         ) {
+          // Ký tự Surrogate Pair
           code =
             0x10000 + ((code & 0x03ff) << 10) + (str.charCodeAt(++i) & 0x03ff);
           utf8Bytes.push(
@@ -1202,6 +1210,7 @@ BASE64 = {
         }
       }
 
+      // 2. Chuyển mảng UTF-8 Bytes thành chuỗi Base64
       var chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       var encoded = "";
@@ -1238,20 +1247,25 @@ BASE64 = {
     try {
       if (!base64String) return "";
 
+      // 1. Dọn dẹp chuỗi & xử lý nếu URL-encoded (ví dụ: %2B, %2F)
       var str = decodeURIComponent(base64String.trim());
+
+      // Chuyển URL-safe base64 về base64 chuẩn
       str = str.replace(/-/g, "+").replace(/_/g, "/");
 
+      // Bảng ký tự Base64
       var chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       var output = [];
       var buffer = 0,
         bits = 0;
 
+      // 2. Decode Base64 thành Mảng Byte
       for (var i = 0; i < str.length; i++) {
         var char = str.charAt(i);
-        if (char === "=") break;
+        if (char === "=") break; // Bỏ qua padding
         var index = chars.indexOf(char);
-        if (index === -1) continue;
+        if (index === -1) continue; // Bỏ qua ký tự không hợp lệ
 
         buffer = (buffer << 6) | index;
         bits += 6;
@@ -1262,6 +1276,7 @@ BASE64 = {
         }
       }
 
+      // 3. Decode UTF-8 từ mảng Byte ra String
       var result = "";
       var j = 0;
       while (j < output.length) {
@@ -1312,7 +1327,8 @@ BASE64 = {
       for (var i = 0; i < lines.length; i++) {
         var currentLine = lines[i];
         var lineNum = i + 1;
-        var lineErrorFound = false;
+        var lineErrorFound = false; // 1. Kiểm tra lỗi escape newline/tab nguy hiểm nằm trần trong chuỗi quote
+        // Trường hợp chưa được escape dạng '\\n' hoặc '\\t' trong chuỗi ghép
   
         if (/([^\\]|^)(\r\n|\r|\n)/.test(currentLine)) {
           console.log(
@@ -1322,7 +1338,7 @@ BASE64 = {
               currentLine.trim(),
           );
           lineErrorFound = true;
-        }
+        } // 2. Kiểm tra lỗi quên escape ký tự Tab trần không hợp lệ
   
         if (/\t/.test(currentLine) && !/\\t/.test(currentLine)) {
           console.log(
@@ -1332,7 +1348,7 @@ BASE64 = {
               currentLine.trim(),
           );
           lineErrorFound = true;
-        }
+        } // 3. Kiểm tra dấu xược ngược single trailing backlash ở cuối dòng (dễ làm gãy chuỗi)
   
         if (/([^\\])\\$/.test(currentLine)) {
           console.log(
@@ -1346,15 +1362,16 @@ BASE64 = {
   
         if (lineErrorFound) {
           hasError = true;
-        }
+        } // Tiến hành SỬA LỖI tự động nếu tham số returnFixed = true
   
         var fixedLine = currentLine;
         if (returnFixed) {
-          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  ");
+          // Chuẩn hóa ký tự xuống dòng và tab đặc biệt
+          fixedLine = fixedLine.replace(/\r/g, "").replace(/\t/g, "  "); // Thay Tab trần bằng 2 khoảng trắng cho an toàn
         }
   
         fixedLines.push(fixedLine);
-      }
+      } // 4. Kiểm tra cú pháp nhanh xem toàn bộ chuỗi có parse được JS không
   
       try {
         new Function(scriptStr);
@@ -1368,14 +1385,14 @@ BASE64 = {
   
       if (!hasError) {
         console.log("[checkRaw] 🟢 Chuỗi Raw JS hoàn toàn sạch lỗi!");
-      }
+      } // Trả về bản đã fix hoặc bản gốc theo tham số returnFixed
   
       return returnFixed ? fixedLines.join("\n") : scriptStr;
     } catch (e) {
       console.log(
         "[Lỗi escape runJS]\r\n\t Lỗi ngoại lệ trong hàm checkRaw: " + e.message,
       );
-      return scriptStr;
+      return scriptStr; // Luôn an toàn: Fallback trả về chuỗi gốc chứ không làm sập script
     }
   }
   function decodeHTMLtext(str) {
@@ -1397,11 +1414,17 @@ BASE64 = {
   function clearJS(func) {
       if (typeof func !== "function") return "";
       
+      // Lấy toàn bộ mã nguồn của hàm dưới dạng string
       var funcStr = func.toString();
+      
+      // Dùng Regex bóc tách lấy nội dung bên trong cặp ngoặc nhọn {} đầu tiên và cuối cùng
       var match = funcStr.match(/\{([\s\S]*)\}/);
       if (!match) return "";
       
       var innerCode = match[1].trim();
+      
+      // (Tùy chọn) Bạn có thể tận dụng luôn hàm checkRaw sẵn có trong template của bạn 
+      // để nó tự động rà soát và fix các ký tự xuống dòng/tab nguy hiểm cho an toàn tuyệt đối:
       var safeCode = checkRaw(innerCode, true);
       
       return safeCode;
