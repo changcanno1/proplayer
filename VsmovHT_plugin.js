@@ -30,7 +30,7 @@ function getHomeSections() {
         {"slug": "/danh-sach/long-tieng","title": "Phim Lồng Tiếng","type": "Horizontal"},
        {"slug": "/danh-sach/phim-le","title": "Phim Lẻ","type": "Horizontal"},
        {"slug": "/danh-sach/phim-bo","title": "Phim Bộ","type": "Horizontal"},
-        {"slug": "/danh-sach/thuyet-minh","title": "Thuyét Minh","type": "Horizontal"},
+        {"slug": "/danh-sach/thuyet-minh","title": "Thuyết Minh","type": "Horizontal"},
         {"slug": "/danh-sach/phim-moi-cap-nhat/","title": "Phim Mới","type": "Grid"}
     ]);
 }
