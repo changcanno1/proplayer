@@ -7,10 +7,10 @@ function getManifest() {
     id: "vsmov",
     name: "Nguồn Vsmov",
     description: "Nguồn phim Vsmov...",
-    "version": "2.1",
+    "version": "2.3",
     info: "",
     baseUrl: "https://vsmov.com",
-    iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/vsmov.png",
+    iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/icon/vsmov.png",
     isEnabled: true,
     "adblock": false,
     type: "MOVIE",
@@ -30,7 +30,7 @@ function getHomeSections() {
         {"slug": "/danh-sach/long-tieng","title": "Phim Lồng Tiếng","type": "Horizontal"},
        {"slug": "/danh-sach/phim-le","title": "Phim Lẻ","type": "Horizontal"},
        {"slug": "/danh-sach/phim-bo","title": "Phim Bộ","type": "Horizontal"},
-        {"slug": "/danh-sach/thuyet-minh","title": "Thuyết Minh","type": "Horizontal"},
+        {"slug": "/danh-sach/thuyet-minh","title": "Thuyét Minh","type": "Horizontal"},
         {"slug": "/danh-sach/phim-moi-cap-nhat/","title": "Phim Mới","type": "Grid"}
     ]);
 }
@@ -463,48 +463,208 @@ function parseMovieDetail(html, url) {
 
 //$data = JSON.parse(sourceHTML)
 
+/* ============ Helper ============ */
+
+function isLikelySubtitle(text) {
+  if (!text || typeof text !== 'string') return false;
+  var head = text.slice(0, 400);
+  if (/^\s*<(!DOCTYPE|html)/i.test(head)) return false;
+  if (/^\[Script Info\]/i.test(text)) return true;
+  if (/^WEBVTT/.test(text)) return true;
+  if (/\d{1,2}:\d{2}:\d{2}[,\.]\d{1,3}\s*-->/.test(text)) return true;
+  return false;
+}
+
+function normalizeTimestamp(text) {
+  return text.replace(
+    /(\d{1,2}:\d{2}:\d{2}),(\d{1,3})/g,
+    function (_, a, b) {
+      return a + '.' + (b + '000').slice(0, 3);
+    }
+  );
+}
+
+function normalizeToVtt(raw) {
+  if (!raw) return null;
+
+  var t = String(raw)
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n?/g, '\n');
+
+  t = normalizeTimestamp(t);
+
+  if (!/^WEBVTT/.test(t)) {
+    t = t.replace(/(^|\n)\s*\d+\s*\n(?=\d{1,2}:\d{2}:\d{2}\.\d{3}\s*-->)/g, '$1');
+    t = 'WEBVTT\n\n' + t.replace(/^\n+/, '');
+  }
+
+  var blocks = [];
+  var cur = [];
+  t.split('\n').forEach(function (line) {
+    if (line.trim() === '') {
+      if (cur.length) { blocks.push(cur); cur = []; }
+    } else {
+      cur.push(line);
+    }
+  });
+  if (cur.length) blocks.push(cur);
+
+  var kept = [];
+  for (var i = 0; i < blocks.length; i++) {
+    var blkStr = blocks[i].join('\n');
+    if (/^WEBVTT/.test(blkStr)) { kept.push(blkStr); continue; }
+    var hasTs = blocks[i].some(function (l) {
+      return /\d{1,2}:\d{2}:\d{2}\.\d{3}\s*-->\s*\d{1,2}:\d{2}:\d{2}\.\d{3}/.test(l);
+    });
+    if (hasTs) kept.push(blkStr);
+  }
+
+  var out = kept.join('\n\n').trim();
+  if (!/\d{1,2}:\d{2}:\d{2}\.\d{3}\s*-->/.test(out)) return null;
+  return out + '\n';
+}
+
+// ✅ Base64 qua BASE64.encode — không dùng btoa
+function toDataUrl(text, mime) {
+  var b64 = BASE64.encode(text);
+  return 'data:' + mime + ';base64,' + b64;
+}
+
 
 function parseDetailResponse(html, url) {
   try {
     console.log("parseDetailResponse dang xu ly: " + url);
 
-    /* ⭐ Parse signedMasterUrl từ HTML player — có token expires + signature */
+    /* Parse signedMasterUrl */
     var m3u8 = "";
     var signedMatch = html.match(/signedMasterUrl\s*:\s*["']([^"']+)["']/i);
     if (signedMatch && signedMatch[1]) {
       m3u8 = signedMatch[1];
       console.log("✅ signedMasterUrl: " + m3u8);
     } else {
-      /* Fallback: build cũ (sẽ 403 nếu server bật token, nhưng giữ để debug) */
       m3u8 = url.replace("/video/", "/stream/") + "/master.m3u8";
-      console.log("⚠️ không tìm thấy signedMasterUrl → fallback: " + m3u8);
+      console.log("⚠️ không có signedMasterUrl → fallback: " + m3u8);
     }
 
-    var $doc = _$(html);
     var domain = url.replace(/^(https?:\/\/[^\/]+).*/, "$1");
-    var script = $doc.find("script:content('subtitles')").html();
-    var match = script.match(/subtitles:\s*(\[\s*\{.*?\}\s*\])/s);
+    console.log('[VSMOV] domain=' + domain);
+
+    /* Parse subtitles */
     var subitem = [];
-    if (match && match[1]) {
-      var sublist = JSON.parse(match[1]);
-      sublist.forEach(function(item, index) {
-        var name = item.code.replace("vie", "Vietsub").replace("eng", "Engsub");
-        var link = domain + item.url;
-        subitem.push({
-          lang: name + " " + (index + 1),
-          url: link
+    var subMatch = html.match(/subtitles\s*:\s*(\[[^\]]*\])/);
+    if (subMatch && subMatch[1]) {
+      try {
+        var sublist = JSON.parse(subMatch[1]);
+        console.log('[VSMOV] sublist len=' + sublist.length);
+
+        sublist.forEach(function (item, index) {
+          var link = item.url || '';
+          if (link.indexOf('http') !== 0) {
+            link = domain + (link.indexOf('/') === 0 ? '' : '/') + link;
+          }
+
+          var code = String(item.code || '').toLowerCase();
+          var name = code
+            .replace('vie', 'Vietsub')
+            .replace('eng', 'Engsub');
+          if (!name) name = item.name || ('Sub ' + (index + 1));
+
+          var uLower = link.toLowerCase();
+
+          // Đoán MIME theo đuôi (chỉ để fallback)
+          var guessMime = 'text/vtt';
+          if (uLower.indexOf('.ass') > -1 || uLower.indexOf('.ssa') > -1) {
+            guessMime = 'text/x-ssa';
+          } else if (uLower.indexOf('.srt') > -1) {
+            guessMime = 'application/x-subrip';
+          } else if (uLower.indexOf('.smi') > -1) {
+            guessMime = 'application/smil';
+          }
+
+          var finalUrl = link;
+          var finalMime = guessMime;
+          var fixed = false;
+
+          /* --- Fetch & kiểm tra file sub --- */
+          try {
+            var res = httpRequest(link, {
+              method: "GET",
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Referer": domain,
+                "Accept": "*/*"
+              }
+            });
+
+            if (res && res.isSuccessful && res.body) {
+              var raw = res.body;
+
+              if (!isLikelySubtitle(raw)) {
+                console.warn('[VSMOV] sub[' + index + '] nội dung không phải sub (có thể trang lỗi), giữ URL gốc');
+              } else if (/^\[Script Info\]/i.test(raw) ||
+                         uLower.indexOf('.ass') > -1 ||
+                         uLower.indexOf('.ssa') > -1) {
+                // ASS/SSA: giữ nguyên, chỉ đổi sang data URL với MIME chuẩn
+                finalMime = 'text/x-ssa';
+                finalUrl  = toDataUrl(raw, finalMime);
+                fixed = true;
+              } else {
+                // VTT hoặc SRT → chuẩn hoá thành VTT
+                var vtt = normalizeToVtt(raw);
+                if (vtt) {
+                  finalMime = 'text/vtt';
+                  finalUrl  = toDataUrl(vtt, finalMime);
+                  fixed = true;
+                } else {
+                  console.warn('[VSMOV] sub[' + index + '] normalize fail, giữ URL gốc');
+                }
+              }
+            } else {
+              console.warn('[VSMOV] sub[' + index + '] fetch fail status=' + (res && res.status));
+            }
+          } catch (fe) {
+            console.warn('[VSMOV] sub[' + index + '] fetch exception: ' + fe);
+          }
+
+          subitem.push({
+            lang: name,
+            url: finalUrl,
+            mimeType: finalMime
+          });
+
+          console.log('[VSMOV] sub[' + index + '] ' + name +
+                      (fixed ? ' [FIXED]' : ' [RAW]') +
+                      ' mime=' + finalMime +
+                      ' → ' + (fixed ? 'dataUrl(len=' + finalUrl.length + ')' : finalUrl));
         });
-      });
+      } catch (pe) {
+        console.warn('[VSMOV] parse subtitle JSON fail:', pe.message);
+        console.warn('[VSMOV] raw block: ' + subMatch[1].slice(0, 300));
+      }
+    } else {
+      console.warn('[VSMOV] không match subtitles pattern');
+      var _idx = html.indexOf('subtitles');
+      if (_idx > -1) {
+        console.warn('[VSMOV] context: '
+          + html.slice(Math.max(0, _idx - 30), _idx + 300).replace(/\n/g, '\\n'));
+      }
     }
 
-    console.log("stream: " + m3u8);
+    console.log("stream: " + m3u8 + " | subs=" + subitem.length +
+                "\nsublist\n" + JSON.stringify(subitem.map(function(s){
+                  return { lang: s.lang, mimeType: s.mimeType,
+                           url: s.url.indexOf('data:') === 0
+                                ? 'data:...(len=' + s.url.length + ')'
+                                : s.url };
+                })));
+
     return JSON.stringify({
       url: m3u8,
       isEmbed: false,
       mimeType: "application/x-mpegURL",
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": BASEURL
+        "Referer": domain
       },
       subtitles: subitem
     });
@@ -519,6 +679,7 @@ function parseDetailResponse(html, url) {
     });
   }
 }
+
 
 function parseCategoriesResponse(apiResponseJson) {
     try {
