@@ -26,6 +26,15 @@ var PHIMAPI_HEADERS = {
   "Accept": "application/json, text/plain, */*",
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 };
+var PHIM4K_HEADERS = {
+  "Accept": "application/json, text/plain, */*",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  "api-key": API_KEY,
+  "authorization": "Basic YWRtaW46MTIzNA==",
+  "Origin": BASEURL,
+  "Referer": BASEURL + "/"
+};
+
 var PHIMAPI_GENRES = {
   "1": "hanh-dong",
   "2": "phieu-luu",
@@ -142,12 +151,9 @@ function phimApiMapItem(item) {
   };
 }
 
-function phimApiFallbackList(sourceUrl) {
-  var page = phimApiPageOf(sourceUrl);
-  var target = phimApiUrlForSource(sourceUrl, page);
-  log("phimapi list fallback source=" + sourceUrl + " target=" + target);
-  var json = phimApiJson(target);
+function phimApiListJson(json, sourceUrl) {
   if (!json) return "";
+  var page = phimApiPageOf(sourceUrl);
   var raw = phimApiRawItems(json);
   if (!raw.length) return "";
   var items = [];
@@ -155,15 +161,33 @@ function phimApiFallbackList(sourceUrl) {
     var mapped = phimApiMapItem(raw[i]);
     if (mapped) items.push(mapped);
   }
-  if (!items.length) {
-    log("phimapi list fallback empty");
-    return "";
-  }
-  log("phimapi list fallback items=" + items.length);
+  if (!items.length) return "";
   return JSON.stringify({
     items: items,
     pagination: phimApiPagination(json, page)
   });
+}
+
+function phimApiFallbackList(sourceUrl) {
+  var page = phimApiPageOf(sourceUrl);
+  var target = /phimapi\.com/i.test(String(sourceUrl || "")) ? sourceUrl : phimApiUrlForSource(sourceUrl, page);
+  log("phimapi list fallback source=" + sourceUrl + " target=" + target);
+  var json = phimApiJson(target);
+  if (!json) return "";
+  var raw = phimApiRawItems(json);
+  if (!raw.length && target.indexOf("tim-kiem") < 0 && target.indexOf("phim-moi-cap-nhat-v3") < 0) {
+    target = PHIMAPI_BASE + "/danh-sach/phim-moi-cap-nhat-v3?page=" + page;
+    log("phimapi list fallback retry=" + target);
+    json = phimApiJson(target);
+    raw = json ? phimApiRawItems(json) : [];
+  }
+  if (!raw.length) {
+    log("phimapi list fallback empty");
+    return "";
+  }
+  var out = phimApiListJson(json, target);
+  log("phimapi list fallback result=" + (out ? "ok" : "empty"));
+  return out;
 }
 
 function phimApiSlugify(title) {
@@ -322,6 +346,16 @@ function phimApiDetailJson(json, url) {
   });
 }
 
+function phimApiDetailUrlFromTitle(url) {
+  var slug = phimApiSlugFromUrl(url);
+  if (slug) return PHIMAPI_BASE + "/phim/" + encodeURIComponent(slug);
+  var title = phimApiTitleFromUrl(url);
+  if (!title) return "";
+  var json = phimApiFindByTitle(title);
+  if (json && json.movie && json.movie.slug) return PHIMAPI_BASE + "/phim/" + encodeURIComponent(json.movie.slug);
+  return "";
+}
+
 function phimApiFallbackDetail(url) {
   var slug = phimApiSlugFromUrl(url);
   var title = phimApiTitleFromUrl(url);
@@ -357,14 +391,66 @@ function phim4kListBad(data) {
   return false;
 }
 
+function phim4kHasAnyItem(data) {
+  if (!data) return false;
+  if (Array.isArray(data)) return data.length > 0;
+  if (Array.isArray(data.movie) && data.movie.length) return true;
+  if (Array.isArray(data.tvseries) && data.tvseries.length) return true;
+  if (Array.isArray(data.movies) && data.movies.length) return true;
+  if (Array.isArray(data.items) && data.items.length) return true;
+  if (data.data) {
+    if (Array.isArray(data.data)) return data.data.length > 0;
+    if (Array.isArray(data.data.items) && data.data.items.length) return true;
+    if (Array.isArray(data.data.movie) && data.data.movie.length) return true;
+    if (Array.isArray(data.data.tvseries) && data.data.tvseries.length) return true;
+    if (Array.isArray(data.data.movies) && data.data.movies.length) return true;
+  }
+  return false;
+}
+
+function phim4kProbeList(url) {
+  if (typeof httpRequest !== "function") return true;
+  try {
+    var res = httpRequest(url, { method: "GET", headers: PHIM4K_HEADERS, timeout: 10000 });
+    var body = res && res.body ? String(res.body) : "";
+    log("phim4k probe list url=" + url + " status=" + (res && res.status) + " ok=" + !!(res && res.isSuccessful) + " len=" + body.length + " prefix=" + logShort(body));
+    if (!res || !res.isSuccessful || !body) return false;
+    var json = JSON.parse(body);
+    if (phim4kListBad(json) || !phim4kHasAnyItem(json)) return false;
+    return true;
+  } catch (e) {
+    log("phim4k probe list error: " + e);
+    return false;
+  }
+}
+
+function phim4kProbeDetail(url) {
+  if (typeof httpRequest !== "function") return true;
+  try {
+    var res = httpRequest(url, { method: "GET", headers: PHIM4K_HEADERS, timeout: 10000 });
+    var body = res && res.body ? String(res.body) : "";
+    log("phim4k probe detail url=" + url + " status=" + (res && res.status) + " ok=" + !!(res && res.isSuccessful) + " len=" + body.length + " prefix=" + logShort(body));
+    if (!res || !res.isSuccessful || !body) return false;
+    var json = JSON.parse(body);
+    if (phim4kDetailFatal(json)) return false;
+    var hasVideo = Array.isArray(json.videos) && json.videos.length > 0;
+    var hasSeason = Array.isArray(json.season) && json.season.some(function (s) { return s && Array.isArray(s.episodes) && s.episodes.length; });
+    return hasVideo || hasSeason;
+  } catch (e) {
+    log("phim4k probe detail error: " + e);
+    return false;
+  }
+}
+
 function phimApiStreamJson(url) {
   var link = String(url || "");
   var mime = /\.m3u8(\?|$)/i.test(link) ? "application/x-mpegURL" : (/\.mkv(\?|$)/i.test(link) ? "video/x-matroska" : "video/mp4");
+  var skipTimes = mime === "application/x-mpegURL" ? [{ start: 890, end: 935, type: "ad" }] : [];
   return JSON.stringify({
     url: link,
     mimeType: mime,
     isEmbed: false,
-    skipTimes: [],
+    skipTimes: skipTimes,
     headers: {
       "User-Agent": PHIMAPI_HEADERS["User-Agent"],
       "Referer": "https://phimapi.com/",
@@ -379,7 +465,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "saigonphim",
       "name": "[MOVIE] Sài Gòn Phim",
-      "version": "1.1.1",
+      "version": "1.4",
       "author": "Alokillgtv",
       "BASEURL": BASEURL,
       "baseUrl": BASEURL,
@@ -535,7 +621,10 @@ function getManifest() {
           }
           var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
           log("getUrlList output=" + finalUrl);
-          return finalUrl;
+          if (phim4kProbeList(finalUrl)) return finalUrl;
+          var fallbackUrl = phimApiUrlForSource(finalUrl, page);
+          log("getUrlList fallback=" + fallbackUrl);
+          return fallbackUrl;
       } catch (e) {
           log("getUrlList[err]:\n " + e);
           return BASEURL;
@@ -573,8 +662,10 @@ function getManifest() {
   
           var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
           log("getUrlSearch output=" + finalUrl);
-          //log("getUrlSearch[url]: \n" + finalUrl);
-          return finalUrl;
+          if (phim4kProbeList(finalUrl)) return finalUrl;
+          var fallbackUrl = phimApiUrlForSource(finalUrl, page);
+          log("getUrlSearch fallback=" + fallbackUrl);
+          return fallbackUrl;
   
       } catch (e) {
          // log("getUrlSearch[err]:\n " + e);
@@ -592,6 +683,15 @@ function getManifest() {
 // ===== HÀM TẠO KHỐI LIST PHIM BEGIN ======
 function parseListResponse(html, $url) {
     log("parseListResponse url=" + $url + " htmlLen=" + (html ? String(html).length : 0) + " prefix=" + logShort(html));
+    if (/phimapi\.com/i.test(String($url || ""))) {
+        var apiJson = null;
+        try { apiJson = JSON.parse(html); } catch (e) { log("phimapi list json error: " + e); }
+        var apiOut = apiJson ? phimApiListJson(apiJson, $url) : "";
+        if (apiOut) return apiOut;
+        var apiRetry = phimApiFallbackList($url);
+        if (apiRetry) return apiRetry;
+        return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
+    }
     // console.log("ListURL:\n" + $url);
     //console.log("ListRaw:\n" + html);
     // --- Helper: lấy mảng phim thô từ payload JSON ---
@@ -1765,7 +1865,7 @@ function getStreamLink(slug, datasend) {
             url: stream,
             mimeType: videoMimeType,
             isEmbed: false,
-            skipTimes: [],
+            skipTimes: skip,
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 "Referer": cdn + "/",
@@ -1817,6 +1917,16 @@ function iframe64(url){
           }
           var detailUrl = slug.charAt(0) === "/" ? BASEURL + slug : BASEURL + "/" + slug;
           log("getUrlDetail output=" + detailUrl);
+          if (phim4kProbeDetail(detailUrl)) {
+              log("getUrlDetail use phim4k");
+              return detailUrl;
+          }
+          var fallbackDetail = phimApiDetailUrlFromTitle(detailUrl);
+          if (fallbackDetail) {
+              log("getUrlDetail use phimapi=" + fallbackDetail);
+              return fallbackDetail;
+          }
+          log("getUrlDetail fallback not found, keep original");
           return detailUrl;
       } catch (e) {
           //log("getUrlDetail[err]:\n " + e);
