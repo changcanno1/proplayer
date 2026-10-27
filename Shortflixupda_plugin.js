@@ -1,6 +1,7 @@
 Dưới đây là toàn bộ mã nguồn của file shortflix-b39b1b68.js đã được cập nhật hoàn chỉnh theo các yêu cầu của bạn (xoá Thư Viện, thêm các danh sách phim mới ra màn hình chính và ưu tiên "Full 1 tập" lên trước):
 var BASEURL = "https://www.shortflix.net"; 
 var BASEAPI = "https://www.shortflix.net/api/search?limit=100";
+var popup_html = "";
 // =============================================================================
 // GLOBAL CURSOR CACHE (BỘ NHỚ LƯU CURSOR ĐỘNG TRONG BỘ NHỚ RAM)
 // =============================================================================
@@ -18,6 +19,8 @@ function getManifest() {
         "baseUrl": "https://www.shortflix.net",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix.png",
         "author": "Alokillgtv",
+        popup_html: popup_html,
+      
         "type": "shortfilm",
         "playerType": "exoplayer"
     });
@@ -36,7 +39,12 @@ function log(msg) {
 function getHomeSections() {
       return JSON.stringify([
         {"slug": "&q=l%E1%BB%93ng+ti%E1%BA%BFng&language=vi_VN&lang=vi_VN","title": "Lồng Tiếng","type": "Horizontal"},
-        {"slug": "&sortBy=last_episode_at&language=vi_VN&lang=vi_VN","title": "Phim Mới","type": "Grid"}
+        {"slug": "&sortBy=last_episode_at&language=vi_VN&lang=vi_VN","title": "Phim Mới","type": "Grid"},
+        {"slug": "&genre=tam-ly","title": "Tâm Lý","type": "Horizontal"},
+        {"slug": "&genre=ngon-tinh","title": "Ngôn Tình","type": "Horizontal"},
+        {"slug": "&genre=hai-huoc","title": "Hài Hước","type": "Horizontal"},
+        {"slug": "&genre=xuyen-khong","title": "Xuyên Không","type": "Horizontal"},
+        {"slug": "&genre=hanh-dong","title": "Hành Động","type": "Horizontal"}
       ]);
 }
 // https://www.shortflix.net/api/search?limit=100&language=vi_VN&lang=vi_VN&sortBy=last_episode_at
