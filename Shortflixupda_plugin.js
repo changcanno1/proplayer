@@ -1,9 +1,7 @@
-Chào bạn, để giải quyết vấn đề lọc các phim chưa được dịch (100% tiếng Anh) và tinh gọn lại màn hình chính chỉ còn "Lồng Tiếng" và "Phim Mới", mình đã thực hiện 2 thay đổi cốt lõi:
- * Giao diện màn hình chính: Sửa hàm getHomeSections() chỉ giữ lại đúng 2 thư mục bạn yêu cầu.
- * Bộ lọc tiếng Việt: Trong hàm parseListResponse(), mình thêm một đoạn Regular Expression (biểu thức chính quy) để kiểm tra các ký tự có dấu đặc trưng của tiếng Việt (như ă, â, đ, ê, ô, ơ, ư và các dấu thanh). Nếu tiêu đề phim title hoàn toàn không chứa ký tự tiếng Việt nào, code sẽ tự động continue (bỏ qua) không add phim đó vào danh sách hiển thị, giúp ứng dụng nhẹ hơn và sạch dữ liệu.
-Dưới đây là toàn bộ mã nguồn hoàn chỉnh đã tích hợp sẵn các yêu cầu trên, bạn copy và dán đè toàn bộ vào file shortflix-b39b1b68.js nhé:
+Dưới đây là toàn bộ mã nguồn của file shortflix-b39b1b68.js đã được cập nhật hoàn chỉnh theo các yêu cầu của bạn (xoá Thư Viện, thêm các danh sách phim mới ra màn hình chính và ưu tiên "Full 1 tập" lên trước):
 var BASEURL = "https://www.shortflix.net"; 
 var BASEAPI = "https://www.shortflix.net/api/search?limit=100";
+var popup_html = "";
 // =============================================================================
 // GLOBAL CURSOR CACHE (BỘ NHỚ LƯU CURSOR ĐỘNG TRONG BỘ NHỚ RAM)
 // =============================================================================
@@ -21,6 +19,8 @@ function getManifest() {
         "baseUrl": "https://www.shortflix.net",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix.png",
         "author": "Alokillgtv",
+        popup_html: popup_html,
+      
         "type": "shortfilm",
         "playerType": "exoplayer"
     });
@@ -36,11 +36,15 @@ function log(msg) {
     }
 }
 
-// CẬP NHẬT: Chỉ để lại Lồng Tiếng và Phim Mới
 function getHomeSections() {
       return JSON.stringify([
         {"slug": "&q=l%E1%BB%93ng+ti%E1%BA%BFng&language=vi_VN&lang=vi_VN","title": "Lồng Tiếng","type": "Horizontal"},
-        {"slug": "&sortBy=last_episode_at&language=vi_VN&lang=vi_VN","title": "Phim Mới","type": "Grid"}
+        {"slug": "&sortBy=last_episode_at&language=vi_VN&lang=vi_VN","title": "Phim Mới","type": "Grid"},
+        {"slug": "&genre=tam-ly","title": "Tâm Lý","type": "Horizontal"},
+        {"slug": "&genre=ngon-tinh","title": "Ngôn Tình","type": "Horizontal"},
+        {"slug": "&genre=hai-huoc","title": "Hài Hước","type": "Horizontal"},
+        {"slug": "&genre=xuyen-khong","title": "Xuyên Không","type": "Horizontal"},
+        {"slug": "&genre=hanh-dong","title": "Hành Động","type": "Horizontal"}
       ]);
 }
 // https://www.shortflix.net/api/search?limit=100&language=vi_VN&lang=vi_VN&sortBy=last_episode_at
@@ -274,14 +278,90 @@ function getUrlYears() {
 // =============================================================================
 // PARSERS
 // =============================================================================
+// /api/search?source=flextv&limit=24&language=vi_VN&lang=vi_VN
+// https://www.shortflix.net/api/search?source=reelshort&limit=24&language=vi_VN&lang=vi_VN
 function catelist(){
-  return `[]`
+  return `[
+  {
+    "id": "&source=netshort&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/netshort.jpg",
+    "title": "Netshort (Vietsub)"
+  },
+  {
+    "id": "&source=flextv&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/flextv.jpg",
+    "title": "Flextv (Vietsub)"
+  },
+  {
+    "id": "&source=reelshort&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/dramashorts.jpg",
+    "title": "Dramashorts (Vietsub)"
+  },
+  {
+    "id": "&source=dramawave&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/dramawave.jpg",
+    "title": "Dramawave (Vietsub)"
+  },
+  {
+    "id": "&source=shorttv&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/shorttv.jpg",
+    "title": "Shorttv (Vietsub)"
+  },
+  {
+    "id": "&source=stardust&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/stardust.jpg",
+    "title": "Stardust (Vietsub)"
+  },
+  {
+    "id": "&source=dramatv",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/dramatv.jpg",
+    "title": "Dramatv (AIsub)"
+  },
+  {
+    "id": "&source=vigloo",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/vigloo.jpg",
+    "title": "Vigloo (AIsub)"
+  },
+  {
+    "id": "&source=candyjar",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/candyjar.jpg",
+    "title": "Candyjar (AIsub)"
+  },
+  {
+    "id": "&source=joyreels",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/joyreels.jpg",
+    "title": "Joyreels (Engsub)"
+  },
+  {
+    "id": "&source=flareflow",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/flareflow.jpg?123",
+    "title": "Flareflow (Engsub)"
+  },
+  {
+    "id": "&source=flickreels",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/flickreels.jpg",
+    "title": "Flickreels (Engsub)"
+  },
+  {
+    "id": "&source=minutedrama",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/minutedrama.jpg?123",
+    "title": "Minutedrama (Engsub)"
+  },
+  {
+    "id": "&source=kalostv",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/kalostv.jpg",
+    "title": "Kalostv (Engsub)"
+  }  
+]`
 }
+
+
 
 function parseListResponse(html, $url) {
     console.log("List\n" + $url)
     try {
         if ($url.indexOf("cate=true") > -1) {
+            // https://vaxplugin.alokillgtv.workers.dev/youtube/cate.json?debug=9780752
             var items = [];
             var rawjs = catelist();
             var $data = JSON.parse(rawjs);
@@ -298,6 +378,7 @@ function parseListResponse(html, $url) {
                     "lang": ""
                 });
             })
+            // console.log(JSON.stringify(items))
             var result = JSON.stringify({
                 "items": items,
                 "pagination": {
@@ -305,6 +386,8 @@ function parseListResponse(html, $url) {
                     "totalPages": 1
                 }
             });
+
+            //console.log("Return List:\n" + result);
             return result
         }
         else{
@@ -316,14 +399,6 @@ function parseListResponse(html, $url) {
           if ($data && $data.items && $data.items.length > 0) {
               for (var $j = 0; $j < $data.items.length; $j++) {
                   var $item = $data.items[$j];
-                  var title = $item.title || "";
-                  
-                  // CẬP NHẬT LỌC PHIM: Bỏ qua phim không có ký tự tiếng Việt (100% tiếng Anh/Pinyin)
-                  var vnRegex = /[àáãạảăắằẳẵặâấầẩẫậèéẹẻẽêềếểễệđìíĩỉịòóõọỏôốồổỗộơớờởỡợùúũụủưứừửữựỳýỹỷỵÀÁÃẠẢĂẮẰẲẴẶÂẤẦẨẪẬÈÉẸẺẼÊỀẾỂỄỆĐÌÍĨỈỊÒÓÕỌỎÔỐỒỔỖỘƠỚỜỞỠỢÙÚŨỤỦƯỨỪỬỮỰỲÝỸỶỴ]/;
-                  if (!vnRegex.test(title)) {
-                      continue; // Bỏ qua phim này, không thêm vào mảng items
-                  }
-                  
                   var year = "";
                   var lang = "";
                   var current = $item.status ? $item.status.replace("PUBLISHED", "Hoàn Thành") : "";
@@ -332,6 +407,7 @@ function parseListResponse(html, $url) {
                   var href = BASEURL + "/vi/videos/" + itemSlug;
                   
                   var quality = "HD";
+                  var title = $item.title || "";
                   var src = $item.thumbnailUrl || "";
   
                   if (href) {
@@ -402,7 +478,7 @@ function parseListResponse(html, $url) {
 function parseSearchResponse(html, url) {
     try {
         log("parseSearchResponse[url]: \n" + url);
-        return parseListResponse(html, url); // Đã lọc theo tiếng Việt từ hàm này
+        return parseListResponse(html, url);
     } catch (e) {
         log("parseSearchResponse[err]:\n " + e);
         return JSON.stringify({
@@ -573,6 +649,7 @@ function parseDetailResponse(html, url) {
         var $subtitle = "";
         var $dataVD = parseScript(script);
         var $episodes = $dataVD.data.episodes || [];
+        //console.log("episode\n" + JSON.stringify($episodes))
         var tapcurrent = $episodes.findIndex(function(ep) {
             return ep.name == tapVal || ep.slug == tapVal || ep.episode == tapVal;
         });
@@ -599,7 +676,10 @@ function parseDetailResponse(html, url) {
         }
         
       if(url.indexOf("full1tap=true") > -1){
+          //.log("ListMV\n" + JSON.stringify($episodes))
+          //log("parseDetailResponse[url]: \n" + $linkstream);
           var postbody = BASE64.encode(JSON.stringify($episodes))
+          //var link = "https://script.google.com/macros/s/AKfycbwOr1SrXDDAEFpcNJGolpcReeDe5u5A7v7BWMqoKw6y1UA-LGjLtVwIgxc-u1d_J1Tb/exec?film_url=" + encodeURIComponent(url)
           var link = "https://shortlink.alokillgtv.workers.dev//?film_url=" + encodeURIComponent(url)
           console.log("link Post:\n" + link)
           var $return = JSON.stringify({
@@ -613,6 +693,7 @@ function parseDetailResponse(html, url) {
               datasend: encodeURIComponent(link)
             
           });
+          //console.log($return);
           return $return
       }
       else{
@@ -646,7 +727,7 @@ function parseDetailResponse(html, url) {
 
 function parseEmbedResponse(html, url, datasend) {
      console.log("Kết quả:\n" + html)
-    log("parseEmbedResponse [url]: " + url); 
+    log("parseEmbedResponse [url]: " + url); //console.log("parseEmbedResponse [Raw]: " + html);
     try {
       var decode = decodeURIComponent(datasend)
       console.log("embed:\n" + decode);
@@ -666,6 +747,7 @@ function parseEmbedResponse(html, url, datasend) {
           mimeType: "text/vtt"
         }]     
       });
+      //console.log("Return Embed:\n" + $return)
       return $return
     } catch (e) {
       console.log("[Lỗi parseEmbedResponse]", e);
@@ -704,6 +786,8 @@ BASE64 = {
   encode: function (str) {
     try {
       if (!str) return "";
+
+      // 1. Encode String ra mảng UTF-8 Bytes trước
       var utf8Bytes = [];
       for (var i = 0; i < str.length; i++) {
         var code = str.charCodeAt(i);
@@ -716,6 +800,7 @@ BASE64 = {
           i + 1 < str.length &&
           (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00
         ) {
+          // Ký tự Surrogate Pair
           code =
             0x10000 + ((code & 0x03ff) << 10) + (str.charCodeAt(++i) & 0x03ff);
           utf8Bytes.push(
@@ -732,6 +817,8 @@ BASE64 = {
           );
         }
       }
+
+      // 2. Chuyển mảng UTF-8 Bytes thành chuỗi Base64
       var chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       var encoded = "";
@@ -756,6 +843,7 @@ BASE64 = {
           chars.charAt(b3) +
           chars.charAt(b4);
       }
+
       return encoded;
     } catch (e) {
       console.log("[BASE64.encode Error]:", e.message || e);
@@ -766,19 +854,26 @@ BASE64 = {
   decode: function (base64String) {
     try {
       if (!base64String) return "";
+
+      // 1. Dọn dẹp chuỗi & xử lý nếu URL-encoded (ví dụ: %2B, %2F)
       var str = decodeURIComponent(base64String.trim());
+
+      // Chuyển URL-safe base64 về base64 chuẩn
       str = str.replace(/-/g, "+").replace(/_/g, "/");
+
+      // Bảng ký tự Base64
       var chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       var output = [];
       var buffer = 0,
         bits = 0;
 
+      // 2. Decode Base64 thành Mảng Byte
       for (var i = 0; i < str.length; i++) {
         var char = str.charAt(i);
-        if (char === "=") break; 
+        if (char === "=") break; // Bỏ qua padding
         var index = chars.indexOf(char);
-        if (index === -1) continue; 
+        if (index === -1) continue; // Bỏ qua ký tự không hợp lệ
 
         buffer = (buffer << 6) | index;
         bits += 6;
@@ -789,6 +884,7 @@ BASE64 = {
         }
       }
 
+      // 3. Decode UTF-8 từ mảng Byte ra String
       var result = "";
       var j = 0;
       while (j < output.length) {
@@ -814,6 +910,7 @@ BASE64 = {
           result += String.fromCharCode(0xd800 + (u >> 10), 0xdc00 + (u & 0x3ff));
         }
       }
+
       return result;
     } catch (e) {
       console.log("[BASE64.decode Error]:", e.message || e);
