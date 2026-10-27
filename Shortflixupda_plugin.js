@@ -1,6 +1,5 @@
 var BASEURL = "https://www.shortflix.net"; 
 var BASEAPI = "https://www.shortflix.net/api/search?limit=100";
-var popup_html = "";
 // =============================================================================
 // GLOBAL CURSOR CACHE (BỘ NHỚ LƯU CURSOR ĐỘNG TRONG BỘ NHỚ RAM)
 // =============================================================================
@@ -18,8 +17,6 @@ function getManifest() {
         "baseUrl": "https://www.shortflix.net",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix.png",
         "author": "Alokillgtv",
-        popup_html: popup_html,
-      
         "type": "shortfilm",
         "playerType": "exoplayer"
     });
