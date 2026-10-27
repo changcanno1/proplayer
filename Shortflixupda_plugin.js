@@ -4,7 +4,6 @@ Chào bạn, để giải quyết vấn đề lọc các phim chưa được d�
 Dưới đây là toàn bộ mã nguồn hoàn chỉnh đã tích hợp sẵn các yêu cầu trên, bạn copy và dán đè toàn bộ vào file shortflix-b39b1b68.js nhé:
 var BASEURL = "https://www.shortflix.net"; 
 var BASEAPI = "https://www.shortflix.net/api/search?limit=100";
-var popup_html = "";
 // =============================================================================
 // GLOBAL CURSOR CACHE (BỘ NHỚ LƯU CURSOR ĐỘNG TRONG BỘ NHỚ RAM)
 // =============================================================================
@@ -17,13 +16,11 @@ function getManifest() {
         "id": "shortflix",
         "name": "Shortflix [SHORT]",
         "description": "Phim Ngắn lồng tiếng vietsub hay",
-        "version": "2.6",
+        "version": "2.5",
         "info": "",
         "baseUrl": "https://www.shortflix.net",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix.png",
         "author": "Alokillgtv",
-        popup_html: popup_html,
-      
         "type": "shortfilm",
         "playerType": "exoplayer"
     });
