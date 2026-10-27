@@ -1,5 +1,6 @@
 var BASEURL = "https://www.shortflix.net"; 
-var BASEAPI = "https://www.shortflix.net/api/search?limit=100&language=vi_VN&lang=vi_VN";
+var BASEAPI = "https://www.shortflix.net/api/search?limit=100";
+var popup_html = "";
 // =============================================================================
 // GLOBAL CURSOR CACHE (BỘ NHỚ LƯU CURSOR ĐỘNG TRONG BỘ NHỚ RAM)
 // =============================================================================
@@ -10,13 +11,15 @@ var DEV = FALSE;
 function getManifest() {
     return JSON.stringify({
         "id": "shortflix",
-        "name": "[SHORT] Shortflix",
+        "name": "Shortflix [SHORT]",
         "description": "Phim Ngắn lồng tiếng vietsub hay",
-        "version": "1.4.2",
+        "version": "2.5",
         "info": "",
         "baseUrl": "https://www.shortflix.net",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix.png",
         "author": "Alokillgtv",
+        popup_html: popup_html,
+      
         "type": "shortfilm",
         "playerType": "exoplayer"
     });
@@ -31,17 +34,19 @@ function log(msg) {
       }
     }
 }
-function getHomeSections() {
-    try {
-        var listurl = '[{\"link\":\"&sortBy=last_episode_at\",\"name\":\"Phim Mới\"}]';
-        var menulist = buildMenu(listurl, true);
-        return JSON.stringify(menulist);
-    } catch (e) {
-        log("getHomeSections[err]:\n " + e);
-        return JSON.stringify([]);
-    }
-}
 
+function getHomeSections() {
+      return JSON.stringify([
+        {"slug": "&q=l%E1%BB%93ng+ti%E1%BA%BFng&language=vi_VN&lang=vi_VN","title": "Lồng Tiếng","type": "Horizontal"},
+        {"slug": "&sortBy=last_episode_at&language=vi_VN&lang=vi_VN","title": "Phim Mới","type": "Grid"},
+        {"slug": "&genre=tam-ly","title": "Tâm Lý","type": "Horizontal"},
+        {"slug": "&genre=ngon-tinh","title": "Ngôn Tình","type": "Horizontal"},
+        {"slug": "&genre=hai-huoc","title": "Hài Hước","type": "Horizontal"},
+        {"slug": "&genre=xuyen-khong","title": "Xuyên Không","type": "Horizontal"},
+        {"slug": "&genre=hanh-dong","title": "Hành Động","type": "Horizontal"}
+      ]);
+}
+// https://www.shortflix.net/api/search?limit=100&language=vi_VN&lang=vi_VN&sortBy=last_episode_at
 function getPrimaryCategories() {
     try {
         var listurl = getLISTmenu();
@@ -181,7 +186,7 @@ function getUrlList(slug, filtersJson) {
         if (path && path.indexOf("http") === 0) {
             resultUrl = path;
         } else {
-            resultUrl = BASEAPI + (path ? path : "");
+              resultUrl = BASEAPI + (path ? path : "");      
         }
 
         // Nếu là trang > 1 và App chưa truyền cursor, tự lấy từ CURSOR_CACHE trong bộ nhớ
@@ -272,75 +277,185 @@ function getUrlYears() {
 // =============================================================================
 // PARSERS
 // =============================================================================
+// /api/search?source=flextv&limit=24&language=vi_VN&lang=vi_VN
+// https://www.shortflix.net/api/search?source=reelshort&limit=24&language=vi_VN&lang=vi_VN
+function catelist(){
+  return `[
+  {
+    "id": "&source=netshort&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/netshort.jpg",
+    "title": "Netshort (Vietsub)"
+  },
+  {
+    "id": "&source=flextv&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/flextv.jpg",
+    "title": "Flextv (Vietsub)"
+  },
+  {
+    "id": "&source=reelshort&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/dramashorts.jpg",
+    "title": "Dramashorts (Vietsub)"
+  },
+  {
+    "id": "&source=dramawave&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/dramawave.jpg",
+    "title": "Dramawave (Vietsub)"
+  },
+  {
+    "id": "&source=shorttv&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/shorttv.jpg",
+    "title": "Shorttv (Vietsub)"
+  },
+  {
+    "id": "&source=stardust&language=vi_VN&lang=vi_VN",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/stardust.jpg",
+    "title": "Stardust (Vietsub)"
+  },
+  {
+    "id": "&source=dramatv",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/dramatv.jpg",
+    "title": "Dramatv (AIsub)"
+  },
+  {
+    "id": "&source=vigloo",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/vigloo.jpg",
+    "title": "Vigloo (AIsub)"
+  },
+  {
+    "id": "&source=candyjar",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/candyjar.jpg",
+    "title": "Candyjar (AIsub)"
+  },
+  {
+    "id": "&source=joyreels",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/joyreels.jpg",
+    "title": "Joyreels (Engsub)"
+  },
+  {
+    "id": "&source=flareflow",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/flareflow.jpg?123",
+    "title": "Flareflow (Engsub)"
+  },
+  {
+    "id": "&source=flickreels",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/flickreels.jpg",
+    "title": "Flickreels (Engsub)"
+  },
+  {
+    "id": "&source=minutedrama",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/minutedrama.jpg?123",
+    "title": "Minutedrama (Engsub)"
+  },
+  {
+    "id": "&source=kalostv",
+    "img": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/kalostv.jpg",
+    "title": "Kalostv (Engsub)"
+  }  
+]`
+}
+
+
 
 function parseListResponse(html, $url) {
+    console.log("List\n" + $url)
     try {
-        log("parseListResponse[url]: \n" + $url);
-        var items = [];
-        var $data = JSON.parse(html);
-        var nextCursor = "";
-        
-        if ($data && $data.items && $data.items.length > 0) {
-            for (var $j = 0; $j < $data.items.length; $j++) {
-                var $item = $data.items[$j];
-                var year = "";
-                var lang = "";
-                var current = $item.status ? $item.status.replace("PUBLISHED", "Hoàn Thành") : "";
-                
-                var itemSlug = $item.slug || $item.id || "";
-                var href = BASEURL + "/vi/videos/" + itemSlug;
-                
-                var quality = "HD";
-                var title = $item.title || "";
-                var src = $item.thumbnailUrl || "";
-
-                if (href) {
-                    var cleanThumb = src.replace(/&amp;/g, '&');
-
-                    items.push({
-                        "id": href,
-                        "title": title.trim(),
-                        "posterUrl": cleanThumb,
-                        "backdropUrl": cleanThumb,
-                        "quality": quality,
-                        "lang": lang,
-                        "episode_current": current
-                    });
+        if ($url.indexOf("cate=true") > -1) {
+            // https://vaxplugin.alokillgtv.workers.dev/youtube/cate.json?debug=9780752
+            var items = [];
+            var rawjs = catelist();
+            var $data = JSON.parse(rawjs);
+            $data.forEach(function(item) {
+                items.push({
+                    "id": item.id,
+                    "title": item.title,
+                    "quality": "",
+                    "episode_current": "Thư Viện",
+                    "posterUrl": item.img,
+                    "backdropUrl": item.img,
+                    isFolder: true,
+                    "year": "",
+                    "lang": ""
+                });
+            })
+            // console.log(JSON.stringify(items))
+            var result = JSON.stringify({
+                "items": items,
+                "pagination": {
+                    "currentPage": 1,
+                    "totalPages": 1
                 }
-            }
+            });
 
-            // 1. Lấy Cursor cho trang kế tiếp từ API hoặc tự tạo từ item cuối cùng
-            if ($data.nextCursor) {
-                nextCursor = $data.nextCursor;
-            } else {
-                var lastRawItem = $data.items[$data.items.length - 1];
-                nextCursor = createCursor(lastRawItem);
-            }
-
-            // 2. Tra cứu trang hiện tại và lưu cursor vào CACHE cho trang sau
-            var currentPage = URL_TO_PAGE_MAP[$url] || 1;
-            var currentPath = URL_TO_PATH_MAP[$url] || "";
-            var nextPage = currentPage + 1;
-
-            if (nextCursor) {
-                var cacheKey = currentPath + "_page_" + nextPage;
-                CURSOR_CACHE[cacheKey] = nextCursor;
-                log("Saved Cursor for [" + cacheKey + "]: " + nextCursor);
-            }
+            //console.log("Return List:\n" + result);
+            return result
         }
-
-        log("Generated nextCursor: " + nextCursor);
-
-        return JSON.stringify({
-            "items": items,
-            "nextCursor": nextCursor,
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 999,
-                "nextCursor": nextCursor
-            }
-        });
-
+        else{
+          log("parseListResponse[url]: \n" + $url);
+          var items = [];
+          var $data = JSON.parse(html);
+          var nextCursor = "";
+          
+          if ($data && $data.items && $data.items.length > 0) {
+              for (var $j = 0; $j < $data.items.length; $j++) {
+                  var $item = $data.items[$j];
+                  var year = "";
+                  var lang = "";
+                  var current = $item.status ? $item.status.replace("PUBLISHED", "Hoàn Thành") : "";
+                  
+                  var itemSlug = $item.slug || $item.id || "";
+                  var href = BASEURL + "/vi/videos/" + itemSlug;
+                  
+                  var quality = "HD";
+                  var title = $item.title || "";
+                  var src = $item.thumbnailUrl || "";
+  
+                  if (href) {
+                      var cleanThumb = src.replace(/&amp;/g, '&');
+  
+                      items.push({
+                          "id": href,
+                          "title": title.trim(),
+                          "posterUrl": cleanThumb,
+                          "backdropUrl": cleanThumb,
+                          "quality": quality,
+                          "lang": lang,
+                          "episode_current": current
+                      });
+                  }
+              }
+  
+              // 1. Lấy Cursor cho trang kế tiếp từ API hoặc tự tạo từ item cuối cùng
+              if ($data.nextCursor) {
+                  nextCursor = $data.nextCursor;
+              } else {
+                  var lastRawItem = $data.items[$data.items.length - 1];
+                  nextCursor = createCursor(lastRawItem);
+              }
+  
+              // 2. Tra cứu trang hiện tại và lưu cursor vào CACHE cho trang sau
+              var currentPage = URL_TO_PAGE_MAP[$url] || 1;
+              var currentPath = URL_TO_PATH_MAP[$url] || "";
+              var nextPage = currentPage + 1;
+  
+              if (nextCursor) {
+                  var cacheKey = currentPath + "_page_" + nextPage;
+                  CURSOR_CACHE[cacheKey] = nextCursor;
+                  log("Saved Cursor for [" + cacheKey + "]: " + nextCursor);
+              }
+          }
+  
+          log("Generated nextCursor: " + nextCursor);
+  
+          return JSON.stringify({
+              "items": items,
+              "nextCursor": nextCursor,
+              "pagination": {
+                  "currentPage": 1,
+                  "totalPages": 999,
+                  "nextCursor": nextCursor
+              }
+          });
+      }
     } catch (e) {
         log("parseListResponse[err]:\n " + e);
         return JSON.stringify({
@@ -434,7 +549,7 @@ function parseScript(rawScript) {
 
 function parseMovieDetail(html, url) {
     try {
-        log("parseMovieDetail[url]: \n" + url);
+        console.log("parseMovieDetail[url]: \n" + url);
         var id = url;
         var lname = "Đang cập nhật...";
         var limg = "";
@@ -525,7 +640,7 @@ function parseMovieDetail(html, url) {
 
 function parseDetailResponse(html, url) {
     try {
-        log("parseDetailResponse[url]: \n" + url);
+        console.log("parseDetailResponse[url]: \n" + url);
         var tap = url.match(/tap=(\d+)/i);
         var tapVal = tap && tap[1] !== undefined ? tap[1] : "1";
         
@@ -533,6 +648,7 @@ function parseDetailResponse(html, url) {
         var $subtitle = "";
         var $dataVD = parseScript(script);
         var $episodes = $dataVD.data.episodes || [];
+        //console.log("episode\n" + JSON.stringify($episodes))
         var tapcurrent = $episodes.findIndex(function(ep) {
             return ep.name == tapVal || ep.slug == tapVal || ep.episode == tapVal;
         });
@@ -554,10 +670,15 @@ function parseDetailResponse(html, url) {
         
         if ($hardsub === false && $video.subtitles && $video.subtitles.length > 0) {
             $subtitle = $video.subtitles[0].fileUrl;
+            var suburl = BASE64.encode($subtitle);
+            suburl = "https://trans.alokillgtv02.workers.dev/?sub_b64=" + suburl + "&sl=auto&tl=vi";
         }
         
-        if(url.indexOf("full1tap=true") > -1){
+      if(url.indexOf("full1tap=true") > -1){
+          //.log("ListMV\n" + JSON.stringify($episodes))
+          //log("parseDetailResponse[url]: \n" + $linkstream);
           var postbody = BASE64.encode(JSON.stringify($episodes))
+          //var link = "https://script.google.com/macros/s/AKfycbwOr1SrXDDAEFpcNJGolpcReeDe5u5A7v7BWMqoKw6y1UA-LGjLtVwIgxc-u1d_J1Tb/exec?film_url=" + encodeURIComponent(url)
           var link = "https://shortlink.alokillgtv.workers.dev//?film_url=" + encodeURIComponent(url)
           console.log("link Post:\n" + link)
           var $return = JSON.stringify({
@@ -571,11 +692,14 @@ function parseDetailResponse(html, url) {
               datasend: encodeURIComponent(link)
             
           });
+          //console.log($return);
           return $return
       }
       else{
+        console.log("Subfile\n" + suburl)
+        console.log("stream 1 file\n" + $linkstream)
         return JSON.stringify({
-            "url": $linkstream,
+            "url": $linkstream + "#.m3u8",
             "isEmbed": false,
             "mimeType": "application/x-mpegURL",
             "headers": {
@@ -583,8 +707,9 @@ function parseDetailResponse(html, url) {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             },
             "subtitles": [{
-                "lang": "vi",
-                "url": $subtitle
+                "lang": "en",
+                "url": suburl,
+                "mimeType": "text/vtt"
             }]
         });
       }
@@ -599,12 +724,15 @@ function parseDetailResponse(html, url) {
 }
 
 
- function parseEmbedResponse(html, url, datasend) {
+function parseEmbedResponse(html, url, datasend) {
      console.log("Kết quả:\n" + html)
-    log("parseEmbedResponse [url]: " + url); 
+    log("parseEmbedResponse [url]: " + url); //console.log("parseEmbedResponse [Raw]: " + html);
     try {
       var decode = decodeURIComponent(datasend)
-      console.log("embed:\n" + decode)
+      console.log("embed:\n" + decode);
+      var suburl2 = BASE64.encode(decode + "&subtitle=true");
+      var suburl = "https://trans.alokillgtv02.workers.dev/?sub_b64=" + suburl2 + "&sl=auto&tl=vi";
+      console.log("Subfile\n" + suburl)
       var $return = JSON.stringify({
         url: decode + "&m3u8=true" ,
         mimeType: "application/x-mpegURL",
@@ -613,12 +741,12 @@ function parseDetailResponse(html, url) {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         },
         subtitles: [{
-          lang: "Vietsub",
-          url: decode + "&subtitle=true",
+          lang: "en",
+          url: suburl,
           mimeType: "text/vtt"
         }]     
       });
-      console.log("Return Embed:\n" + $return)
+      //console.log("Return Embed:\n" + $return)
       return $return
     } catch (e) {
       console.log("[Lỗi parseEmbedResponse]", e);
@@ -657,6 +785,8 @@ BASE64 = {
   encode: function (str) {
     try {
       if (!str) return "";
+
+      // 1. Encode String ra mảng UTF-8 Bytes trước
       var utf8Bytes = [];
       for (var i = 0; i < str.length; i++) {
         var code = str.charCodeAt(i);
@@ -669,6 +799,7 @@ BASE64 = {
           i + 1 < str.length &&
           (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00
         ) {
+          // Ký tự Surrogate Pair
           code =
             0x10000 + ((code & 0x03ff) << 10) + (str.charCodeAt(++i) & 0x03ff);
           utf8Bytes.push(
@@ -686,6 +817,7 @@ BASE64 = {
         }
       }
 
+      // 2. Chuyển mảng UTF-8 Bytes thành chuỗi Base64
       var chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       var encoded = "";
@@ -721,19 +853,26 @@ BASE64 = {
   decode: function (base64String) {
     try {
       if (!base64String) return "";
+
+      // 1. Dọn dẹp chuỗi & xử lý nếu URL-encoded (ví dụ: %2B, %2F)
       var str = decodeURIComponent(base64String.trim());
+
+      // Chuyển URL-safe base64 về base64 chuẩn
       str = str.replace(/-/g, "+").replace(/_/g, "/");
+
+      // Bảng ký tự Base64
       var chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       var output = [];
       var buffer = 0,
         bits = 0;
 
+      // 2. Decode Base64 thành Mảng Byte
       for (var i = 0; i < str.length; i++) {
         var char = str.charAt(i);
-        if (char === "=") break; 
+        if (char === "=") break; // Bỏ qua padding
         var index = chars.indexOf(char);
-        if (index === -1) continue; 
+        if (index === -1) continue; // Bỏ qua ký tự không hợp lệ
 
         buffer = (buffer << 6) | index;
         bits += 6;
@@ -744,6 +883,7 @@ BASE64 = {
         }
       }
 
+      // 3. Decode UTF-8 từ mảng Byte ra String
       var result = "";
       var j = 0;
       while (j < output.length) {
