@@ -460,12 +460,54 @@ function phimApiStreamJson(url) {
   });
 }
 
+var PHIM4K_READY = null;
+var USE_PHIMAPI = false;
+
+function phim4kCheck() {
+  if (typeof httpRequest !== "function") {
+    PHIM4K_READY = null;
+    log("phim4k startup check skipped: httpRequest unavailable");
+    return null;
+  }
+  var url = BASEURL + "/rest-api/v130/movies?page=1";
+  try {
+    var res = httpRequest(url, { method: "GET", headers: PHIM4K_HEADERS, timeout: 5000 });
+    var body = res && res.body ? String(res.body) : "";
+    log("phim4k startup check url=" + url + " status=" + (res && res.status) + " ok=" + !!(res && res.isSuccessful) + " len=" + body.length + " prefix=" + logShort(body));
+    if (!res || !res.isSuccessful || !body) {
+      PHIM4K_READY = false;
+      return false;
+    }
+    var json = JSON.parse(body);
+    PHIM4K_READY = !phim4kListBad(json) && phim4kHasAnyItem(json);
+    log("phim4k startup ready=" + PHIM4K_READY);
+    return PHIM4K_READY;
+  } catch (e) {
+    PHIM4K_READY = false;
+    log("phim4k startup error: " + e);
+    return false;
+  }
+}
+
+function phim4kReady() {
+  if (PHIM4K_READY === null) phim4kCheck();
+  return PHIM4K_READY;
+}
+
+try {
+  phim4kCheck();
+  USE_PHIMAPI = PHIM4K_READY === false;
+  log("phim4k mode=" + (USE_PHIMAPI ? "phimapi" : "phim4k"));
+} catch (e) {
+  log("phim4k init error: " + e);
+}
+
 function getManifest() {
   try {
     return JSON.stringify({
       "id": "saigonphim",
       "name": "[MOVIE] Sài Gòn Phim",
-      "version": "1.4",
+      "version": "1.5.1",
       "author": "Alokillgtv",
       "BASEURL": BASEURL,
       "baseUrl": BASEURL,
@@ -621,7 +663,7 @@ function getManifest() {
           }
           var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
           log("getUrlList output=" + finalUrl);
-          if (phim4kProbeList(finalUrl)) return finalUrl;
+          if (!USE_PHIMAPI && phim4kProbeList(finalUrl)) return finalUrl;
           var fallbackUrl = phimApiUrlForSource(finalUrl, page);
           log("getUrlList fallback=" + fallbackUrl);
           return fallbackUrl;
@@ -662,7 +704,7 @@ function getManifest() {
   
           var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
           log("getUrlSearch output=" + finalUrl);
-          if (phim4kProbeList(finalUrl)) return finalUrl;
+          if (!USE_PHIMAPI && phim4kProbeList(finalUrl)) return finalUrl;
           var fallbackUrl = phimApiUrlForSource(finalUrl, page);
           log("getUrlSearch fallback=" + fallbackUrl);
           return fallbackUrl;
@@ -1917,7 +1959,7 @@ function iframe64(url){
           }
           var detailUrl = slug.charAt(0) === "/" ? BASEURL + slug : BASEURL + "/" + slug;
           log("getUrlDetail output=" + detailUrl);
-          if (phim4kProbeDetail(detailUrl)) {
+          if (!USE_PHIMAPI && phim4kProbeDetail(detailUrl)) {
               log("getUrlDetail use phim4k");
               return detailUrl;
           }
