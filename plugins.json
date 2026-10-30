@@ -51,6 +51,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/phimnet.png"
     },
     {
+      "id": "phimchill",
+      "name": "Phim Chill [MOVIE]",
+      "version": "3.9.8",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimchill_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/phimchill.png"
+    },
+    {
       "id": "rophim",
       "name": "RP Mới [MOVIE]",
       "version": "3.7.0",
