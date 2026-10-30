@@ -6,12 +6,13 @@ function getManifest() {
   return JSON.stringify({
     id: "ThethaoTV",
     name: "[SPORT] ThethaoTV",
-    version: "1.0.4",
+    version: "1.0.3",
     baseUrl: BASE_URL,
     iconUrl: "https://i.ibb.co/cSrQ5y7K/ththethao-logo.png",
     isEnabled: true,
     isAdult: false,
     type: "IPTV",
+    // Đã gỡ bỏ layoutType: "HORIZONTAL" để không ép UI xoay ngang gây lag
     playerType: "exoplayer",
     debug: true
   });
@@ -19,6 +20,7 @@ function getManifest() {
 
 function getHomeSections() {
   return JSON.stringify([
+    // Chuyển mục đầu tiên sang Grid (cuộn dọc) giống cơ chế tối ưu của Xoilac TV
     { slug: "gio-vang-tv", title: "Giờ Vàng TV", type: "Grid", path: "" },
     { slug: "khan-dai-tv", title: "Khán Đài TV", type: "Horizontal", path: "" },
     { slug: "s8-tv", title: "S8 TV", type: "Horizontal", path: "" },
@@ -54,7 +56,7 @@ function getUrlList(slug, filtersJson) {
 }
 
 function getUrlSearch(keyword = "", filtersJson) {
-  return `${BASE_URL}?search=${encodeURIComponent(keyword?.trim() || "")}`;
+  return `${BASE_URL}?search=${encodeURIComponent(keyword?.trim())}`;
 }
 
 function getUrlDetail(path) {
@@ -82,33 +84,25 @@ function parseListResponse(html, apiUrl) {
     const items = [];
     let channels = [];
 
-    if (channelList.length === 0 && html) {
-      channelList = parseM3U(html);
-    }
-    
+    if (channelList.length === 0) channelList = parseM3U(html);
     const category = extractParamFromUrl(apiUrl, "category");
     const keyword = extractParamFromUrl(apiUrl, "search");
 
-    if (category) {
+    if (category)
       channels = filterChannels(channelList, ["category", category]);
-    } else if (keyword) {
+    else if (keyword)
       channels = filterChannels(channelList, ["search", keyword]);
-    } else {
-      channels = channelList;
-    }
 
     channels.forEach((channel) => {
       const matchInfo = parseChannelName(channel.name);
-      const isFlv = /\.flv(\?|$)/i.test(channel.url) || channel.url.toLowerCase().includes(".flv");
-
       items.push({
         id: "?channelId=" + channel.channelId,
         title: matchInfo.title ? matchInfo.title : channel.name,
         description: `Channel "${channel.name}" is hosted on server THTheThao.`,
         posterUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
         backdropUrl: channel.tvgLogo || FALLBACK_POSTER_URL,
-        quality: isLive(matchInfo.dateTime) ? "LIVE" : (matchInfo.dateTime || "LIVE"),
-        episode_current: isFlv ? "FLV" : "HLS"
+        quality: isLive(matchInfo.dateTime) ? "LIVE" : matchInfo.dateTime,
+        episode_current: channel.url.includes(".m3u8") ? "HSL" : "FLV"
       });
     });
 
@@ -118,7 +112,7 @@ function parseListResponse(html, apiUrl) {
     });
   } catch (error) {
     console.error(
-      "⛔ [parseListResponse in ththethao_plugin.js] ERROR MESSAGE: ",
+      "⛔ [parseDetailResponse in ththethao_plugin.js] ERROR MESSAGE: ",
       error
     );
     return JSON.stringify({
@@ -134,37 +128,27 @@ function parseSearchResponse(html, apiUrl) {
 
 function parseDetailResponse(html, apiUrl) {
   try {
-    if (channelList.length === 0 && html) {
-      channelList = parseM3U(html);
-    }
-
     if (apiUrl.indexOf("|") > 0) apiUrl = apiUrl.split("|")[0];
     const channelId = extractParamFromUrl(apiUrl, "channelId");
-    const channel = getChannel(channelList, channelId);
-
-    if (!channel || !channel.url) {
-      return "{}";
-    }
-
     const {
       url,
       name,
-      props = {}
-    } = channel;
-
-    const userAgent = props["http-user-agent"];
-    const referrer = props["http-referrer"] || props["referrer"];
-    const origin = props["http-origin"];
-
-    const isFlv = /\.flv(\?|$)/i.test(url) || url.toLowerCase().includes(".flv");
+      props: {
+        "http-user-agent": userAgent,
+        "http-referrer": referrer,
+        "http-origin": origin
+      }
+    } = getChannel(channelList, channelId);
 
     console.log("ℹ️ [parseDetailResponse in ththethao_plugin.js] Name: ", name);
-    console.log("ℹ️ [parseDetailResponse in ththethao_plugin.js] URL: ", url);
-
-    if (isFlv) {
-      console.log("ℹ️ [parseDetailResponse in ththethao_plugin.js] Manifest type: FLV");
+      if (url.includes(".flv")) {
+      // FLV (flv)
+      console.log(
+        `ℹ️ [parseDetailResponse in ththethao_plugin.js] Manifest type FLV`
+      );
+      console.log("ℹ️ [parseDetailResponse in ththethao_plugin.js] URL:", url);
       return JSON.stringify({
-        isEmbed: false,
+       isEmbed: false,
         url: url,
         mimeType: "video/x-flv",
         headers: {
@@ -174,7 +158,11 @@ function parseDetailResponse(html, apiUrl) {
         }
       });
     } else {
-      console.log("ℹ️ [parseDetailResponse in ththethao_plugin.js] Manifest type: HLS (M3U8)");
+      // HLS (m3u8)
+      console.log(
+        `ℹ️ [parseDetailResponse in ththethao_plugin.js] Manifest type HLS (M3U8)`
+      );
+      console.log("ℹ️ [parseDetailResponse in ththethao_plugin.js] URL:", url);
       return JSON.stringify({
         isEmbed: false,
         url: url,
@@ -209,10 +197,14 @@ function parseYearsResponse(html) {
 // NHÓM 4: HELPERS
 // =============================================================================
 
+// ======================================
+// VARIABLES
+// ======================================
+
 const BASE_URL = "https://thtt.pages.dev/tttt.m3u";
 const FALLBACK_POSTER_URL = "https://i.ibb.co/rKHf363x/fallback-thumbnail.webp";
 let channelList = [];
-
+// Use GROUP_MAP to rename and merge the channel into tvg-group.
 const GROUP_MAP = {
   "giờ vàng tv": "Giờ Vàng TV",
   "khán đài tv": "Khán Đài TV",
@@ -223,6 +215,7 @@ const GROUP_MAP = {
   "phá làng tv": "Phá Làng TV"
 };
 
+// Use CATEGORY_MAP to convert the slug to tvg-group.
 const CATEGORY_MAP = {
   "gio-vang-tv": "Giờ Vàng TV",
   "khan-dai-tv": "Khán Đài TV",
@@ -233,6 +226,10 @@ const CATEGORY_MAP = {
   "pha-lang-tv": "Phá Làng TV"
 };
 
+// ======================================
+// FUNCTIONS
+// ======================================
+
 function extractParamFromUrl(url, param) {
   if (!url) return "";
   var match = url.match(new RegExp("[?&]" + param + "=([^&]+)"));
@@ -240,26 +237,25 @@ function extractParamFromUrl(url, param) {
 }
 
 function filterChannels(channels, [filterKey, filterValue]) {
-  if (!channels || !Array.isArray(channels)) return [];
-
+  // filter channels by category
   if (filterValue && filterKey === "category") {
     return channels.filter(
       (channel) => CATEGORY_MAP[filterValue] === channel.tvgGroup
     );
   }
   if (filterValue && filterKey === "search") {
-    const keyword = filterValue.toLowerCase();
     return channels.filter((channel) => {
-      const name = (channel.name || "").toLowerCase();
-      return name.indexOf(keyword) >= 0;
+      const name = channel.name.toLowerCase();
+      filterValue = filterValue.toLowerCase();
+      return name.indexOf(filterValue) >= 0;
     });
   }
-  return channels;
 }
 
 function getChannel(channels, channelId) {
   if (channelId === undefined || channelId === null || channelId === "")
     return {};
+  const numId = parseInt(channelId, 10);
   return (
     channels.find(
       (channel) => String(channel.channelId) === String(channelId)
@@ -268,7 +264,6 @@ function getChannel(channels, channelId) {
 }
 
 function parseM3U(text) {
-  if (!text) return [];
   const lines = text.split("\n");
   const channels = [];
   let currentChannel = null;
@@ -287,26 +282,24 @@ function parseM3U(text) {
         props: {}
       };
 
-      const commaIndex = line.lastIndexOf(",");
-      if (commaIndex !== -1) {
+      const commaIndex = line.lastIndexOf(`,`);
+      if (commaIndex !== -1)
         currentChannel.name =
-          line.substring(commaIndex + 1).trim() || "No Name";
-      }
+          line.substring(commaIndex + 2).trim() || "No Name";
 
       const logoMatch = line.match(/tvg-logo="([^"]+)"/i);
       if (logoMatch && logoMatch[1]) currentChannel.tvgLogo = logoMatch[1];
 
       const groupMatch = line.match(/group-title="([^"]+)"/i);
-      if (groupMatch && groupMatch[1]) {
-        const groupKey = groupMatch[1].toLowerCase().trim();
-        currentChannel.tvgGroup = GROUP_MAP[groupKey]
-          ? GROUP_MAP[groupKey]
-          : groupMatch[1].trim();
-      }
+      if (groupMatch && groupMatch[1])
+        currentChannel.tvgGroup = GROUP_MAP[groupMatch[1].toLowerCase()]
+          ? GROUP_MAP[groupMatch[1].toLowerCase()]
+          : groupMatch[1];
 
       const idMatch = line.match(/tvg-id="([^"]+)"/i);
       if (idMatch && idMatch[1]) currentChannel.tvgId = idMatch[1];
 
+      // Capture all catchup attributes
       const catchupMatch = line.match(/catchup="([^"]+)"/i);
       if (catchupMatch) currentChannel.props.catchup = catchupMatch[1];
 
@@ -338,7 +331,6 @@ function parseM3U(text) {
         }
       }
     } else if (line !== "" && !line.startsWith("#")) {
-      // Giữ lại toàn bộ URL (bao gồm cả .flv và .m3u8)
       if (currentChannel) {
         currentChannel.url = line;
         channels.push(currentChannel);
@@ -358,6 +350,7 @@ function parseM3U(text) {
   return channels;
 }
 
+// Convert Base64/Base64Url to Hex for ClearKey
 function base64ToHex(base64) {
   if (!base64) return "";
   let b64 = base64.replace(/-/g, "+").replace(/_/g, "/");
@@ -376,6 +369,7 @@ function base64ToHex(base64) {
   }
 }
 
+// A handmade atob function for QuickJS
 function atob(input) {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -406,24 +400,24 @@ function atob(input) {
 }
 
 function parseChannelName(channelName) {
-  if (!channelName) return { dateTime: null, title: "No Name" };
   const match = channelName.trim().match(
-    /^(?:🟢\s*)?(\d{1,2}:\d{2})\s+(\d{2}\/\d{2})\s+(.+)$/
+    /^(?:🟢\s*)?(\d{2}:\d{2})\s+(\d{2}\/\d{2})\s+(.+)$/
   );
   if (!match) {
     return {
       dateTime: null,
-      title: channelName.trim()
+      title: channelName.trim(),
     };
   }
   return {
     dateTime: `${match[1]}-${match[2]}`,
-    title: match[3].trim()
+    title: match[3].trim(),
   };
 }
 
 function isLive(dateTime) {
-  if (!dateTime) return false;
+  // dateTime format: "22:30-05/08" hoặc "3:30-05/08"
+  // Mặc định GMT+7
   var match = /^(\d{1,2}):(\d{2})-(\d{2})\/(\d{2})$/.exec(dateTime);
 
   if (!match) {
@@ -434,6 +428,7 @@ function isLive(dateTime) {
   var day = Number(match[3]);
   var month = Number(match[4]);
 
+  // Validate
   if (
     hour < 0 ||
     hour > 23 ||
@@ -446,9 +441,12 @@ function isLive(dateTime) {
   ) {
     return false;
   }
+  // Lấy năm hiện tại theo UTC
   var now = new Date();
   var year = now.getUTCFullYear();
+  // GMT+7 -> UTC
   var eventTimestamp = Date.UTC(year, month - 1, day, hour - 7, minute, 0, 0);
 
+  // So sánh timestamp hiện tại (UTC)
   return eventTimestamp <= Date.now();
 }
