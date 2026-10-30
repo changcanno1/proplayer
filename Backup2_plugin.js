@@ -6,7 +6,7 @@ function getManifest() {
     return JSON.stringify({
         "id": "phimhdcs",
         "name": "PhimHDCS",
-        "version": "1.1.7",
+        "version": "1.1.8",
         "baseUrl": "https://phimhdcss.com",
         "iconUrl": "https://phimhdcss.com/favicon.ico",
         "isEnabled": true,
@@ -532,7 +532,19 @@ function _decodeOxData(htmlContent) {
             } catch (e) {}
         }
     }
+
+    if (!oxData) {
+        var embeddedMatch = /\.dataset\.link\s*=\s*["']([^"']+)["']/i.exec(htmlContent);
+        if (embeddedMatch) oxData = { fallback: [embeddedMatch[1]] };
+    }
     return { oxData: oxData, salt: salt };
+}
+
+function _decodeStreamServer(value) {
+    var candidate = String(value || "");
+    if (candidate.indexOf("http") === 0) return candidate;
+    var decoded = _decodeBase64(candidate.split("").reverse().join(""));
+    return decoded && decoded.indexOf("http") === 0 ? decoded : "";
 }
 
 function parseDetailResponse(htmlContent, pageUrl, datasend) {
@@ -541,6 +553,7 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
         var requested = "";
         if (typeof datasend !== 'undefined' && datasend) {
             requested = String(datasend).toLowerCase().trim();
+            if (requested.indexOf("data:") === 0) requested = requested.substring(5);
         }
         if (!requested && pageUrl) {
             var pl = String(pageUrl).toLowerCase();
@@ -561,8 +574,10 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
             var directCandidate = null;
 
             for (var k in oxData) {
-                if (oxData.hasOwnProperty(k) && Array.isArray(oxData[k])) {
-                    var candidateUrl = _decodeChunksWithSalt(oxData[k], salt);
+                if (oxData.hasOwnProperty(k)) {
+                    var candidateUrl = Array.isArray(oxData[k])
+                        ? _decodeChunksWithSalt(oxData[k], salt)
+                        : _decodeStreamServer(oxData[k]);
                     if (!candidateUrl || candidateUrl.indexOf("http") !== 0) continue;
 
                     // Unwrap player.php?link= wrapper
@@ -571,19 +586,15 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
                         if (linkParam) candidateUrl = decodeURIComponent(linkParam[1]);
                     }
 
-                    // Bỏ qua Server NC (streamc.xyz) và server kvp
-                    if (candidateUrl.indexOf("streamc.xyz") !== -1 ||
-                        candidateUrl.indexOf("kvp") !== -1) {
-                        continue;
-                    }
-
                     log('PHIMHDCS_DEBUG server [' + k + ']: ' + candidateUrl);
 
                     if (candidateUrl.indexOf("tiktok") !== -1 || candidateUrl.indexOf("tk.") !== -1) {
                         if (!tiktokCandidate) tiktokCandidate = { id: k, url: candidateUrl };
                     } else if (candidateUrl.indexOf("streamxemphimhd") !== -1) {
                         if (!hdcCandidate) hdcCandidate = { id: k, url: candidateUrl };
-                    } else if (candidateUrl.indexOf(".m3u8") !== -1 || candidateUrl.indexOf(".mp4") !== -1) {
+                    } else if (candidateUrl.indexOf("streamc.xyz") !== -1) {
+                        continue;
+                    } else if (candidateUrl.indexOf("kvp") !== -1 || candidateUrl.indexOf(".m3u8") !== -1 || candidateUrl.indexOf(".mp4") !== -1 || candidateUrl.indexOf("master.txt") !== -1) {
                         if (!directCandidate) directCandidate = { id: k, url: candidateUrl };
                     }
                 }
@@ -591,13 +602,13 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
 
             // Chọn server theo yêu cầu user hoặc ưu tiên mặc định
             var selected = null;
-            if (requested === "server:hdc") {
-                selected = hdcCandidate || tiktokCandidate || directCandidate;
-            } else if (requested === "server:tiktok") {
-                selected = tiktokCandidate || hdcCandidate || directCandidate;
+            if (requested === "server:hdc" || requested === "data:server:hdc") {
+                selected = hdcCandidate || directCandidate || tiktokCandidate;
+            } else if (requested === "server:tiktok" || requested === "data:server:tiktok") {
+                selected = directCandidate || tiktokCandidate || hdcCandidate;
             } else {
-                // Mặc định: TikTok (nhanh, ổn định) → StreamXemPhimHD → Direct
-                selected = tiktokCandidate || hdcCandidate || directCandidate;
+                // Prefer a native media URL; embeds can be rejected by ExoPlayer.
+                selected = directCandidate || tiktokCandidate || hdcCandidate;
             }
 
             if (selected && selected.url) {
@@ -605,11 +616,11 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
                 log('PHIMHDCS_DEBUG selected: ' + playerUrl);
 
                 // === LINK TRỰC TIẾP (.m3u8 / .mp4) → Phát native ExoPlayer ===
-                if (playerUrl.indexOf(".m3u8") !== -1 || playerUrl.indexOf(".mp4") !== -1) {
+                if (playerUrl.indexOf(".m3u8") !== -1 || playerUrl.indexOf(".mp4") !== -1 || playerUrl.indexOf("master.txt") !== -1) {
                     return JSON.stringify({
                         url: playerUrl,
                         isEmbed: false,
-                        mimeType: "application/x-mpegURL",
+                        mimeType: playerUrl.indexOf(".mp4") !== -1 ? "video/mp4" : "application/x-mpegURL",
                         headers: {
                             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                             "Referer": "https://phimhdcss.com/"
@@ -622,7 +633,7 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
                 if (playerUrl.indexOf("streamxemphimhd") !== -1) {
                     return JSON.stringify({
                         url: playerUrl,
-                        isEmbed: false,
+                        isEmbed: true,
                         headers: {
                             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                             "Referer": "https://phimhdcss.com/",
@@ -634,7 +645,7 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
                     });
                 }
 
-                // === TIKTOK / EMBED KHÁC → Embed loop để parseEmbedResponse xử lý ===
+                // TikTok page redirects to the current edgeplayer iframe; keep it in WebView.
                 var isTiktok = playerUrl.indexOf("tiktok") !== -1 || playerUrl.indexOf("tk.") !== -1;
                 return JSON.stringify({
                     url: playerUrl,
@@ -659,7 +670,7 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
             var embedUrl = iframeMatch[1];
             if (embedUrl.indexOf('//') === 0) embedUrl = "https:" + embedUrl;
             if (embedUrl && embedUrl !== pageUrl && embedUrl.length > 5) {
-                if (embedUrl.indexOf("streamc.xyz") === -1 && embedUrl.indexOf("kvp") === -1) {
+                    if (embedUrl.indexOf("streamc.xyz") === -1) {
                     return JSON.stringify({
                         url: embedUrl,
                         isEmbed: true,
@@ -691,27 +702,32 @@ function parseEmbedResponse(htmlContent, url, datasend) {
         // --- TIKTOK EMBED ---
         if (url.indexOf("tiktok.phimhdc") !== -1) {
             log("parseEmbedResponse: TikTok embed");
-            var iframeMatch = htmlContent.match(/src="([^"]+edgeplayer\.html[^"]+)"/i) || htmlContent.match(/<iframe[^>]+src="([^"]+)"/i);
-            if (iframeMatch) {
-                var keyMatch = iframeMatch[1].match(/[?&](?:amp;)?key=([a-zA-Z0-9_-]+)/i) || htmlContent.match(/[?&](?:amp;)?key=([a-zA-Z0-9_-]+)/i);
-                if (keyMatch) {
-                    var key = keyMatch[1];
-                    var streamUrl = "https://tiktok.phimhdc.com/video/" + key + "/master.m3u8?delivery=direct";
-                    log("parseEmbedResponse: TikTok stream → " + streamUrl);
-                    return JSON.stringify({
-                        url: streamUrl,
-                        isEmbed: false,
-                        mimeType: "application/x-mpegURL",
-                        headers: {
-                            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
-                            "Referer": "https://tiktok.phimhdc.com/edgeplayer.html?pv=16&key=" + key + "&delivery=direct"
-                        },
-                        subtitles: []
-                    });
-                }
+            if (url.indexOf("edgeplayer.html") !== -1) return JSON.stringify({ url: "", isEmbed: false, headers: {}, subtitles: [] });
+            htmlContent = String(htmlContent || "").replace(/&amp;/gi, "&").replace(/\\u0026/gi, "&");
+            var iframeMatch = htmlContent.match(/src=["']([^"']+edgeplayer\.html[^"']*)["']/i) || htmlContent.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+            var keyMatch = (iframeMatch && iframeMatch[1].match(/[?&](?:amp;)?key=([a-zA-Z0-9_-]+)/i)) || String(url || "").match(/[?&](?:amp;)?key=([a-zA-Z0-9_-]+)/i) || htmlContent.match(/(?:[?&]|%26)key(?:=|%3D)([a-zA-Z0-9_-]+)/i);
+            if (!keyMatch) keyMatch = String(url || "").match(/\/embed\/([a-zA-Z0-9_-]+)/i);
+            if (keyMatch) {
+                var key = keyMatch[1];
+                var edgeUrl = iframeMatch ? iframeMatch[1] : "/edgeplayer.html?pv=18&key=" + encodeURIComponent(key) + "&delivery=direct";
+                edgeUrl = edgeUrl.replace(/\$\{encodeURIComponent\(key\)\}/g, encodeURIComponent(key)).replace(/\$\{q\}/g, "&delivery=direct");
+                if (edgeUrl.indexOf("//") === 0) edgeUrl = "https:" + edgeUrl;
+                if (edgeUrl.indexOf("http") !== 0) edgeUrl = "https://tiktok.phimhdc.com" + (edgeUrl.charAt(0) === "/" ? "" : "/") + edgeUrl;
+                log("parseEmbedResponse: TikTok edgeplayer → " + edgeUrl);
+                return JSON.stringify({
+                    url: edgeUrl,
+                    isEmbed: true,
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+                        "Referer": url,
+                        "Custom-Js": "/* Keep the TikTok edgeplayer in its own WebView. */",
+                        "Block-Sniffer": "true"
+                    },
+                    subtitles: []
+                });
             }
             log("parseEmbedResponse: TikTok failed to extract key");
-            return JSON.stringify({ url: "", isEmbed: false, headers: {}, subtitles: [] });
+                    return JSON.stringify({ url: "", isEmbed: false, headers: {}, subtitles: [] });
         }
 
         // --- STREAMXEMPHIMHD: getVideo JSON response ---
