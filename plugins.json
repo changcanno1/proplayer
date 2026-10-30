@@ -36,19 +36,19 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/saigonfilm_plugin.js",
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAvC1dIB0emUqIfQbIFdMc0K-utn3P_x5KpqZs0LA6GQ&s=10"
     },
-    {
-      "id": "rophim",
-      "name": "RP Mới [MOVIE]",
-      "version": "1.2.7",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
-    },
    {
       "id": "PhimBom",
       "name": "PhimBom",
       "version": "2.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
+    },
+    {
+      "id": "rophim",
+      "name": "RP Mới [MOVIE]",
+      "version": "1.2.7",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
     {
       "id": "onflix",
@@ -100,13 +100,6 @@
       "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75"
     },
     {
-      "id": "netshort",
-      "name": "Netshort [SHORT]",
-      "version": "2.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Netshort_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/netshort.png"
-    },
-    {
       "id": "Mê Phim Ngắn",
       "name": "Mê Phim Ngắn",
       "version": "1.1.0",
@@ -127,6 +120,13 @@
       "version": "1.1.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/YiniTV_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yini.png"
+    },
+    {
+      "id": "netshort",
+      "name": "Netshort [SHORT]",
+      "version": "2.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Netshort_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/netshort.png"
     },
     {
       "id": "yanhh3d",
