@@ -16,6 +16,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
     {
+      "id": "danet",
+      "name": "DANET [MOVIE]",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/danet_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/danet.png"
+    },
+    {
       "id": "vn2c",
       "name": "PhimVn2C",
       "version": "2.1",
