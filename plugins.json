@@ -51,13 +51,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
     },
     {
-      "id": "phimnet",
-      "name": "Phimnet [MOVIE]",
-      "version": "1.2.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimnet_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/phimnet.png"
-    },
-    {
       "id": "phimchill",
       "name": "Phim Chill [MOVIE]",
       "version": "3.9.8",
