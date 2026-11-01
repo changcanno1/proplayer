@@ -1,4 +1,4 @@
-lo{
+{
   "version": 1,
   "plugins": [
     {
@@ -15,7 +15,7 @@ lo{
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
-    {
+     {
       "id": "Phim HDCS",
       "name": "[MOVIE] Phim HDCS",
       "version": "1.2.2",
