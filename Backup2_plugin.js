@@ -6,7 +6,7 @@ function getManifest() {
     return JSON.stringify({
         "id": "phimhdcs",
         "name": "PhimHDCS",
-        "version": "1.2.1",
+        "version": "1.2.2",
         "baseUrl": "https://phimhdcss.com",
         "iconUrl": "https://phimhdcss.com/favicon.ico",
         "isEnabled": true,
@@ -413,6 +413,7 @@ function parseMovieDetail(htmlContent) {
                     ids: [
                         { name: "Tự động", url: ep.url + "|data:server:auto" },
                         { name: "StreamXemPhimHD", url: ep.url + "|data:server:hdc" },
+                        { name: "Abyss / Hydrax", url: ep.url + "|data:server:abyss" },
                         { name: "TikTok", url: ep.url + "|data:server:tiktok" },
                         { name: "Dự phòng (StreamC)", url: ep.url + "|data:server:streamc" }
                     ]
@@ -442,6 +443,7 @@ function parseMovieDetail(htmlContent) {
                     ids: [
                         { name: "Tự động", url: extraUrl + "|data:server:auto" },
                         { name: "StreamXemPhimHD", url: extraUrl + "|data:server:hdc" },
+                        { name: "Abyss / Hydrax", url: extraUrl + "|data:server:abyss" },
                         { name: "TikTok", url: extraUrl + "|data:server:tiktok" },
                         { name: "Dự phòng (StreamC)", url: extraUrl + "|data:server:streamc" }
                     ]
@@ -602,7 +604,11 @@ function _phcsJsonRequest(url, method, body, headers) {
             body: body || undefined,
             headers: headers || { "User-Agent": "Mozilla/5.0", "Accept": "application/json,*/*" }
         });
-        return response && response.isSuccessful ? String(response.body || "") : "";
+        if (!response) return "";
+        if (response.isSuccessful !== undefined) {
+            return response.isSuccessful ? String(response.body || "") : "";
+        }
+        return String(response.body !== undefined ? response.body : response);
     } catch (e) { return ""; }
 }
 
@@ -879,36 +885,32 @@ function _phcsResolveHdcDirect(hdcUrl, pageRef) {
 }
 
 // Bóc thông tin key & phụ đề VTT rời từ tiktok.phimhdc.com
+var PHCS_TIKTOK_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+
 function _phcsResolveTikTokInfo(tiktokUrl) {
     if (!tiktokUrl) return null;
     var origin = "https://tiktok.phimhdc.com";
-    var ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+    var ua = PHCS_TIKTOK_UA;
 
     var embedHtml = _phcsJsonRequest(tiktokUrl, "GET", "", {
         "User-Agent": ua,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Referer": "https://phimhdcss.com/",
-        "Sec-Fetch-Dest": "iframe",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "cross-site"
+        "Referer": "https://phimhdcss.com/"
     });
     var decodedHtml = String(embedHtml || "").replace(/&amp;/gi, "&");
-    var keyMatch = decodedHtml.match(/edgeplayer\.html[^"']*[?&]key=([a-zA-Z0-9_-]+)/i)
-        || decodedHtml.match(/[?&]key=([a-zA-Z0-9_-]+)/i)
+    var keyMatch = decodedHtml.match(/edgeplayer\.html[^"']*key=([a-zA-Z0-9_-]+)/i)
+        || decodedHtml.match(/key=([a-zA-Z0-9_-]+)/i)
         || String(tiktokUrl).match(/\/embed\/([a-zA-Z0-9_-]+)/i);
     var key = keyMatch ? keyMatch[1] : "";
     if (!key) return null;
 
-    var edgePage = origin + "/edgeplayer.html?pv=22&key=" + encodeURIComponent(key) + "&delivery=raw";
+    var edgePage = origin + "/edgeplayer.html?pv=22&key=" + encodeURIComponent(key) + "&delivery=proxy";
     var guardRaw = _phcsJsonRequest(origin + "/api/js-token?name=play_guard&jobId=" + encodeURIComponent(key), "GET", "", {
         "User-Agent": ua,
         "Accept": "application/json",
         "Referer": edgePage,
         "Origin": origin,
-        "X-Requested-With": "XMLHttpRequest",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin"
+        "X-Requested-With": "XMLHttpRequest"
     });
     var guard = "";
     try { guard = JSON.parse(guardRaw).token || ""; } catch (e) {}
@@ -947,6 +949,48 @@ function _phcsResolveTikTokInfo(tiktokUrl) {
         edgeUrl: edgePage,
         subtitles: subtitles
     };
+}
+
+// Bóc tách direct HLS Master manifest cho ExoPlayer từ tiktok.phimhdc.com
+function _phcsResolveTikTokDirect(tiktokUrl, pageRef) {
+    var info = _phcsResolveTikTokInfo(tiktokUrl);
+    if (!info || !info.key || !info.guard) return null;
+
+    var origin = "https://tiktok.phimhdc.com";
+    var ua = PHCS_TIKTOK_UA;
+    var postBody = JSON.stringify({ jobId: info.key, delivery: "proxy" });
+
+    var resRaw = _phcsJsonRequest(origin + "/api/master-inline", "POST", postBody, {
+        "User-Agent": ua,
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        "X-Play-Guard": info.guard,
+        "Referer": info.edgeUrl,
+        "Origin": origin
+    });
+
+    try {
+        var resObj = JSON.parse(resRaw);
+        if (resObj && resObj.ok && resObj.manifest && resObj.manifest.indexOf("#EXTM3U") !== -1) {
+            var manifest = resObj.manifest;
+            var rewritten = _phcsRewriteManifestUrls(manifest, origin + "/hls/" + info.key + "/master.m3u8");
+            return {
+                url: origin + "/hls/" + info.key + "/master.m3u8",
+                baseUrl: origin + "/hls/" + info.key + "/master.m3u8",
+                m3u8Content: rewritten,
+                isEmbed: false,
+                mimeType: "application/x-mpegURL",
+                headers: {
+                    "User-Agent": ua,
+                    "Referer": info.edgeUrl,
+                    "Origin": origin
+                },
+                subtitles: info.subtitles || []
+            };
+        }
+    } catch (e) {}
+    return null;
 }
 
 // Giải mã trực tiếp embed.streamc.xyz (học từ nguoncnew_plugin.js)
@@ -1046,6 +1090,7 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
             if (pl.indexOf("server:hdc") !== -1) requested = "server:hdc";
             else if (pl.indexOf("server:tiktok") !== -1) requested = "server:tiktok";
             else if (pl.indexOf("server:streamc") !== -1) requested = "server:streamc";
+            else if (pl.indexOf("server:abyss") !== -1) requested = "server:abyss";
             else if (pl.indexOf("server:auto") !== -1) requested = "server:auto";
         }
         if (!requested) requested = "server:auto";
@@ -1085,6 +1130,13 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
                         if (!hdcCandidate) hdcCandidate = { id: k, url: candidateUrl };
                     } else if (candidateUrl.indexOf("streamc.xyz") !== -1) {
                         if (!streamcCandidate) streamcCandidate = { id: k, url: candidateUrl };
+                    } else if (candidateUrl.indexOf("abyssplayer.com") !== -1 || candidateUrl.indexOf("abysscdn.com") !== -1 || candidateUrl.indexOf("hydrax") !== -1) {
+                        // Chuyển link Abyss thành dạng https://abysscdn.com/?v=<id> để native giải mã được ngay
+                        var abyssVid = candidateUrl.replace(/^https?:\/\/(?:player\.)?abyssplayer\.com\/(?:[^\?#]*\/)?/i, "")
+                                                   .replace(/^https?:\/\/abysscdn\.com\/(?:\?v=)?/i, "")
+                                                   .split(/[?&#]/)[0].trim();
+                        var abyssFormatted = "https://abysscdn.com/?v=" + abyssVid;
+                        if (!otherCandidate) otherCandidate = { id: k, url: abyssFormatted, isAbyss: true };
                     } else if (candidateUrl.indexOf("kvp") !== -1 || candidateUrl.indexOf(".m3u8") !== -1 || candidateUrl.indexOf(".mp4") !== -1 || candidateUrl.indexOf("master.txt") !== -1) {
                         if (!directCandidate) directCandidate = { id: k, url: candidateUrl };
                     } else {
@@ -1124,16 +1176,40 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
                 return JSON.stringify({ url: "", isEmbed: false, headers: {}, subtitles: scSubs });
             }
 
+            // 2.1 Nếu user chọn Abyss / Hydrax
+            if (requested === "server:abyss" && otherCandidate && otherCandidate.isAbyss) {
+                var abSubs = hdcCandidate ? _phcsFetchHdcSubtitlesOnly(hdcCandidate.url) : [];
+                if (abSubs.length === 0 && tiktokCandidate) {
+                    var tkResForAb = _phcsResolveTikTokInfo(tiktokCandidate.url);
+                    if (tkResForAb && tkResForAb.subtitles) abSubs = _phcsMergeSubtitles(abSubs, tkResForAb.subtitles);
+                }
+                log("PHIMHDCS_DEBUG Abyss server chosen: " + otherCandidate.url);
+                return JSON.stringify({
+                    url: otherCandidate.url,
+                    isEmbed: false,
+                    mimeType: "video/mp4",
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "Referer": "https://abysscdn.com/"
+                    },
+                    subtitles: abSubs
+                });
+            }
+
             // 3. Nếu user chọn TikTok
             var sharedSubtitles = [];
             var tkInfo = null;
             if (requested === "server:tiktok" && tiktokCandidate) {
+                var tkDirect = _phcsResolveTikTokDirect(tiktokCandidate.url, pageUrl);
+                if (tkDirect && tkDirect.url) {
+                    log("PHIMHDCS_DEBUG TikTok mode -> resolved direct HLS manifest for ExoPlayer");
+                    return JSON.stringify(tkDirect);
+                }
                 tkInfo = _phcsResolveTikTokInfo(tiktokCandidate.url);
                 if (tkInfo && tkInfo.subtitles) {
                     sharedSubtitles = _phcsMergeSubtitles(sharedSubtitles, tkInfo.subtitles);
                 }
-                // Vì segment của TikTok mã hóa PNG steganography (chunk stEg) không phát trực tiếp trên ExoPlayer được,
-                // thử lấy stream HLS chuẩn từ StreamXemPhimHD hoặc StreamC kết hợp với phụ đề TikTok
+                // Thử lấy stream từ HDC hoặc StreamC hoặc Abyss kết hợp với phụ đề TikTok
                 if (hdcCandidate) {
                     var hdcForTk = _phcsResolveHdcDirect(hdcCandidate.url, pageUrl);
                     if (hdcForTk && hdcForTk.url && !hdcForTk.subtitlesOnly) {
@@ -1152,6 +1228,19 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
                         return JSON.stringify(scForTk);
                     }
                 }
+                if (otherCandidate && otherCandidate.isAbyss) {
+                    log("PHIMHDCS_DEBUG TikTok mode -> fallback Abyss direct (" + otherCandidate.url + ")");
+                    return JSON.stringify({
+                        url: otherCandidate.url,
+                        isEmbed: false,
+                        mimeType: "video/mp4",
+                        headers: {
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                            "Referer": "https://abysscdn.com/"
+                        },
+                        subtitles: sharedSubtitles
+                    });
+                }
                 // Nếu chỉ có duy nhất TikTok, mở edgeplayer.html trong WebView kèm Custom-JS chống redirect về trang chủ
                 var targetTkUrl = (tkInfo && tkInfo.edgeUrl) ? tkInfo.edgeUrl : tiktokCandidate.url;
                 return JSON.stringify({
@@ -1167,7 +1256,7 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
                 });
             }
 
-            // 4. Luồng chính: StreamXemPhimHD (server:auto hoặc server:hdc) -> fallback sang StreamC -> fallback WebView
+            // 4. Luồng chính: StreamXemPhimHD (server:auto hoặc server:hdc) -> TikTok direct HLS -> StreamC -> Abyss direct -> WebView
             if (hdcCandidate) {
                 var hdcResolved = _phcsResolveHdcDirect(hdcCandidate.url, pageUrl);
                 if (hdcResolved) {
@@ -1189,6 +1278,18 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
                 }
             }
 
+            // Nếu HDC không có hoặc chỉ có phụ đề: Ưu tiên bóc trực tiếp HLS manifest từ server chính TikTok
+            if (tiktokCandidate) {
+                var tkDirectAuto = _phcsResolveTikTokDirect(tiktokCandidate.url, pageUrl);
+                if (tkDirectAuto && tkDirectAuto.url) {
+                    if (sharedSubtitles.length > 0) {
+                        tkDirectAuto.subtitles = _phcsMergeSubtitles(tkDirectAuto.subtitles || [], sharedSubtitles);
+                    }
+                    log("PHIMHDCS_DEBUG Auto mode -> resolved direct HLS manifest from TikTok server for ExoPlayer");
+                    return JSON.stringify(tkDirectAuto);
+                }
+            }
+
             // Nếu HDC chưa lấy được hoặc chỉ có TikTok/StreamC: lấy thêm phụ đề từ TikTok nếu có
             if (sharedSubtitles.length === 0 && tiktokCandidate) {
                 tkInfo = tkInfo || _phcsResolveTikTokInfo(tiktokCandidate.url);
@@ -1204,6 +1305,21 @@ function parseDetailResponse(htmlContent, pageUrl, datasend) {
                     log("PHIMHDCS_DEBUG Fallback to StreamC direct HLS succeeded, subtitles=" + sharedSubtitles.length);
                     return JSON.stringify(scResolved);
                 }
+            }
+
+            // Fallback sang Abyss/Hydrax trực tiếp: trả https://abysscdn.com/?v=... + mimeType video/mp4
+            if (otherCandidate && otherCandidate.isAbyss) {
+                log("PHIMHDCS_DEBUG Fallback to Abyss direct succeeded (" + otherCandidate.url + ")");
+                return JSON.stringify({
+                    url: otherCandidate.url,
+                    isEmbed: false,
+                    mimeType: "video/mp4",
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "Referer": "https://abysscdn.com/"
+                    },
+                    subtitles: sharedSubtitles
+                });
             }
 
             // Fallback cuối cùng: mở WebView kèm Custom-JS chống redirect về trang chủ và bắt stream
