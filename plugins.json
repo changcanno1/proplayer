@@ -1,4 +1,4 @@
-{
+lo{
   "version": 1,
   "plugins": [
     {
@@ -14,6 +14,13 @@
       "version": "2.2.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
+    },
+    {
+      "id": "Phim HDCS",
+      "name": "[MOVIE] Phim HDCS",
+      "version": "1.2.2",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup2_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
       "id": "danet",
@@ -76,13 +83,6 @@
       "name": "[MOVIE] Phimhay1",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup1_plugin.js",
-      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
-    },
-    {
-      "id": "Phimhay2",
-      "name": "[MOVIE] Phimhay2",
-      "version": "1.1.8",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup2_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
    {
