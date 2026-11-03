@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "plugins": [
+    {
+      "id": "vsmov",
+      "name": "Nguồn Vsmov",
+      "version": "2.3.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
+      "iconUrl": "https://vsmov.com/VSmov.png"
+    },
+    {
+      "id": "nguoncnew",
+      "name": "Phim NguonC VIP",
+      "version": "2.2.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
+    },
+     {
+      "id": "Phim HDCS",
+      "name": "[MOVIE] Phim HDCS",
+      "version": "1.2.2",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup2_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
+    {
+      "id": "danet",
+      "name": "DANET [MOVIE]",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/danet_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/danet.png"
+    },
+    {
+      "id": "vn2c",
+      "name": "PhimVn2C",
+      "version": "2.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VN2Cfilm_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/vn2c.png"
+    },
+    {
+      "id": "kkphim",
+      "name": "KKPhim",
+      "version": "2.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/kkphim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
+    },
+    {
+      "id": "SaigonFilm",
+      "name": "SaigonFilm [MOVIE]",
+      "version": "1.5.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/saigonfilm_plugin.js",
+      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAvC1dIB0emUqIfQbIFdMc0K-utn3P_x5KpqZs0LA6GQ&s=10"
+    },
+   {
+      "id": "PhimBom",
+      "name": "PhimBom",
+      "version": "2.3.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
+    },
+    {
+      "id": "phimchill",
+      "name": "Phim Chill [MOVIE]",
+      "version": "3.9.8",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimchill_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/phimchill.png"
+    },
+    {
+      "id": "rophim",
+      "name": "RP Mới [MOVIE]",
+      "version": "3.7.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+    },
+    {
+      "id": "onflix",
+      "name": "Onflix",
+      "version": "1.9.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/OnflixHT_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
+    },
+    {
+      "id": "Phimhay1",
+      "name": "[MOVIE] Phimhay1",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup1_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
+   {
+      "id": "Phimhay3",
+      "name": "[MOVIE] Phimhay3",
+      "version": "2.60",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup3_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
+    {
+      "id": "Phimhay4",
+      "name": "[MOVIE] Phimhay4",
+      "version": "2.2.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup4_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
+    {
+      "id": "Phimhay5",
+      "name": "[MOVIE] Phimhay5",
+      "version": "2.2.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Bilutv_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
+    {
+      "id": "phimngan_net",
+      "name": "Phim Ngắn Net",
+      "version": "2.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
+      "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75"
+    },
+    {
+      "id": "Mê Phim Ngắn",
+      "name": "Mê Phim Ngắn",
+      "version": "1.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/mephimngan_plugin.js",
+      "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
+    },
+    {
+      "id": "shortflix",
+      "name": "shortflix",
+      "version": "1.4.2",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortflixupda_plugin.js",
+      "iconUrl": "https://m.media-amazon.com/images/I/61fJ78I23IL.png",
+      "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
+    },
+    {
+      "id": "yini",
+      "name": "YiniTV [SHORT]",
+      "version": "1.1.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/YiniTV_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yini.png"
+    },
+    {
+      "id": "netshort",
+      "name": "Netshort [SHORT]",
+      "version": "2.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Netshort_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/netshort.png"
+    },
+    {
+      "id": "yanhh3d",
+      "name": "Yanhh3d [ANIME]",
+      "version": "2.3.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/HH3DNew_plugin.js",
+      "iconUrl": "https://hoathinh3d.co/wp-content/uploads/2023/09/favicon.png"
+    },
+    {
+      "id": "hhpanda",
+      "name": "[ANIME] HHPanda",
+      "version": "1.6.4",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/hhpanda_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hhpanda.png"
+    },
+    {
+      "id": "cartoon",
+      "name": "Cartoon [ANIME]",
+      "version": "1.2.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Cartoon_plugins.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/cartoon.png"
+    },
+    {
+      "id": "Anime47",
+      "name": "Anime47",
+      "version": "1.3.2",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Animie47New_plugin.js",
+      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBfZXavFvLlt56VptIFEx-RSQI-oSTGEEjJT7D9hNKJA&s"
+    },
+    {
+      "id": "animevv",
+      "name": "animevv",
+      "version": "1.3.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/AnimeVVHT_plugin.js",
+      "iconUrl": "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/i/c72e2f68-1a1c-48a2-aa5f-edf7eaaf3548/d77q5ev-af22ff5c-be81-4e24-bf0e-13836c6c939e.png"
+    },
+    {
+      "id": "anidoki",
+      "name": "AniDoki [ANIME]",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/anidoki_plugin.js",
+      "iconUrl": "https://anidoki.com/favicon-192x192.png"
+    },
+    {
+      "id": "ThethaoTV",
+      "name": "[Sport] ThethaoTV",
+      "version": "1.0.3",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Thethao_plugin.js",
+      "iconUrl": "https://cdn.xoilacxba.tv/2025/05/xoilac365-tv.png"
+    },
+    {
+      "id": "SportEng",
+      "name": "[SPORT] SportEng",
+      "version": "1.2.3",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/SportsEng_plugin.js",
+      "iconUrl": "https://i.ibb.co/BHQSwhLX/ppv-logo.png"
+    }
+  ]
+}
