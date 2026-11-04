@@ -144,7 +144,7 @@ function getManifest() {
     return JSON.stringify({
         id: "film1",
         name: "Film 1",
-        version: "1.0.2",
+        version: "1.0.3",
         author: "VAX",
         description: "Film 1, nguồn phim chất lượng có 4K.",
         BASEURL: BASEURL,
@@ -248,7 +248,8 @@ function getUrlDetail(slug) {
     if (decodedSlug.indexOf("xiaofilm:") === 0) {
         var directEpisodeUrl = decodedSlug.substring("xiaofilm:".length);
         xiaoLog("getUrlDetail episode direct=" + xiaoPreview(directEpisodeUrl, 180));
-        return directEpisodeUrl;
+        /* Ép Native giữ header khi mở HLS trực tiếp. */
+        return directEpisodeUrl + "|Referer=" + BASEURL + "/&Origin=" + BASEURL;
     }
 
     var cleanSlug = String(slug || "").replace(/^.*\//, "");
@@ -266,7 +267,7 @@ function xiaoMapItem(item) {
         backdropUrl: xiaoImage(item.poster_url || item.thumb_url),
         description: item.description || item.overview || "",
         year: item.year || "",
-        quality: item.quality || "",
+        quality: item.quality.toUpperCase() || "",
         episode_current: item.episode_current || "",
         lang: item.lang || "",
         category: (item.genre_slugs || []).join(",")
@@ -347,12 +348,6 @@ function xiaoWebPlayerScript() {
             "window.open=function(u){log('Đã chặn window.open: '+u);return null;};" +
             "window.location.assign=function(u){log('Đã chặn location.assign: '+u);};" +
             "window.location.replace=function(u){log('Đã chặn location.replace: '+u);};" +
-            "var origLoc=window.location;" +
-            "Object.defineProperty(window,'location',{" +
-                "configurable:true,enumerable:true," +
-                "get:function(){return origLoc;}," +
-                "set:function(val){log('Đã chặn location.href='+val);return origLoc.href;}" +
-            "});" +
             "window.addEventListener('beforeunload',function(e){e.stopPropagation();},true);" +
             "document.addEventListener('click',function(e){" +
                 "var t=e.target;while(t&&t.tagName!=='A')t=t.parentNode;" +
@@ -382,7 +377,9 @@ function xiaoWebPlayerScript() {
         "mask.className='jw-controls';" +
         "mask.style.cssText='position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;background:#000!important;z-index:80000!important;display:flex!important;align-items:center!important;justify-content:center!important;color:#fff!important;font-family:sans-serif!important;font-size:18px!important;pointer-events:all!important;';" +
         "mask.innerHTML='<div style=\"text-align:center;\"><div style=\"font-size:32px;margin-bottom:10px;\">⏳</div>Đang kết nối Stream 4K...</div>';" +
-        "(document.documentElement||document.body).appendChild(mask);" +
+        "var xfRoot=document.body||document.documentElement;" +
+        "if(xfRoot)xfRoot.appendChild(mask);" +
+        "else document.addEventListener('DOMContentLoaded',function(){var r=document.body||document.documentElement;if(r)r.appendChild(mask);},{once:true});" +
 
         "/* 4. TÌM TARGET VIDEO THẬT */" +
         "function getVideoTarget(v){" +
@@ -400,7 +397,9 @@ function xiaoWebPlayerScript() {
         "hud.className='jw-controls';" +
         "hud.style.cssText='position:fixed!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%) scale(0.95)!important;background:rgba(0,0,0,0.85)!important;color:#fff!important;padding:14px 22px!important;border-radius:14px!important;z-index:90000!important;pointer-events:none!important;opacity:0!important;transition:opacity 0.2s,transform 0.2s!important;font-family:sans-serif!important;font-size:15px!important;font-weight:bold!important;min-width:160px!important;text-align:center!important;border:1px solid rgba(255,255,255,0.2)!important;box-shadow:0 6px 20px rgba(0,0,0,0.7)!important;';" +
         "hud.innerHTML='<div id=\"xf-hud-icon\" style=\"font-size:24px;line-height:1.2;margin-bottom:4px;\"></div><div id=\"xf-hud-text\" style=\"white-space:nowrap;\"></div><div id=\"xf-hud-bar-wrap\" style=\"height:6px;background:rgba(255,255,255,0.25);border-radius:3px;margin-top:8px;overflow:hidden;\"><i id=\"xf-hud-bar\" style=\"display:block;height:100%;width:0;background:linear-gradient(90deg,#4dabf7,#a855f7);\"></i></div>';" +
-        "(document.documentElement||document.body).appendChild(hud);" +
+        "xfRoot=document.body||document.documentElement;" +
+        "if(xfRoot)xfRoot.appendChild(hud);" +
+        "else document.addEventListener('DOMContentLoaded',function(){var r=document.body||document.documentElement;if(r)r.appendChild(hud);},{once:true});" +
 
         "function showHud(icon,text,pct){" +
             "var hi=document.getElementById('xf-hud-icon'),ht=document.getElementById('xf-hud-text'),hb=document.getElementById('xf-hud-bar'),hw=document.getElementById('xf-hud-bar-wrap');" +
@@ -755,23 +754,38 @@ function xiaoWebPlayerScript() {
 
 function xiaoBuildEpisodes(seasons, movieSlug) {
     var episodes = [];
+    var episodeMap = {};
     seasons = Array.isArray(seasons) ? seasons : [];
 
     for (var i = 0; i < seasons.length; i++) {
         var season = seasons[i] || {};
-        var list = season.episodes || [];
+        var list = Array.isArray(season.episodes) ? season.episodes : [];
+        var seasonNumber = season.season_number || season.number || i + 1;
 
         for (var j = 0; j < list.length; j++) {
             var episode = list[j] || {};
-            var versions = episode.versions || [episode];
+            var versions = Array.isArray(episode.versions) && episode.versions.length ?
+                episode.versions : [episode];
+            var number = episode.episode_number != null ? episode.episode_number :
+                (episode.sort_order != null ? episode.sort_order : j + 1);
+            var groupKey = String(seasonNumber) + ":ep:" + String(number);
+            var grouped = episodeMap[groupKey];
+            if (!grouped) {
+                grouped = {
+                    name: "Tập " + number,
+                    slug: "s" + seasonNumber + "-ep-" + number,
+                    id: "",
+                    ids: []
+                };
+                episodeMap[groupKey] = grouped;
+                episodes.push(grouped);
+            }
 
             for (var k = 0; k < versions.length; k++) {
                 var version = versions[k] || {};
                 if (!version.link_m3u8) continue;
 
-                var number = episode.episode_number || episode.sort_order || j + 1;
                 var serverName = version.server_name || version.name || "Server";
-                var uniqueSlug = "ep-" + number + "-" + k + "-" + (version.id || "stream");
 
                 var secure = /\/secure-play\//i.test(version.link_m3u8);
                 var serverKey = version.server_key || "";
@@ -783,22 +797,65 @@ function xiaoBuildEpisodes(seasons, movieSlug) {
                     xiaoLog("Bỏ episode WebView vì thiếu eid: episode=" + j + " version=" + k);
                     continue;
                 }
-                episodes.push({
-                    /* Encode payload để Native không cắt ID tại ký tự pipe. */
-                    id: secure ? BASEURL + "/xiaofilm_episode/" + encodeURIComponent(JSON.stringify({
+                var streamId = secure ? BASEURL + "/xiaofilm_episode/" + encodeURIComponent(JSON.stringify({
                         slug: movieSlug,
                         eid: String(episodeId),
                         sid: serverKey,
                         name: playerName || serverName,
                         ticket: version.link_m3u8
-                    })) :
-                        "xiaofilm:" + version.link_m3u8,
-                    name: "Tập " + number + " - " + serverName,
-                    slug: uniqueSlug,
+                    })) : "xiaofilm:" + version.link_m3u8;
+                var duplicate = false;
+                for (var d = 0; d < grouped.ids.length; d++) {
+                    if (grouped.ids[d].url === streamId) {
+                        duplicate = true;
+                        break;
+                    }
+                }
+                if (duplicate) continue;
+                console.log("IDS playername:\n" + playerName)
+                console.log("IDS serverName:\n" + serverName)
+                function resolveServerName(name) {
+                  const s = name.toLowerCase();
+                
+                  // Ưu tiên các trường hợp đặc biệt
+                  if (name.includes("#Hà Nội (Thuyết Minh)")) return "Server Nhanh (Thuyết Minh)";
+                  if (name.includes("#Hà Nội (Vietsub)"))     return "Server Nhanh (Vietsub)";
+                
+                  const hasVietsub    = /vietsub/.test(s);
+                  const hasThuyetMinh = /thuyết minh|thuyet minh/.test(s);
+                  const has4k         = /4k/.test(s);
+                  const hasKkphim     = /kkphim/.test(s);
+                  const hasVsmov      = /vsmov/.test(s);
+                
+                  if (has4k && hasVietsub)     return "Server 4K (Vietsub)";
+                  if (has4k && hasThuyetMinh)  return "Server 4K (Thuyết Minh)";
+                  if (hasVsmov && hasThuyetMinh) return "Server Nhanh 2 (Thuyết Minh)";
+                  if (hasVsmov && hasVietsub)  return "Server Nhanh 2 (Vietsub)";
+                  if (hasKkphim && hasThuyetMinh) return "Server Nhanh (Thuyết Minh)";
+                  if (hasKkphim && hasVietsub) return "Server Nhanh (Vietsub)";
+                  if (hasThuyetMinh)           return "Server Nhanh (Thuyết Minh)";
+                  if (hasVietsub)              return "Server Nhanh (Vietsub)";
+                
+                  return name;
+                }
+                
+                serverName = resolveServerName(serverName);
+                grouped.ids.push({
+                    name: serverName || playerName,
+                    url: streamId,
                     datasend: version.subtitle_url || episode.subtitle_url || ""
                 });
             }
         }
+    }
+
+    for (var e = episodes.length - 1; e >= 0; e--) {
+        if (!episodes[e].ids.length) {
+            episodes.splice(e, 1);
+            continue;
+        }
+        /* Loader cần id hợp lệ; ids[] vẫn giữ toàn bộ server con. */
+        episodes[e].id = episodes[e].ids[0].url;
     }
 
     xiaoLog("Build episodes=" + episodes.length);
