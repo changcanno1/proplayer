@@ -5,7 +5,7 @@ var popup_html = "";
 function getManifest() {
   return JSON.stringify({
     id: "vsmov",
-    name: "Có Update mới, ra gặp Trung",
+    name: "vsmov",
     description: "Nguồn phim Vsmov...",
     "version": "2.1",
     info: "",
