@@ -3,7 +3,7 @@
   "plugins": [
     {
       "id": "vsmov",
-      "name": "Nguồn Vsmov",
+      "name": "Có Update mới, ra gặp Trung",
       "version": "2.3.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
       "iconUrl": "https://vsmov.com/VSmov.png"
