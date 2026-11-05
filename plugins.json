@@ -23,6 +23,13 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
+      "id": "rophim",
+      "name": "RP Mới [MOVIE]",
+      "version": "2.4.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+    },
+    {
       "id": "danet",
       "name": "DANET [MOVIE]",
       "version": "1.0.0",
@@ -44,6 +51,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
     },
     {
+      "id": "vicdn",
+      "name": "Nguồn Vicdn",
+      "version": "2.6",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/vicdn.png"
+    },
+    {
       "id": "SaigonFilm",
       "name": "SaigonFilm [MOVIE]",
       "version": "1.5.1",
@@ -63,13 +77,6 @@
       "version": "3.9.8",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimchill_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/phimchill.png"
-    },
-    {
-      "id": "rophim",
-      "name": "RP Mới [MOVIE]",
-      "version": "3.7.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
     {
       "id": "onflix",
