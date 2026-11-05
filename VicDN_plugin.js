@@ -7,7 +7,7 @@ function getManifest() {
     id: "vicdn",
     name: "Nguồn Vicdn",
     description: "Nguồn phim Vicdn.",
-    "version": "2.3",
+    "version": "2.6",
     info: "Nguồn phim vietsub và thuyết minh mới.\n\n Hỗ trợ lồng tiếng và có tốc độ phát rất nhanh.",
     baseUrl: "https://vicdn.cc",
     iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/icon/vicdn.png",
@@ -15,7 +15,7 @@ function getManifest() {
     "adblock": false,
     type: "MOVIE",
     "author": "Alokillgtv",
-     playerType: "embedtoexoplay",
+      playerType: "exoplayer",
   });
 }
 //     popup_html: popup_html,
@@ -329,6 +329,21 @@ function decodeHTMLEntities(str) {
     }
 }
 
+function vicdnDetectAvailableTracks(slug, firstEp) {
+  var result = { raw: true, tm1: false, tm2: false };
+  try {
+    if (typeof httpRequest !== "function" || !slug || !firstEp) return result;
+    var playerUrl = BASEURL + "/" + slug + "-" + firstEp;
+    var page = httpRequest(playerUrl, { method: "GET", headers: vicdnHeaders(playerUrl), timeout: 10000 });
+    if (!page || !page.isSuccessful || !page.body) return result;
+    var unpacked = vicdnUnpackPlayer(page.body);
+    if (!unpacked) return result;
+    result.tm1 = !!(vicdnAudioSource(unpacked, "female", "tm1") || vicdnFindAudio(unpacked, "female", "tm1"));
+    result.tm2 = !!(vicdnAudioSource(unpacked, "male", "tm2") || vicdnFindAudio(unpacked, "male", "tm2"));
+  } catch (e) {}
+  return result;
+}
+
 function parseMovieDetail(html, url) {
     try {
         log("parseMovieDetail[url]: \n" + url);
@@ -358,24 +373,33 @@ function parseMovieDetail(html, url) {
         year = $data.year;
         var servers = [];
         var episodes = [];
+        var firstEpNum = ($data.list_episodes && $data.list_episodes.length > 0) ? String($data.list_episodes[0]).split("|")[0] : "1";
+        var avail = vicdnDetectAvailableTracks($data.slug, firstEpNum);
         for (var $j = 0; $j < $data.list_episodes.length; $j++) {
             var item = $data.list_episodes[$j];
             var split = item.split("|");
+            var epIds = [{
+                url: url + "?current=" + split[0] + "&tm=raw",
+                name: "Vietsub (Âm Thanh Gốc)"
+            }];
+            if (avail.tm1) {
+                epIds.push({
+                    url: url + "?current=" + split[0] + "&tm=tm1",
+                    name: "Thuyết Minh Nữ"
+                });
+            }
+            if (avail.tm2) {
+                epIds.push({
+                    url: url + "?current=" + split[0] + "&tm=tm2",
+                    name: "Thuyết Minh Nam"
+                });
+            }
             episodes.push({
                 id: url + "?current=" + split[0] + "&tm=raw",
                 name: "Tập " + split[0],
                 slug: "tap-" + split[0],
-                ids: [{
-                  url: url + "?current=" + split[0] + "&tm=raw",
-                  name: "Vietsub (Âm Thanh Gốc)"
-                },{
-                  url: url + "?current=" + split[0] + "&tm=tm1",
-                  name: "Vietsub (Thuyết Minh Nữ)"
-                },{
-                  url: url + "?current=" + split[0] + "&tm=tm2",
-                  name: "Vietsub (Thuyết Minh Nam)"
-                }]
-            })
+                ids: epIds
+            });
         }
         servers.push({
             name: "Server",
@@ -488,6 +512,10 @@ function checkRaw(scriptStr, returnFixed) {
 
 
 function parseDetailResponse(html, url) {
+  log("native parseDetailResponse url=" + url);
+  var nativeResult = vicdnResolveNative(url);
+  if (nativeResult) return JSON.stringify(nativeResult);
+  log("native resolver unavailable, fallback embed");
   try {
     var $jsdata = JSON.parse(html);
     var $data = $jsdata.data;
@@ -515,7 +543,8 @@ console.log("TM: "+epi[2]+" sub\n" + sub)
     log("Embed: " + stream)
     return JSON.stringify({
       url: stream,
-      isEmbed: false,
+      isEmbed: true,
+      mimeType: "text/html",
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -536,11 +565,318 @@ console.log("TM: "+epi[2]+" sub\n" + sub)
   } catch (e) {
     log("parseDetailResponse[err]:\n " + e);
     return JSON.stringify({ 
-      url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-      mimeType: "video/mp4", 
-      isEmbed: false, headers: {}, subtitles: [] 
+      url: url || BASEURL + "/",
+      mimeType: "text/html",
+      isEmbed: true,
+      headers: { "Referer": BASEURL + "/", "User-Agent": "Mozilla/5.0" },
+      subtitles: []
     });
   }
+}
+
+// Resolve the packed player configuration and decrypt its AES-GCM playlists
+// before handing the stream to ExoPlayer. The old WebView sniffer remains only
+// as a compatibility fallback when the native crypto bridge is unavailable.
+function vicdnNormalizeBody(raw) {
+  var s = String(raw || "").replace(/^\uFEFF/, "").trim();
+  if (!s) return "";
+  if (s.indexOf("WEBVTT") !== -1 || s.indexOf("-->") !== -1 || s.indexOf("#EXTM3U") === 0 || s.indexOf("<") === 0) {
+    return s;
+  }
+  var b64 = s;
+  var dm = s.match(/^data:[^,]*;base64,([\s\S]+)$/i);
+  if (dm) b64 = dm[1].trim();
+  if (/^[A-Za-z0-9+/_=\r\n-]+$/.test(b64) && b64.length >= 8) {
+    try {
+      var decoded = vicdnBytesToText(vicdnB64ToBytes(b64)).replace(/^\uFEFF/, "").trim();
+      if (decoded) return decoded;
+    } catch (e) {}
+  }
+  return s;
+}
+
+function vicdnCheckVttExists(subUrl, playerUrl) {
+  if (!subUrl || typeof httpRequest !== "function") return false;
+  try {
+    var r = httpRequest(subUrl, { method: "GET", headers: vicdnHeaders(playerUrl), timeout: 6000 });
+    if (!r || !r.isSuccessful || !r.body) return false;
+    var raw = String(r.body).trim();
+    if (raw.indexOf("V0VCVlRU") === 0) return true;
+    var body = vicdnNormalizeBody(raw);
+    if (body.indexOf("#ENC-AESGCM") !== -1) {
+      body = vicdnDecryptPlaylist(body);
+    }
+    return body.indexOf("WEBVTT") !== -1 || body.indexOf("-->") !== -1;
+  } catch (e) {
+    return false;
+  }
+}
+
+function vicdnResolveNative(apiUrl) {
+  try {
+    if (typeof httpRequest !== "function") { log("native: httpRequest unavailable"); return null; }
+    var parsed = String(apiUrl || "").match(/^https:\/\/vicdn\.cc\/api\/info\/([^?]+)\?current=(\d+)&tm=([^&#]+)/i);
+    if (!parsed) { log("native: episode URL mismatch"); return null; }
+
+    var playerUrl = BASEURL + "/" + parsed[1] + "-" + parsed[2];
+    var page = httpRequest(playerUrl, { method: "GET", headers: vicdnHeaders(playerUrl), timeout: 15000 });
+    if (!page || !page.isSuccessful || !page.body) { log("native: player HTTP failed"); return null; }
+
+    var unpacked = vicdnUnpackPlayer(page.body);
+    if (!unpacked) { log("native: player unpack failed"); return null; }
+    var tmKey = parsed[3] || "raw";
+    var sourceKey = tmKey === "tm1" ? "female" : (tmKey === "tm2" ? "male" : "original");
+    var source = vicdnAudioSource(unpacked, sourceKey, tmKey) || vicdnFindAudio(unpacked, sourceKey, tmKey);
+    // Some titles only publish the original audio. Never send the player HTML
+    // to ExoPlayer just because a requested dub track is unavailable.
+    if (!source && sourceKey !== "original") {
+      log("native: " + sourceKey + " unavailable, use original audio");
+      source = vicdnAudioSource(unpacked, "original", "raw") || vicdnFindAudio(unpacked, "original", "raw");
+    }
+    var videoKey = parsed[1] + "-" + parsed[2];
+    var viSub = BASEURL + "/vtt/" + videoKey + "-vi.vtt";
+    var enSub = BASEURL + "/vtt/" + videoKey + "-en.vtt";
+    if (!source) { log("native: audio source not found"); return null; }
+
+    var playlist = httpRequest(source, { method: "GET", headers: vicdnHeaders(playerUrl), timeout: 15000 });
+    if (!playlist || !playlist.isSuccessful || !playlist.body) { log("native: playlist HTTP failed"); return null; }
+    var clearM3u8 = vicdnDecryptPlaylist(vicdnNormalizeBody(playlist.body));
+    if (!clearM3u8 || clearM3u8.indexOf("#EXTM3U") !== 0) { log("native: AES bridge unavailable or decrypt failed"); return null; }
+
+    var trackVi = vicdnTrackSub(unpacked, "-vi.vtt") || viSub;
+    var trackEn = vicdnTrackSub(unpacked, "-en.vtt") || enSub;
+    var subtitles = [];
+    if (vicdnCheckVttExists(trackVi, playerUrl)) {
+      subtitles.push({ url: trackVi, lang: "Vietsub", mimeType: "text/vtt" });
+    } else {
+      log("native: vi.vtt unavailable on server for " + videoKey);
+    }
+    if (vicdnCheckVttExists(trackEn, playerUrl)) {
+      subtitles.push({ url: trackEn, lang: "English", mimeType: "text/vtt" });
+    }
+    return {
+      url: source,
+      m3u8Content: clearM3u8,
+      baseUrl: source,
+      m3u8Key: "vicdn_cc_key",
+      mimeType: "application/x-mpegURL",
+      isEmbed: false,
+      headers: vicdnHeaders(playerUrl),
+      subtitles: subtitles
+    };
+  } catch (e) {
+    log("native resolver error: " + e);
+    return null;
+  }
+}
+
+function vicdnHeaders(referer) {
+  return {
+    "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36",
+    "Referer": referer || BASEURL + "/",
+    "Origin": BASEURL
+  };
+}
+
+function vicdnUnpackPlayer(html) {
+  var matches = String(html || "").match(/eval\(function\(p,a,c,k,e,d\)\{[\s\S]*?<\/script>/gi) || [];
+  if (!matches.length) return "";
+  var out = [];
+  for (var i = 0; i < matches.length; i++) {
+    var expression = matches[i].replace(/<\/script>\s*$/i, "");
+    try {
+      expression = expression.replace(/^eval\(/, "(").replace(/\);\s*$/, ")");
+      var unpacked = new Function("return " + expression + ";")();
+      if (unpacked) out.push(unpacked);
+    } catch (e) {}
+  }
+  return out.join("\n");
+}
+
+function vicdnMatch(source, key) {
+  var re = new RegExp(key + "\\s*=\\s*['\"]([^'\"]+)['\"]", "i");
+  var match = String(source || "").match(re);
+  return match ? match[1] : "";
+}
+
+function vicdnTrackSub(source, suffix) {
+  var escaped = String(suffix || "").replace(/\./g, "\\.");
+  var re = new RegExp("https:\\/\\/vicdn\\.cc\\/vtt\\/[^'\"\\s]+" + escaped, "i");
+  var match = String(source || "").match(re);
+  return match ? match[0] : "";
+}
+
+function vicdnAudioSource(source, key, tmKey) {
+  var text = String(source || "");
+  var svKey = tmKey || (key === "male" ? "tm2" : (key === "female" ? "tm1" : "raw"));
+  var reSv = new RegExp("['\"]" + svKey + "['\"]\\s*:\\s*\\{\\s*['\"]file['\"]\\s*:\\s*['\"]([^'\"]*)['\"]", "i");
+  var matchSv = text.match(reSv);
+  if (matchSv && matchSv[1]) return matchSv[1];
+  var re = new RegExp("AUDIO_SOURCES\\s*\\.\\s*" + key + "\\s*=\\s*['\"]([^'\"]+)['\"]", "i");
+  var match = text.match(re);
+  if (match) return match[1];
+  re = new RegExp("AUDIO_SOURCES\\s*\\[\\s*['\"]" + key + "['\"]\\s*\\]\\s*=\\s*['\"]([^'\"]+)['\"]", "i");
+  match = text.match(re);
+  return match ? match[1] : "";
+}
+
+function vicdnFindAudio(source, key) {
+  var urls = String(source || "").match(/https:\/\/vicdn\.cc\/hls\/x\d+\/[^'"\s]+/gi) || [];
+  var wanted = key === "male" ? /^x3/i : (key === "female" ? /^x2/i : /^x1/i);
+  for (var i = 0; i < urls.length; i++) {
+    var code = urls[i].match(/\/hls\/(x\d+)\//i);
+    if (code && wanted.test(code[1])) return urls[i];
+  }
+  return key === "original" && urls.length ? urls[0] : "";
+}
+
+var VICDN_AES_SBOX = [0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,0xca,0x82,0xc9,0x7d,0xfa,0x59,0x47,0xf0,0xad,0xd4,0xa2,0xaf,0x9c,0xa4,0x72,0xc0,0xb7,0xfd,0x93,0x26,0x36,0x3f,0xf7,0xcc,0x34,0xa5,0xe5,0xf1,0x71,0xd8,0x31,0x15,0x04,0xc7,0x23,0xc3,0x18,0x96,0x05,0x9a,0x07,0x12,0x80,0xe2,0xeb,0x27,0xb2,0x75,0x09,0x83,0x2c,0x1a,0x1b,0x6e,0x5a,0xa0,0x52,0x3b,0xd6,0xb3,0x29,0xe3,0x2f,0x84,0x53,0xd1,0x00,0xed,0x20,0xfc,0xb1,0x5b,0x6a,0xcb,0xbe,0x39,0x4a,0x4c,0x58,0xcf,0xd0,0xef,0xaa,0xfb,0x43,0x4d,0x33,0x85,0x45,0xf9,0x02,0x7f,0x50,0x3c,0x9f,0xa8,0x51,0xa3,0x40,0x8f,0x92,0x9d,0x38,0xf5,0xbc,0xb6,0xda,0x21,0x10,0xff,0xf3,0xd2,0xcd,0x0c,0x13,0xec,0x5f,0x97,0x44,0x17,0xc4,0xa7,0x7e,0x3d,0x64,0x5d,0x19,0x73,0x60,0x81,0x4f,0xdc,0x22,0x2a,0x90,0x88,0x46,0xee,0xb8,0x14,0xde,0x5e,0x0b,0xdb,0xe0,0x32,0x3a,0x0a,0x49,0x06,0x24,0x5c,0xc2,0xd3,0xac,0x62,0x91,0x95,0xe4,0x79,0xe7,0xc8,0x37,0x6d,0x8d,0xd5,0x4e,0xa9,0x6c,0x56,0xf4,0xea,0x65,0x7a,0xae,0x08,0xba,0x78,0x25,0x2e,0x1c,0xa6,0xb4,0xc6,0xe8,0xdd,0x74,0x1f,0x4b,0xbd,0x8b,0x8a,0x70,0x3e,0xb5,0x66,0x48,0x03,0xf6,0x0e,0x61,0x35,0x57,0xb9,0x86,0xc1,0x1d,0x9e,0xe1,0xf8,0x98,0x11,0x69,0xd9,0x8e,0x94,0x9b,0x1e,0x87,0xe9,0xce,0x55,0x28,0xdf,0x8c,0xa1,0x89,0x0d,0xbf,0xe6,0x42,0x68,0x41,0x99,0x2d,0x0f,0xb0,0x54,0xbb,0x16];
+var VICDN_AES_RCON = [0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36];
+// SHA-256("vicdn_cc_key")
+var VICDN_KEY_BYTES = [0x40,0x49,0x2e,0x85,0x91,0xb3,0xde,0x3b,0xab,0xbc,0xb6,0x7d,0xf2,0x0c,0x36,0xd0,0x10,0xd6,0xaf,0xbd,0x00,0x42,0x18,0x74,0x21,0x73,0xb1,0xf2,0xd0,0x1e,0xce,0xef];
+var VICDN_ROUND_KEYS = null;
+
+function vicdnB64ToBytes(input) {
+  var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  var map = {};
+  for (var c = 0; c < chars.length; c++) map[chars.charAt(c)] = c;
+  var str = String(input || "").replace(/-/g, "+").replace(/_/g, "/").replace(/[^A-Za-z0-9+/=]/g, "");
+  var out = [];
+  var acc = 0, bits = 0;
+  for (var i = 0; i < str.length; i++) {
+    var ch = str.charAt(i);
+    if (ch === "=") break;
+    acc = (acc << 6) | (map[ch] || 0);
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      out.push((acc >> bits) & 255);
+    }
+  }
+  return out;
+}
+
+function vicdnBytesToText(bytes) {
+  var out = "", i = 0;
+  while (i < bytes.length) {
+    var c = bytes[i++];
+    if (c < 128) out += String.fromCharCode(c);
+    else if (c < 224) out += String.fromCharCode(((c & 31) << 6) | (bytes[i++] & 63));
+    else if (c < 240) out += String.fromCharCode(((c & 15) << 12) | ((bytes[i++] & 63) << 6) | (bytes[i++] & 63));
+    else {
+      var cp = ((c & 7) << 18) | ((bytes[i++] & 63) << 12) | ((bytes[i++] & 63) << 6) | (bytes[i++] & 63) - 0x10000;
+      out += String.fromCharCode(0xD800 + (cp >> 10), 0xDC00 + (cp & 1023));
+    }
+  }
+  return out;
+}
+
+function vicdnAesSubWord(w) {
+  return ((VICDN_AES_SBOX[(w >>> 24) & 255] << 24) | (VICDN_AES_SBOX[(w >>> 16) & 255] << 16) | (VICDN_AES_SBOX[(w >>> 8) & 255] << 8) | VICDN_AES_SBOX[w & 255]) >>> 0;
+}
+
+function vicdnAesExpandKey(key) {
+  var w = [], i;
+  for (i = 0; i < 8; i++) w[i] = ((key[4 * i] << 24) | (key[4 * i + 1] << 16) | (key[4 * i + 2] << 8) | key[4 * i + 3]) >>> 0;
+  for (i = 8; i < 60; i++) {
+    var t = w[i - 1];
+    if (i % 8 === 0) t = (vicdnAesSubWord(((t << 8) | (t >>> 24)) >>> 0) ^ ((VICDN_AES_RCON[i / 8 - 1] || 0) << 24)) >>> 0;
+    else if (i % 8 === 4) t = vicdnAesSubWord(t);
+    w[i] = (w[i - 8] ^ t) >>> 0;
+  }
+  return w;
+}
+
+function vicdnAesEncryptBlock(block, w) {
+  var st = block.slice();
+  function addRoundKey(round) {
+    for (var c = 0; c < 4; c++) {
+      var word = w[round * 4 + c];
+      for (var r = 0; r < 4; r++) st[4 * c + r] ^= (word >>> (24 - 8 * r)) & 255;
+    }
+  }
+  function subBytes() { for (var i = 0; i < 16; i++) st[i] = VICDN_AES_SBOX[st[i]]; }
+  function shiftRows() {
+    var copy = st.slice();
+    for (var r = 1; r < 4; r++) for (var c = 0; c < 4; c++) st[4 * c + r] = copy[4 * ((c + r) % 4) + r];
+  }
+  function xtime(a) { return ((a << 1) ^ ((a & 0x80) ? 0x1b : 0)) & 255; }
+  function mixColumns() {
+    for (var c = 0; c < 4; c++) {
+      var a0 = st[4 * c], a1 = st[4 * c + 1], a2 = st[4 * c + 2], a3 = st[4 * c + 3];
+      var x0 = xtime(a0), x1 = xtime(a1), x2 = xtime(a2), x3 = xtime(a3);
+      st[4 * c] = x0 ^ (x1 ^ a1) ^ a2 ^ a3;
+      st[4 * c + 1] = a0 ^ x1 ^ (x2 ^ a2) ^ a3;
+      st[4 * c + 2] = a0 ^ a1 ^ x2 ^ (x3 ^ a3);
+      st[4 * c + 3] = (x0 ^ a0) ^ a1 ^ a2 ^ x3;
+    }
+  }
+  addRoundKey(0);
+  for (var round = 1; round < 14; round++) { subBytes(); shiftRows(); mixColumns(); addRoundKey(round); }
+  subBytes(); shiftRows(); addRoundKey(14);
+  return st;
+}
+
+function vicdnDecryptAesGcmJs(ivHex, payloadB64) {
+  try {
+    var iv = [];
+    for (var h = 0; h < ivHex.length; h += 2) iv.push(parseInt(ivHex.substr(h, 2), 16) & 255);
+    var all = vicdnB64ToBytes(payloadB64);
+    if (iv.length !== 12 || all.length <= 16) return "";
+    var cipher = all.slice(0, all.length - 16);
+    if (!VICDN_ROUND_KEYS) VICDN_ROUND_KEYS = vicdnAesExpandKey(VICDN_KEY_BYTES);
+    var counter = iv.concat([0, 0, 0, 1]);
+    var plain = [];
+    for (var off = 0; off < cipher.length; off += 16) {
+      var n = (((counter[12] << 24) | (counter[13] << 16) | (counter[14] << 8) | counter[15]) + 1) >>> 0;
+      counter[12] = (n >>> 24) & 255;
+      counter[13] = (n >>> 16) & 255;
+      counter[14] = (n >>> 8) & 255;
+      counter[15] = n & 255;
+      var stream = vicdnAesEncryptBlock(counter, VICDN_ROUND_KEYS);
+      for (var i = 0; i < 16 && off + i < cipher.length; i++) plain.push(cipher[off + i] ^ stream[i]);
+    }
+    return vicdnBytesToText(plain).trim();
+  } catch (e) {
+    return "";
+  }
+}
+
+function vicdnDecryptPlaylist(raw) {
+  var text = vicdnNormalizeBody(raw);
+  if (text.indexOf("#ENC-AESGCM") < 0) return text;
+  var iv = text.match(/#ENC-AESGCM;iv=([0-9a-f]+)/i);
+  if (!iv) return "";
+  var lines = text.split(/\r?\n/);
+  var payload = "";
+  var collecting = false;
+  for (var i = 0; i < lines.length; i++) {
+    if (lines[i].indexOf("#EXT-X-B65") === 0) { collecting = true; continue; }
+    if (collecting && lines[i].trim()) payload += lines[i].trim();
+  }
+  if (!payload) return "";
+  var decrypt = null;
+  if (typeof AppCrypto !== "undefined" && typeof AppCrypto.decryptAesGcm === "function") decrypt = AppCrypto.decryptAesGcm;
+  else if (typeof _vaCrypto !== "undefined" && typeof _vaCrypto.decryptAesGcm === "function") decrypt = _vaCrypto.decryptAesGcm;
+  else if (typeof decryptAesGcm === "function") decrypt = decryptAesGcm;
+  if (decrypt) {
+    try {
+      var res = String(decrypt(vicdnBase64("vicdn_cc_key"), vicdnHexBase64(iv[1]), payload) || "").trim();
+      if (res.indexOf("#EXTM3U") === 0 || res.indexOf("WEBVTT") !== -1) return res;
+    } catch (e) {}
+  }
+  return vicdnDecryptAesGcmJs(iv[1], payload);
+}
+
+function vicdnBase64(value) {
+  if (typeof BASE64 !== "undefined" && BASE64.encode) return BASE64.encode(value);
+  return btoa(unescape(encodeURIComponent(value)));
+}
+
+function vicdnHexBase64(hex) {
+  var raw = "";
+  for (var i = 0; i < hex.length; i += 2) raw += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+  return vicdnBase64(raw);
 }
 
 
@@ -589,9 +925,10 @@ window.addEventListener('message', function(ev) {
     if (__vaxMode === 'web') bindJwCtrl();
     return;
   }
-  /* JW control commands — chỉ khi web mode */
-  if (__vaxMode === 'web') {
-    jwCmd(d.vaxCmd, d.val);
+  /* JW control commands — hỗ trợ cả khi chưa nhận setMode */
+  var cmdVal = d.val != null ? d.val : d.value;
+  if (__vaxMode === 'web' || d.vaxCmd === 'seek') {
+    jwCmd(d.vaxCmd, cmdVal);
   } else {
     /* native mode: cho phép toggle/seek/etc điều khiển <video> như cũ */
     var v = document.querySelector('video');
@@ -834,7 +1171,36 @@ function getServerMapping() {
 var __jwPlayer = null;
 var __jwBound = false;
 
+function _vicdnGetV() {
+  return document.querySelector('#ssPlay video') || document.querySelector('.jw-wrapper video') || document.querySelector('video');
+}
+function _vicdnPostTime() {
+  try {
+    var p = __jwPlayer;
+    var v = _vicdnGetV();
+    var cur = p && p.getPosition ? (Number(p.getPosition()) || 0) : 0;
+    var dur = p && p.getDuration ? (Number(p.getDuration()) || 0) : 0;
+    if ((!dur || !isFinite(dur) || dur <= 0) && v) dur = Number(v.duration) || 0;
+    if ((!cur || !isFinite(cur)) && v) cur = Number(v.currentTime) || 0;
+    if (isFinite(dur) && dur > 0) {
+      window.parent.postMessage({ type: 'NGUONC_TIME', time: cur, duration: dur }, '*');
+    }
+  } catch(e) {}
+}
+
 function bindJwCtrl() {
+  var v = _vicdnGetV();
+  if (v && !v.__vicdnVBound) {
+    v.__vicdnVBound = true;
+    try {
+      v.addEventListener('timeupdate', _vicdnPostTime);
+      v.addEventListener('loadedmetadata', _vicdnPostTime);
+      v.addEventListener('durationchange', _vicdnPostTime);
+      v.addEventListener('seeked', _vicdnPostTime);
+      v.addEventListener('play', function() { try { window.parent.postMessage({ type: 'NGUONC_STATE', paused: false }, '*'); } catch(e){} _vicdnPostTime(); });
+      v.addEventListener('pause', function() { try { window.parent.postMessage({ type: 'NGUONC_STATE', paused: true }, '*'); } catch(e){} _vicdnPostTime(); });
+    } catch(e) {}
+  }
   if (__jwBound) return true;
   if (!window.jwplayer) return false;
   var p;
@@ -846,25 +1212,57 @@ function bindJwCtrl() {
 
   function post(type, d) { try { window.parent.postMessage(Object.assign({type:type}, d||{}), '*'); } catch(e){} }
 
-  p.on('time', function(e) { post('NGUONC_TIME', { time: e.position || 0, duration: e.duration || 0 }); });
-  p.on('play', function() { post('NGUONC_STATE', { paused:false }); });
-  p.on('pause', function() { post('NGUONC_STATE', { paused:true }); });
-  p.on('seek', function(e) { post('NGUONC_TIME', { offset: e.offset || 0, duration: p.getDuration() || 0 }); });
+  p.on('time', function(e) {
+    var pos = (e && typeof e.position === 'number') ? e.position : 0;
+    var dur = (e && typeof e.duration === 'number' && e.duration > 0) ? e.duration : 0;
+    if (!dur) { var ve = _vicdnGetV(); if (ve && isFinite(ve.duration) && ve.duration > 0) dur = ve.duration; }
+    if (dur > 0) post('NGUONC_TIME', { time: pos, duration: dur });
+  });
+  p.on('play', function() { post('NGUONC_STATE', { paused:false }); _vicdnPostTime(); });
+  p.on('pause', function() { post('NGUONC_STATE', { paused:true }); _vicdnPostTime(); });
+  p.on('seek', function(e) {
+    var off = (e && typeof e.offset === 'number') ? e.offset : (p.getPosition() || 0);
+    var dur = p.getDuration() || 0;
+    if (!dur) { var ve = _vicdnGetV(); if (ve && isFinite(ve.duration) && ve.duration > 0) dur = ve.duration; }
+    post('NGUONC_TIME', { time: off, offset: off, duration: dur });
+  });
   return true;
 }
 
 function jwCmd(c, val) {
   if (!__jwPlayer) {
-    if (!bindJwCtrl()) return;
+    bindJwCtrl();
   }
   var p = __jwPlayer;
-  if (!p) return;
+  var v = _vicdnGetV();
+  if (!p && !v) return;
   try {
-    if (c === 'toggle') { if (p.getState() === 'playing') p.pause(); else p.play(); }
-    else if (c === 'seek+5') { var d = p.getDuration() || 0; p.seek(Math.min(d, (p.getPosition()||0) + 5)); }
-    else if (c === 'seek-5') { p.seek(Math.max(0, (p.getPosition()||0) - 5)); }
-    else if (c === 'vol+') { p.setVolume(Math.min(100, (p.getVolume()||0) + 10)); }
-    else if (c === 'vol-') { p.setVolume(Math.max(0, (p.getVolume()||0) - 10)); }
+    if (c === 'toggle') {
+      if (p) { if (p.getState() === 'playing') p.pause(); else p.play(); }
+      else if (v) { v.paused ? v.play().catch(function(){}) : v.pause(); }
+    }
+    else if (c === 'seek') {
+      var t = Number(val);
+      if (isFinite(t) && t >= 0) {
+        var d0 = (p && p.getDuration) ? (p.getDuration() || 0) : (v && isFinite(v.duration) ? v.duration : 0);
+        var tgt = d0 > 0 ? Math.min(d0, t) : t;
+        try { if (p && p.seek) p.seek(tgt); } catch(e){}
+        try { if (v) v.currentTime = tgt; } catch(e){}
+        _vicdnPostTime();
+      }
+    }
+    else if (c === 'seek+5' || c === 'seek-5') {
+      var dlt = c === 'seek+5' ? 5 : -5;
+      var d = (p && p.getDuration) ? (p.getDuration() || 0) : (v && isFinite(v.duration) ? v.duration : 0);
+      var cur = (p && p.getPosition) ? (p.getPosition() || 0) : (v ? v.currentTime || 0 : 0);
+      var target = Math.max(0, cur + dlt);
+      if (d > 0) target = Math.min(d, target);
+      try { if (p && p.seek) p.seek(target); } catch(e){}
+      try { if (v) v.currentTime = target; } catch(e){}
+      _vicdnPostTime();
+    }
+    else if (c === 'vol+') { if (p) p.setVolume(Math.min(100, (p.getVolume()||0) + 10)); else if (v) { v.volume = Math.min(1, v.volume + 0.1); v.muted = false; } }
+    else if (c === 'vol-') { if (p) p.setVolume(Math.max(0, (p.getVolume()||0) - 10)); else if (v) { v.volume = Math.max(0, v.volume - 0.1); v.muted = false; } }
     else if (c === 'blur') { try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); window.blur(); } catch(e){} }
     else if (c === 'scale') { /* no-op cho JW */ }
   } catch(e) { bridgeLog('jwCmd err: ' + e.message); }
@@ -880,6 +1278,10 @@ setTimeout(function() {
     }, 200);
   }
 }, 1500);
+setInterval(function() {
+  bindJwCtrl();
+  _vicdnPostTime();
+}, 500);
   `
 }
 
