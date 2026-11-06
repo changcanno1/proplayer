@@ -20,11 +20,11 @@ function getManifest() {
         return JSON.stringify({
             "id": "anidoki",
             "name": "AniDoki [ANIME]",
-            "version": "1.0",
+            "version": "1.0.4",
             "author": "alokillgtv",
             "info": "Kho anime vietsub Full HD, cập nhật nhanh.\nNguồn tổng hợp Anime47 / AniDoki, có phụ đề AI tiếng Việt.",
             "baseUrl": WEB,
-            "iconUrl": "https://anidoki.com/favicon-192x192.png",
+            "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/anidoki.png",
             "isEnabled": true,
             "isAdult": false,
             "adblock": false,
@@ -192,33 +192,59 @@ function getUrlYears() { return ""; }
 // =============================================================================
 function pickTitle(t) {
     if (!t) return "";
-    if (typeof t === "string") return t;
-    return t.vietnamese || t.english || t.romaji || "";
+    if (typeof t === "string" || typeof t === "number") return String(t);
+    if (typeof t === "object") {
+        return String(t.vietnamese || t.english || t.romaji || t.japanese || t.name || "");
+    }
+    return "";
+}
+
+function pickList(obj) {
+    if (Array.isArray(obj)) return obj;
+    if (!obj || typeof obj !== "object") return [];
+    var roots = [obj.data, obj.items, obj.animes, obj.list, obj.results, obj.result];
+    for (var i = 0; i < roots.length; i++) {
+        if (Array.isArray(roots[i])) return roots[i];
+        if (roots[i] && typeof roots[i] === "object") {
+            var nested = [roots[i].items, roots[i].animes, roots[i].list, roots[i].results];
+            for (var j = 0; j < nested.length; j++) {
+                if (Array.isArray(nested[j])) return nested[j];
+            }
+        }
+    }
+    return [];
+}
+
+function pickText(v) {
+    if (v === null || v === undefined) return "";
+    if (typeof v === "string" || typeof v === "number") return String(v);
+    if (typeof v === "object") return pickTitle(v);
+    return "";
 }
 
 function buildListItems(obj) {
     var items = [];
-    var list = (obj && obj.data) ? obj.data : [];
-    if (!Array.isArray(list)) list = [];
+    var list = pickList(obj);
     for (var i = 0; i < list.length; i++) {
         var it = list[i];
-        if (!it || !it.id) continue;
-        var title = pickTitle(it.title);
-        var poster = it.coverImage || it.bannerImage || "";
+        if (!it || (!it.id && !it.slug && !it.animeId)) continue;
+        var id = it.id || it.slug || it.animeId;
+        var title = pickTitle(it.title || it.name || it.vietnamese || it.english);
+        var poster = it.coverImage || it.cover_image || it.poster || it.image || it.thumbnail || it.bannerImage || "";
         var epCur = "";
-        if (it.isMovie) epCur = "Full";
-        else if (it.currentEpisode) epCur = "Tập " + it.currentEpisode;
-        else if (it.totalEpisodes) epCur = it.totalEpisodes + " tập";
+        if (it.isMovie || it.type === "movie") epCur = "Full";
+        else if (it.currentEpisode) epCur = "Tập " + pickText(it.currentEpisode);
+        else if (it.totalEpisodes) epCur = pickText(it.totalEpisodes) + " tập";
         items.push({
-            "id": it.id,
+            "id": String(id),
             "title": title,
-            "posterUrl": poster,
-            "backdropUrl": it.bannerImage || poster,
-            "quality": it.format || "",
+            "posterUrl": pickText(poster),
+            "backdropUrl": pickText(it.bannerImage || it.banner_image || poster),
+            "quality": pickText(it.format || it.quality),
             "episode_current": epCur,
-            "year": it.year || "",
-            "lang": it.language || "Vietsub",
-            "score": it.score || ""
+            "year": pickText(it.year),
+            "lang": pickText(it.language || it.lang) || "Vietsub",
+            "score": pickText(it.score)
         });
     }
     return items;
