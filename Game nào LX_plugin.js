@@ -4,8 +4,8 @@ var GAME_CACHE = [];
 
 function getManifest() {
     return JSON.stringify({
-        id: "game",
-        name: "Game nào LX",
+        id: "vaxgame",
+        name: "VAX GAME [GAME]",
         version: "1.0.0",
         BASEURL: GAME_LIST_URL,
         iconUrl: "https://vaxplugin.alokillgtv02.workers.dev/img/icon/vaxgame.png",
