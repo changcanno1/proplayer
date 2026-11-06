@@ -2,8 +2,8 @@
   "version": 1,
   "plugins": [
      {
-      "id": "Game nào LX",
-      "name": "game",
+      "id": "game",
+      "name": "Game nào LX",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Game%20nào%20LX_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv02.workers.dev/img/icon/vaxgame.png"
