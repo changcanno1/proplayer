@@ -4,7 +4,7 @@ var GAME_CACHE = [];
 
 function getManifest() {
     return JSON.stringify({
-        id: "vaxgame",
+        id: "game",
         name: "GAME [LX]",
         version: "1.0.0",
         BASEURL: GAME_LIST_URL,
