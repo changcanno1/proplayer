@@ -58,6 +58,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
     },
     {
+      "id": "bluphim",
+      "name": "Blu Phim [MOVIE]",
+      "version": "1.0.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/BLUFilm_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/bluphim.png"
+    },
+    {
       "id": "vicdn",
       "name": "Nguồn Vicdn",
       "version": "2.6",
