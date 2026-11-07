@@ -1,5 +1,5 @@
 /* VAX GAME - plugin native WebView (Tối ưu tải 10 game trang chủ) */
-var GAME_LIST_URL = "https://vaxplugins.alokillgtv05.workers.dev/tv/game/list.txt";
+var GAME_LIST_URL = "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/list.txt";
 var GAME_CACHE = [];
 
 function getManifest() {
