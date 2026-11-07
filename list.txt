@@ -7,6 +7,27 @@
     "category": "Game Tiếng Việt"
   },
   {
+    "name": "Hầu đồng Online",
+    "url": "https://haudong.online/ban-do",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6GOGqpznz9PFOwVAJDnRInc_NkJBxznDXlVoM-CpqAg&s=10",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+{
+    "name": "Cầu duyên Online",
+    "url": "https://cauduyen.gymmap.vn",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwtXQ4MkANpDJ2o3deoVb5Yn7P32ON40vZyhGbgh4C-g&s=10",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+{
+    "name": "Võ Lâm Truyền Kỳ Online",
+    "url": "https://hoainiem.uk",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSr-uuVyzjZmyZZshwy37Vo0gmsvGs_Y-27UQ-4D2EY1w&s=10",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+  {
     "name": "Niệm Phật Online",
     "url": "https://www.niemphat.online/",
     "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJsZgybxj3Eb2ArytBsQfDVHuF384yZ0G6gfuGuJYr3A&s=10",
@@ -49,13 +70,6 @@
     "category": "Game Tiếng Việt"
   },
   {
-    "name": "GTA Web",
-    "url": "https://gta.vkey.vn/",
-    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/gta.jpg",
-    "tag": "Game Tiếng Việt",
-    "category": "Game Tiếng Việt"
-  },
-  {
     "name": "Tiệm Xôi",
     "url": "https://g.vkey.vn/tiemxoi/",
     "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/tiemxoi.jpg",
@@ -73,13 +87,6 @@
     "name": "Xuyên Không",
     "url": "https://g.vkey.vn",
     "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/nongtrai.jpg",
-    "tag": "Game Tiếng Việt",
-    "category": "Game Tiếng Việt"
-  },
-  {
-    "name": "24H Làm Chó",
-    "url": "https://g.vkey.vn/24hlamcho",
-    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/24hlamcho.jpg",
     "tag": "Game Tiếng Việt",
     "category": "Game Tiếng Việt"
   },
