@@ -1,4 +1,4 @@
-/* VAX GAME - plugin native WebView */
+/* VAX GAME - plugin native WebView (Tối ưu tải 10 game trang chủ) */
 var GAME_LIST_URL = "https://vaxplugins.alokillgtv05.workers.dev/tv/game/list.txt";
 var GAME_CACHE = [];
 
@@ -6,7 +6,7 @@ function getManifest() {
     return JSON.stringify({
         id: "game",
         name: "GAME [LX]",
-        version: "1.0.0",
+        version: "1.0.1",
         BASEURL: GAME_LIST_URL,
         iconUrl: "https://vaxplugin.alokillgtv02.workers.dev/img/icon/vaxgame.png",
         isEnabled: true,
@@ -34,44 +34,55 @@ function getHomeSections() {
     ]);
 }
 
-
 function getLISTmenu() {
-    try{
-      return `[
-        { "link": "Game Tiếng Việt", "name": "Game Tiếng Việt"},
-        { "link": "Chơi Online", "name": "Chơi Online"},
-        { "link": "Hành Động", "name": "Hành Động"},
-        { "link": "Chiến Thuật", "name": "Chiến Thuật"},
-        { "link": "Giải Đố", "name": "Giải Đố"},
-        { "link": "Thể Thao", "name": "Thể Thao"},
-        { "link": "Bắn Súng", "name": "Bắn Súng"},
-        { "link": "Trí Tuệ", "name": "Trí Tuệ"},
-        { "link": "Bài Bạc", "name": "Bài Bạc"},
-        { "link": "Chơi Cờ", "name": "Chơi Cờ"},
-        { "link": "Giải Trí", "name": "Giải Trí"},
-        { "link": "Mô Phỏng", "name": "Mô Phỏng"}
-      ]`;
-    } catch(e){
-      log("getLISTmenu[err]:\n " + e);
-      return `[
-        {"link":"/","name":"Đang lỗi getLISTmenu()"},
-      ]`;
+    try {
+        return `[
+            { "link": "Game Tiếng Việt", "name": "Game Tiếng Việt"},
+            { "link": "Chơi Online", "name": "Chơi Online"},
+            { "link": "Hành Động", "name": "Hành Động"},
+            { "link": "Chiến Thuật", "name": "Chiến Thuật"},
+            { "link": "Giải Đố", "name": "Giải Đố"},
+            { "link": "Thể Thao", "name": "Thể Thao"},
+            { "link": "Bắn Súng", "name": "Bắn Súng"},
+            { "link": "Trí Tuệ", "name": "Trí Tuệ"},
+            { "link": "Bài Bạc", "name": "Bài Bạc"},
+            { "link": "Chơi Cờ", "name": "Chơi Cờ"},
+            { "link": "Giải Trí", "name": "Giải Trí"},
+            { "link": "Mô Phỏng", "name": "Mô Phỏng"}
+        ]`;
+    } catch(e) {
+        return `[{"link":"/","name":"Đang lỗi getLISTmenu()"}]`;
     }
-  }
-
+}
 
 function getPrimaryCategories() {
-    try { return JSON.stringify(buildMenu(getLISTmenu())); }
+    try { return JSON.stringify(JSON.parse(getLISTmenu())); }
     catch (e) { return JSON.stringify([]); }
 }
 
 function getUrlList(slug, filtersJson) {
     var category = String(slug || "all");
-    return GAME_LIST_URL + (category !== "all" ? "?category=" + encodeURIComponent(category) : "");
+    var page = 1;
+    if (filtersJson) {
+        try {
+            var f = JSON.parse(filtersJson);
+            page = parseInt(f.page) || 1;
+        } catch (e) {}
+    }
+    // Gắn |data:page=... để parseListResponse biết trang hiện tại mà không gửi rác lên server
+    var url = GAME_LIST_URL + (category !== "all" ? "?category=" + encodeURIComponent(category) : "");
+    return url + "|data:page=" + page;
 }
 
 function getUrlSearch(keyword, filtersJson) {
-    return GAME_LIST_URL + "?q=" + encodeURIComponent(keyword || "");
+    var page = 1;
+    if (filtersJson) {
+        try {
+            var f = JSON.parse(filtersJson);
+            page = parseInt(f.page) || 1;
+        } catch (e) {}
+    }
+    return GAME_LIST_URL + "?q=" + encodeURIComponent(keyword || "") + "|data:page=" + page;
 }
 
 function getUrlDetail(slug) {
@@ -104,41 +115,101 @@ function cleanGame(game) {
 function filterGames(raw, apiUrl) {
     var games = parseGames(raw);
     var query = String(apiUrl || "");
-    var match = query.match(/[?&]category=([^&]+)/i);
+    var match = query.match(/[?&]category=([^&|]+)/i);
     var category = match ? decodeURIComponent(match[1]) : "";
     var out = [];
     GAME_CACHE = [];
     for (var i = 0; i < games.length; i++) {
         if (category && String(games[i].category || games[i].tag || "") !== category) continue;
         var item = cleanGame(games[i]);
-        if (item) { out.push(item); GAME_CACHE.push(item); }
+        if (item) {
+            out.push(item);
+            GAME_CACHE.push(item);
+        }
     }
     return out;
 }
 
-function parseListResponse(raw, apiUrl) {
-    var items = filterGames(raw, apiUrl);
+function parseListResponse(raw, apiUrl, datasend) {
+    var allItems = filterGames(raw, apiUrl);
+    
+    // Đọc số trang từ datasend hoặc apiUrl
+    var page = 1;
+    var dataStr = String(datasend || "");
+    if (!dataStr && apiUrl && apiUrl.indexOf("|") > -1) {
+        dataStr = apiUrl.substring(apiUrl.indexOf("|") + 1);
+    }
+    var pageMatch = dataStr.match(/page=(\d+)/i);
+    if (pageMatch) {
+        page = parseInt(pageMatch[1], 10) || 1;
+    }
+
+    var pageSize = 10; // Trang chủ chỉ load 10 game đầu cho nhẹ
+    if (page > 1) {
+        pageSize = 20; // Khi vào Xem Thêm (Category) tải 20 game mỗi trang
+    }
+
+    var totalItems = allItems.length;
+    var totalPages = Math.ceil(totalItems / pageSize) || 1;
+    
+    // Cắt lát danh sách game theo trang
+    var startIndex = (page - 1) * pageSize;
+    var pagedItems = allItems.slice(startIndex, startIndex + pageSize);
+
     return JSON.stringify({
-        items: items,
-        pagination: { currentPage: 1, totalPages: 1 }
+        items: pagedItems,
+        pagination: {
+            currentPage: page,
+            totalPages: totalPages,
+            totalItems: totalItems,
+            itemsPerPage: pageSize
+        }
     });
 }
 
-function parseSearchResponse(raw, apiUrl) {
+function parseSearchResponse(raw, apiUrl, datasend) {
     var all = filterGames(raw, apiUrl);
-    var q = ((String(apiUrl || "").match(/[?&]q=([^&]+)/i) || [])[1] || "");
+    var q = ((String(apiUrl || "").match(/[?&]q=([^&|]+)/i) || [])[1] || "");
     q = decodeURIComponent(q).toLowerCase();
-    if (q) all = all.filter(function (g) {
-        return (g.title + " " + g.description + " " + g.category).toLowerCase().indexOf(q) >= 0;
+    if (q) {
+        all = all.filter(function (g) {
+            return (g.title + " " + g.description + " " + g.category).toLowerCase().indexOf(q) >= 0;
+        });
+    }
+
+    var page = 1;
+    var dataStr = String(datasend || "");
+    if (!dataStr && apiUrl && apiUrl.indexOf("|") > -1) {
+        dataStr = apiUrl.substring(apiUrl.indexOf("|") + 1);
+    }
+    var pageMatch = dataStr.match(/page=(\d+)/i);
+    if (pageMatch) {
+        page = parseInt(pageMatch[1], 10) || 1;
+    }
+
+    var pageSize = 20;
+    var totalPages = Math.ceil(all.length / pageSize) || 1;
+    var pagedItems = all.slice((page - 1) * pageSize, page * pageSize);
+
+    return JSON.stringify({
+        items: pagedItems,
+        pagination: {
+            currentPage: page,
+            totalPages: totalPages,
+            totalItems: all.length,
+            itemsPerPage: pageSize
+        }
     });
-    return JSON.stringify({ items: all, pagination: { currentPage: 1, totalPages: 1 } });
 }
 
 function parseMovieDetail(html, apiUrl) {
     var url = String(apiUrl || "");
     var found = null;
     for (var i = 0; i < GAME_CACHE.length; i++) {
-        if (GAME_CACHE[i].url === url) { found = GAME_CACHE[i]; break; }
+        if (GAME_CACHE[i].url === url) {
+            found = GAME_CACHE[i];
+            break;
+        }
     }
     return JSON.stringify({
         id: url,
@@ -151,33 +222,30 @@ function parseMovieDetail(html, apiUrl) {
 }
 
 function getJS(apiUrl){
-  if(apiUrl.indexOf("https://www.crazygames.com") > -1){
-    return crazyJS()
-  }
+    if (apiUrl.indexOf("https://www.crazygames.com") > -1){
+        return crazyJS();
+    }
 }
 
 function crazyJS(){
-  return `
+    return `
 (function () {
   'use strict';
   if (window.__GLS_INIT) { return; }
   window.__GLS_INIT = true;
 
-  var TAG        = '[GLS]';
-  var STYLE_ID   = '__gls_loader_style';
-  var ROOT_ID    = '__gls_iframe_root';
+  var TAG = '[GLS]';
+  var STYLE_ID = '__gls_loader_style';
+  var ROOT_ID = '__gls_iframe_root';
   var IFRAME_SEL = 'iframe#game-iframe, iframe.GameContainerMobile_gameIframe__kYvt0, iframe.bs-GameContainer--game';
   var AUTO_HIDE_MS = 3000;
 
-  function log()   { try { var a=[].slice.call(arguments); a.unshift(TAG); console.log.apply(console,a); } catch(e){} }
-  function warn()  { try { var a=[].slice.call(arguments); a.unshift(TAG); console.warn.apply(console,a); } catch(e){} }
+  function log() { try { var a=[].slice.call(arguments); a.unshift(TAG); console.log.apply(console,a); } catch(e){} }
+  function warn() { try { var a=[].slice.call(arguments); a.unshift(TAG); console.warn.apply(console,a); } catch(e){} }
   function error() { try { var a=[].slice.call(arguments); a.unshift(TAG); console.error.apply(console,a); } catch(e){} }
 
-  log('boot v3, readyState=' + document.readyState);
-
-  /* ---------- Loader qua CSS pseudo-element (KHÔNG chèn DOM) ---------- */
   var LOADER_CSS = ''
-    + 'html::before{content:"ĐANG TẢI GAME\\n Xin vui lòng chờ chút nhé.";'
+    + 'html::before{content:"ĐANG TẢI GAME\\\\n Xin vui lòng chờ chút nhé.";'
     + 'white-space:pre-wrap;position:fixed;top:0;left:0;right:0;bottom:0;'
     + 'text-align:center;padding-top:40vh;box-sizing:border-box;'
     + 'background:#0f0f14;color:#fff;'
@@ -190,49 +258,40 @@ function crazyJS(){
     + '@keyframes __gls_spin{to{transform:rotate(360deg)}}';
 
   function injectLoaderStyle() {
-    if (document.getElementById(STYLE_ID)) { log('loader: style already present'); return true; }
+    if (document.getElementById(STYLE_ID)) { return true; }
     var parent = document.head || document.documentElement;
-    if (!parent) { warn('loader: no parent yet'); return false; }
+    if (!parent) { return false; }
     var s = document.createElement('style');
     s.id = STYLE_ID;
     s.textContent = LOADER_CSS;
     parent.appendChild(s);
-    log('loader: style injected into ' + parent.tagName);
     return true;
   }
 
   if (!injectLoaderStyle()) {
     document.addEventListener('DOMContentLoaded', function () {
-      log('loader: retry style inject on DOMContentLoaded');
       injectLoaderStyle();
     }, { once: true });
   }
 
   var hidden = false;
   function hideLoader(reason) {
-    if (hidden) { log('loader: HIDE skipped (already), reason=' + reason); return; }
+    if (hidden) return;
     hidden = true;
-    log('loader: HIDE begin, reason=' + reason);
     try {
       var s = document.getElementById(STYLE_ID);
-      if (s && s.parentNode) { s.parentNode.removeChild(s); log('loader: style removed from DOM'); }
-      else { warn('loader: style element NOT FOUND'); }
-    } catch (e) { error('loader: hide threw', e); }
-    log('loader: HIDE end');
+      if (s && s.parentNode) { s.parentNode.removeChild(s); }
+    } catch (e) {}
   }
 
   var autoHideTimer = setTimeout(function () { hideLoader('auto-30s'); }, AUTO_HIDE_MS);
 
-  /* ---------- Watch & Swap ---------- */
   var swapped = false;
   var watching = false;
   var mo = null, pollId = 0, heartbeatId = 0;
-  var startTime = Date.now();
-  function elapsed() { return Date.now() - startTime; }
   function findIframe() { try { return document.querySelector(IFRAME_SEL); } catch (e) { return null; } }
 
-  function stopWatching(reason) {
-    log('watch: STOP, reason=' + reason);
+  function stopWatching() {
     if (mo) { try { mo.disconnect(); } catch (e) {} mo = null; }
     if (pollId) { clearInterval(pollId); pollId = 0; }
     if (heartbeatId) { clearInterval(heartbeatId); heartbeatId = 0; }
@@ -240,17 +299,13 @@ function crazyJS(){
   }
 
   function doSwap(iframe) {
-    if (swapped) { return; }
-    if (!iframe) { return; }
+    if (swapped || !iframe) return;
     swapped = true;
-    log('swap: BEGIN at +' + elapsed() + 'ms, iframe.src=' + String(iframe.src || '').slice(0, 100));
-    stopWatching('swap-start');
+    stopWatching();
     clearTimeout(autoHideTimer);
 
-    /* A. Ẩn loading NGAY (bất chấp các bước sau có lỗi hay không) */
-    try { hideLoader('swap-pre-hide'); } catch (e) { error('swap A threw', e); }
+    try { hideLoader('swap-pre-hide'); } catch (e) {}
 
-    /* B. Tạo root container fullscreen */
     var root = null;
     try {
       root = document.getElementById(ROOT_ID);
@@ -261,47 +316,31 @@ function crazyJS(){
           + 'width:100vw;height:100vh;margin:0;padding:0;border:0;'
           + 'background:#000;z-index:2147483646;overflow:hidden;';
         document.documentElement.appendChild(root);
-        log('swap B: root CREATED');
-      } else {
-        log('swap B: root exists');
       }
-    } catch (e) { error('swap B threw', e); }
+    } catch (e) {}
 
-    /* C. Move iframe sang root */
     if (root) {
       try {
         root.appendChild(iframe);
         iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;'
           + 'border:0;margin:0;padding:0;display:block;';
-        log('swap C: iframe MOVED into root, src=' + String(iframe.src || '').slice(0, 100));
-      } catch (e) { error('swap C threw', e); }
-    } else {
-      error('swap C: SKIPPED (no root)');
+      } catch (e) {}
     }
 
-    /* D. Xoá sạch body */
     try {
-      if (document.body) {
-        var n = document.body.childElementCount;
-        document.body.innerHTML = '';
-        log('swap D: body WIPED (removed ' + n + ' children)');
-      } else { warn('swap D: no body'); }
-    } catch (e) { error('swap D threw', e); }
+      if (document.body) { document.body.innerHTML = ''; }
+    } catch (e) {}
 
-    /* E. Xoá <script> trong <head> (giữ <style>) */
     try {
       var head = document.head;
       if (head) {
         var scripts = head.querySelectorAll('script');
-        var removed = 0;
         for (var i = 0; i < scripts.length; i++) {
-          try { var sc = scripts[i]; if (sc.parentNode) { sc.parentNode.removeChild(sc); removed++; } } catch (e2) {}
+          try { var sc = scripts[i]; if (sc.parentNode) sc.parentNode.removeChild(sc); } catch (e2) {}
         }
-        log('swap E: removed ' + removed + '/' + scripts.length + ' head scripts');
       }
-    } catch (e) { error('swap E threw', e); }
+    } catch (e) {}
 
-    /* F. Reset html/body: không viền, không cuộn */
     try {
       var d = document.documentElement.style;
       d.margin='0'; d.padding='0'; d.overflow='hidden'; d.width='100%'; d.height='100%'; d.background='#000';
@@ -309,82 +348,38 @@ function crazyJS(){
         var b = document.body.style;
         b.margin='0'; b.padding='0'; b.overflow='hidden'; b.width='100%'; b.height='100%'; b.background='#000';
       }
-      log('swap F: style reset OK');
-    } catch (e) { error('swap F threw', e); }
-
-    /* G. Thử fullscreen (bọc kỹ) */
-    try {
-      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-        var p = document.documentElement.requestFullscreen();
-        if (p && typeof p.then === 'function') {
-          p.then(function () { log('swap G: fullscreen OK'); })
-           .catch(function (err) { warn('swap G: fullscreen REJECTED: ' + (err && err.message)); });
-        }
-      } else if (document.fullscreenElement) { log('swap G: already fullscreen'); }
-      else { warn('swap G: fullscreen API missing'); }
-    } catch (e) { warn('swap G threw', e); }
-
-    /* H. Verify sau 1s và 5s */
-    setTimeout(function () {
-      var okIframe    = !!findIframe();
-      var styleGone   = !document.getElementById(STYLE_ID);
-      var bodyEmpty   = !!(document.body && document.body.childElementCount === 0);
-      var rootOk      = !!document.getElementById(ROOT_ID);
-      log('verify+1s: iframe=' + okIframe + ' styleGone=' + styleGone
-          + ' bodyEmpty=' + bodyEmpty + ' rootOk=' + rootOk);
-      if (!styleGone) {
-        warn('verify+1s: style STILL PRESENT — force removing');
-        try { var s2 = document.getElementById(STYLE_ID); if (s2 && s2.parentNode) s2.parentNode.removeChild(s2); } catch (e) {}
-      }
-    }, 1000);
-
-    setTimeout(function () {
-      log('verify+5s: iframe=' + !!findIframe()
-          + ' styleGone=' + !document.getElementById(STYLE_ID)
-          + ' loaderHidden=' + hidden);
-    }, 5000);
-
-    log('swap: DONE (sync portion)');
+    } catch (e) {}
   }
 
-  function startWatching(reason) {
-    if (watching || swapped) { log('watch: skip, reason=' + reason); return; }
+  function startWatching() {
+    if (watching || swapped) return;
     watching = true;
-    log('watch: START reason=' + reason + ', readyState=' + document.readyState);
 
     var f = findIframe();
-    if (f) { log('watch: iframe already present'); doSwap(f); return; }
+    if (f) { doSwap(f); return; }
 
     try {
       mo = new MutationObserver(function () {
         var el = findIframe();
-        if (el) { log('watch: iframe FOUND via MutationObserver'); doSwap(el); }
+        if (el) doSwap(el);
       });
       mo.observe(document.documentElement || document, { childList: true, subtree: true });
-      log('watch: MutationObserver attached');
-    } catch (e) { error('watch: MO setup threw', e); }
+    } catch (e) {}
 
     pollId = setInterval(function () {
       var el = findIframe();
-      if (el) { log('watch: iframe FOUND via polling'); doSwap(el); }
+      if (el) doSwap(el);
     }, 300);
-    log('watch: poll every 300ms started');
-
-    heartbeatId = setInterval(function () {
-      if (swapped) { return; }
-      log('watch: heartbeat +' + elapsed() + 'ms, iframe=' + (findIframe() ? 'FOUND' : 'waiting'));
-    }, 2000);
-    log('watch: heartbeat every 2s started');
   }
 
-  if (document.documentElement) { startWatching('immediate'); }
+  if (document.documentElement) { startWatching(); }
   else {
     document.addEventListener('DOMContentLoaded', function () {
-      startWatching('domcontentloaded');
+      startWatching();
     }, { once: true });
   }
 })();
-  `
+    `;
 }
 
 function parseDetailResponse(html, apiUrl) {
