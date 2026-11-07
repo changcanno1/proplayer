@@ -1,0 +1,74 @@
+[
+  {
+    "name": "Chùa Online",
+    "url": "https://chuaonline.org/",
+    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/chuaonline.png",
+    "desc": "Game đi chùa online. Thử một lần thiền định nào.",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+  {
+    "name": "Đời Phố",
+    "url": "https://g.vkey.vn/doipho/",
+    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/doipho.jpg",
+    "desc": "Cuộc sống ở một thành phố như thế nào, tự trải nghiệm đi nhé.",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+  {
+    "name": "Đế Chế Vỉa Hè",
+    "url": "https://g.vkey.vn/dcvh/",
+    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/decheviahe.jpg",
+    "desc": "Khởi nghiệp từ quán nước vỉa hè, phục vụ khách hàng để vươn lên thành ông trùm vỉa hè.",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+  {
+    "name": "24H Làm Chó",
+    "url": "https://g.vkey.vn/24hlamcho",
+    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/24hlamcho.jpg",
+    "desc": "Thử thách 24H làm chó của bạn xem thế nào. Làm sao để tránh được bọn trộm chó chạy Exciter đây.",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+  {
+    "name": "Zoo Garden",
+    "url": "https://cute.vkey.vn/",
+    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/zoogarden.jpg",
+    "desc": "Game kiểu nhẹ nhàng, trồng trọt, câu cá, đánh quái, và phiêu lưu vào hành tinh mới.",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+  {
+    "name": "GTA Web",
+    "url": "https://gta.vkey.vn/",
+    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/gta.jpg",
+    "desc": "GTA web phiên bản bẩn bựa, chơi được bằng tay cầm, chuột phím.",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+  {
+    "name": "Tiệm Xôi",
+    "url": "https://g.vkey.vn/tiemxoi/",
+    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/tiemxoi.jpg",
+    "desc": "Cùng nhau đi bán xôi thôi.",
+    "tag": "Mô Phỏng",
+    "category": "Mô Phỏng"
+  },
+  {
+    "name": "Trà Sữa",
+    "url": "https://g.vkey.vn/trasua/",
+    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/trasua_1.jpg",
+    "desc": "Pha trà đón khách ở chính cái tiệm nhỏ của bạn.",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+  {
+    "name": "Xuyên Không",
+    "url": "https://g.vkey.vn",
+    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/nongtrai.jpg",
+    "desc": "Xuyên Không là game nông trại mô phỏng, nơi khu vườn của bạn tiến hóa theo lịch sử loài người.",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  }
+]
