@@ -24,14 +24,12 @@ function getHomeSections() {
         { slug: "Hành Động", title: "Hành Động", type: "Horizontal" },
         { slug: "Chiến Thuật", title: "Chiến Thuật", type: "Horizontal" },
         { slug: "Giải Đố", title: "Giải Đố", type: "Horizontal" },
-        { slug: "Nhập Vai", title: "Nhập Vai", type: "Horizontal" },
         { slug: "Thể Thao", title: "Thể Thao", type: "Horizontal" },
         { slug: "Bắn Súng", title: "Bắn Súng", type: "Horizontal" },
         { slug: "Trí Tuệ", title: "Trí Tuệ", type: "Horizontal" },
         { slug: "Bài Bạc", title: "Bài Bạc", type: "Horizontal" },
         { slug: "Chơi Cờ", title: "Chơi Cờ", type: "Horizontal" },
         { slug: "Giải Trí", title: "Giải Trí", type: "Horizontal" },
-        { slug: "Đua Xe", title: "Đua Xe", type: "Horizontal" },
         { slug: "Mô Phỏng", title: "Mô Phỏng", type: "Horizontal" }
     ]);
 }
@@ -45,14 +43,12 @@ function getLISTmenu() {
         { "link": "Hành Động", "name": "Hành Động"},
         { "link": "Chiến Thuật", "name": "Chiến Thuật"},
         { "link": "Giải Đố", "name": "Giải Đố"},
-        { "link": "Nhập Vai", "name": "Nhập Vai"},
         { "link": "Thể Thao", "name": "Thể Thao"},
         { "link": "Bắn Súng", "name": "Bắn Súng"},
         { "link": "Trí Tuệ", "name": "Trí Tuệ"},
         { "link": "Bài Bạc", "name": "Bài Bạc"},
         { "link": "Chơi Cờ", "name": "Chơi Cờ"},
         { "link": "Giải Trí", "name": "Giải Trí"},
-        { "link": "Đua Xe", "name": "Đua Xe"},
         { "link": "Mô Phỏng", "name": "Mô Phỏng"}
       ]`;
     } catch(e){
