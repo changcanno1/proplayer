@@ -245,7 +245,7 @@ function crazyJS(){
   function error() { try { var a=[].slice.call(arguments); a.unshift(TAG); console.error.apply(console,a); } catch(e){} }
 
   var LOADER_CSS = ''
-    + 'html::before{content:"ĐANG TẢI GAME\\\\ Xin vui lòng chờ chút nhé.";'
+    + 'html::before{content:"ĐANG TẢI GAME";'
     + 'white-space:pre-wrap;position:fixed;top:0;left:0;right:0;bottom:0;'
     + 'text-align:center;padding-top:40vh;box-sizing:border-box;'
     + 'background:#0f0f14;color:#fff;'
