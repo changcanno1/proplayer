@@ -7,6 +7,13 @@
     "category": "Game Tiếng Việt"
   },
   {
+    "name": "Niệm Phật Online",
+    "url": "https://www.niemphat.online/",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJsZgybxj3Eb2ArytBsQfDVHuF384yZ0G6gfuGuJYr3A&s=10",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+  {
     "name": "Karaoke - Nghe Nhạc Online",
     "url": "https://www.ngoichung.vn",
     "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTticNEJDeVI4jODYYX_FeMwOAxrEZv4AU6LS6hXhDBxw&s=10",
@@ -24,13 +31,6 @@
     "name": "Đế Chế Vỉa Hè",
     "url": "https://g.vkey.vn/dcvh/",
     "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/decheviahe.jpg",
-    "tag": "Game Tiếng Việt",
-    "category": "Game Tiếng Việt"
-  },
-  {
-    "name": "24H Làm Chó",
-    "url": "https://g.vkey.vn/24hlamcho",
-    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/24hlamcho.jpg",
     "tag": "Game Tiếng Việt",
     "category": "Game Tiếng Việt"
   },
@@ -66,6 +66,13 @@
     "name": "Xuyên Không",
     "url": "https://g.vkey.vn",
     "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/nongtrai.jpg",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
+  {
+    "name": "24H Làm Chó",
+    "url": "https://g.vkey.vn/24hlamcho",
+    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/24hlamcho.jpg",
     "tag": "Game Tiếng Việt",
     "category": "Game Tiếng Việt"
   },
