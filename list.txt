@@ -9,7 +9,7 @@
   {
     "name": "Karaoke - Nghe Nhạc Online",
     "url": "https://www.ngoichung.vn",
-    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSylVbTlOQM7-kscveRA01gM_XLQcIvb0-z5EnjtaLDIg&s=10",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTticNEJDeVI4jODYYX_FeMwOAxrEZv4AU6LS6hXhDBxw&s=10",
     "tag": "Game Tiếng Việt",
     "category": "Game Tiếng Việt"
   },
