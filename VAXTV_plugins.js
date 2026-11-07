@@ -1,6 +1,23 @@
 var iddomain = "bilutv"
 BASEURL = "https://vaxplugin.alokillgtv02.workers.dev/tv/index.html"
 NEWDOMAIN = false;
+var GAME_LIST_URL = "https://vaxplugins.alokillgtv05.workers.dev/tv/game/list.txt";
+var GAME_IMG = "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxgame_1.jpg?v=7";
+var GAME_CACHE = [];
+var GAME_MAP = {};
+var GAME_CATEGORIES = ["Game Tiếng Việt", "Mô Phỏng", "Hành Động", "Giải Trí", "Bài Bạc", "Chơi Cờ", "Bắn Súng", "Chiến Thuật", "Giải Đố", "Trí Tuệ", "Lái Xe", "Phiêu Lưu", "Thể Thao", "Chơi Online"];
+function gameLog() {
+    try { var a = [].slice.call(arguments); a.unshift("[VAXGAME]"); console.log.apply(console, a); } catch (e) {}
+}
+function gameParam(url, name) {
+    try {
+        var m = String(url || "").match(new RegExp("[?&]" + name + "=([^&]*)", "i"));
+        return m ? decodeURIComponent(m[1]) : "";
+    } catch (e) { return ""; }
+}
+function isGameListUrl(url) {
+    return String(url || "").indexOf(GAME_LIST_URL) === 0;
+}
 var popup_html = "";
 
 // ============================================================
@@ -26,9 +43,9 @@ function getManifest() {
     return JSON.stringify({
       "id": "vaxtv",
       "name": "VAX TỔNG HỢP [MOVIE]",
-      "version": "1.9.7",
+      "version": "2.4",
       "author": "Alokillgtv",
-      "info": "[UPDATE: 1.9.4] thêm nhiều nguồn phim, truyện tranh. Cơ chế lồng tiếng cho phim, cơ chế chỉnh delay cho subtitle, cơ chế tìm subtitle.",
+      "info": "[UPDATE: 2.4] Hoàn thiện UI Control mới, fix nhiều lỗi. Update Vax Game xịn xò hơn. Fix các lỗi giao diện.",
       "BASEURL": BASEURL,
       "headers":{
           "X-VAX-YB": "vax_yb_token_2030_1990"
@@ -52,7 +69,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "loiapp",
       "name": "Plugin bị lỗi cài đặt",
-      "version": "2.0",
+      "version": "2.2",
       "info": "Plugin đang bị lỗi: \n" + e,
       "baseUrl": "http://vkey.vn/",
       "iconUrl": "https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/novahd.png",
@@ -65,85 +82,78 @@ function getManifest() {
 function getcate(){
   return `[{
     "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=movie&plugin=kkphim&play=proxy",
-    "img": "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxmovie_1.jpg?v=7",
+    "img": "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxmovie_1.jpg?v=7",
     "des": "VAXMOVIE là player mở rộng chuyên dụng để stream các nguồn phim khác nhau, một cách để bạn duyệt, tìm và xem phim một cách nhanh chóng.",
     "count": "MOVIE",
     "title": "VAX MOVIE"
   },
   {
     "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=anime&plugin=yanhh3d",
-    "img": "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxanime_1.jpg?v=7",
+    "img": "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxanime_1.jpg?v=7",
     "des": "",
     "count": "ANIME",
     "title": "VAX ANIME"
   },
   {
     "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=short&plugin=netshort",
-    "img": "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxshort_1.jpg?v=7",
+    "img": "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxshort_1.jpg?v=7",
     "des": "",
     "count": "SHORT",
     "title": "VAX SHORT"
   },
   {
-    "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/index.html?m3u=aHR0cHM6Ly9kbC5kcm9wYm94dXNlcmNvbnRlbnQuY29tL3MvbzV2eWdpdDM0djlyeWx5NzFnYW00L2NvYmFuNjYubTN1P3Jsa2V5PWF1eW9vbjU0aGZ1YmFqdDE2bmM3dTdkYm4mc3Q9NzBneXZ0Y3UmZGw9MA%3D%3D&listcate=ewogICJfZmF2IjogMiwKICAiX2FsbCI6IDEsCiAgIkvDik5IIEJBzIFOIEhBzIBORyI6IDAsCiAgIkvDik5IIENBIE5IQcyjQyI6IDUwLAogICJLw4pOSCDEkOG6tkMgU%2BG6rkMiOiAwLAogICJLw4pOSCBHSeG6okkgVFLDjSI6IDAsCiAgIkvDik5IIEhUViAtIEJBzIFPIFZBzIAgUFRUSCBUUEhDTXxIVFYiOiBbMyw4MF0sCiAgIkvDik5IIEhUVkMgLSBCQcyBTyBWQcyAIFBUVEggVFBIQ00iOiA4MCwKICAiS8OKTkggS0jDgUMiOiAwLAogICJLw4pOSCBQSElNIFRSVVnhu4ZOIjogNiwKICAiS8OKTkggVEjhu4IgVEhBTyI6IDgsCiAgIkvDik5IIFRISeG6vlQgWeG6vlUiOiAyMDAsCiAgIkvDik5IIFRISeG6vlUgTkhJIjogMywKICAiS8OKTkggVElOIFThu6hDIjogNywKICAiS8OKTkggVOG7lE5HIEjhu6JQIE5VxqDMgUMgTkdPQcyASSI6IDksCiAgIkvDik5IIFRST05HIE7Gr%2BG7mkMgJiDEkOG7ikEgUEjGr8agTkd8S8OKTkggVOG7iE5IIjogNCwKICAiS8OKTkggVk9IIFJhZGlvIjogMTcwLAogICJLw4pOSCBWT1YiOiBbNSwxNzBdLAogICJLw4pOSCBWVFYiOiBbMiwyMDBdCn0%3D&type=tv",
-    "img": "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxtv_1.jpg?v=7",
+    "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/index.html?base=true",
+    "img": "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxtv_1.jpg?v=7",
     "des": "",
     "count": "TV",
     "title": "VAX TV"
   },
-  {
-    "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/index.html?m3u=aHR0cHM6Ly90aHR0LnBhZ2VzLmRldi90dHR0Lm0zdQ%3D%3D",
-    "img": "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxsport_1.jpg?v=7",
+    {
+    "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=live&plugin=vaxlive",
+    "img": "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxsport_1.jpg?v=7",
     "des": "",
-    "count": "SPORT",
-    "title": "VAX SPORT"
+    "count": "LIVE",
+    "title": "VAX LIVE SPORT"
   },
   {
-    "id": "https://example.com?type=youtube",
-    "img": "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxyoutube_1.jpg?v=7",
+    "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=movie&plugin=youtube",
+    "img": "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxyoutube_1.jpg?v=7",
     "des": "",
     "count": "VIDEO",
     "title": "VAX YOUTUBE"
   },
   {
     "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/manga/index.html?type=manga&plugin=nettruyen",
-    "img": "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxmanga_1.jpg?v=7",
+    "img": "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxmanga_1.jpg?v=7",
     "des": "",
     "count": "MANGA",
     "title": "VAX MANGA"
   },
   {
-    "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/novel/index.html?type=novel&plugin=truyenfull",
-    "img": "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxreader_1.jpg?v=7",
+    "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/novel/index.html?type=novel&plugin=truyenlocal",
+    "img": "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxreader_1.jpg?v=7",
     "des": "",
     "count": "BOOK",
     "title": "VAX READER"
   },
   {
     "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/news/index.html?type=news&plugin=dantri",
-    "img": "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxnew_1.jpg?v=7",
+    "img": "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxnew_1.jpg?v=7",
     "des": "",
     "count": "NEWS",
     "title": "VAX NEWS"
   },
-  {
-    "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/game/index.html?base=true",
-    "img": "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxgame_1.jpg?v=7",
-    "des": "",
-    "count": "GAMES",
-    "title": "VAX GAMES"
-  }
+    {
+     "id": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/list.txt?vaxgame=root",
+     "img": "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxgame_1.jpg?v=7",
+     "des": "Thư mục game theo thể loại",
+     "count": "GAMES",
+     "title": "VAX GAMES",
+     "isFolder": true
+   }
 ]`
 }
-/*
-  {
-    "id": "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=xxx&plugin=vsphim",
-    "img": "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxxxx_1.jpg?v=7",
-    "des": "",
-    "count": "XXX",
-    "title": "VAX XXX"
-  }
-*/
+
 
 
 // ===== HÀM MENU LIST BEGIN ======
@@ -241,7 +251,7 @@ function getUrlSearch(keyword, filtersJson) {
               else{
                 name = ""
               }
-              console.log("xxxx:\n" + "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=xxx" + name)
+             // console.log("xxxx:\n" + "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=xxx" + name)
               return "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=xxx" + name
         }
         var match2 = keyword.match(/type/i);
@@ -257,20 +267,102 @@ function getUrlSearch(keyword, filtersJson) {
               else{
                 name = ""
               }
-              console.log("xxxx:\n" + "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=xxx" + name)
+            //  console.log("xxxx:\n" + "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=xxx" + name)
               return "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=xxx" + name
+        }
+        var match3 = keyword.match(/tester/i);
+        if (match3) {
+              return "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?typeplugin=movie&plugin=kkphim&reload=true"
         }
   }
 
 // ===== HÀM TẠO KHỐI LIST PHIM BEGIN ======
+function parseGameList(raw) {
+    try {
+        var data = JSON.parse(String(raw || ""));
+        return Array.isArray(data) ? data : (data.games || data.items || data.list || []);
+    } catch (e) { return []; }
+}
+
+function gameCategoryOf(game) {
+    return String((game && (game.category || game.tag)) || "").trim();
+}
+
+function gameItem(game) {
+    if (!game || !game.name || !game.url) return null;
+    var url = String(game.url);
+    var item = {
+        id: url,
+        title: String(game.name),
+        quality: gameCategoryOf(game) || "GAME",
+        episode_current: "WebView",
+        posterUrl: String(game.image || ""),
+        backdropUrl: String(game.image || ""),
+        description: String(game.desc || ""),
+        category: gameCategoryOf(game),
+        url: url
+    };
+    GAME_MAP[url] = item;
+    return item;
+}
+
+function gameFolder(id, title, poster) {
+    return {
+        id: id,
+        slug: id,
+        title: title,
+        quality: "GAME",
+        episode_current: "Thư mục",
+        posterUrl: poster || GAME_IMG,
+        backdropUrl: poster || GAME_IMG,
+        isFolder: true
+    };
+}
+
+function gameListResponse(raw, url) {
+    var games = parseGameList(raw);
+    var category = gameParam(url, "category");
+    var items = [];
+    GAME_CACHE = [];
+    if (!category) {
+        for (var c = 0; c < GAME_CATEGORIES.length; c++) {
+            var first = null;
+            for (var i = 0; i < games.length; i++) {
+                if (gameCategoryOf(games[i]) === GAME_CATEGORIES[c]) { first = games[i]; break; }
+            }
+            var poster = (first && first.image) ? String(first.image) : GAME_IMG;
+            items.push(gameFolder(GAME_LIST_URL + "?category=" + encodeURIComponent(GAME_CATEGORIES[c]), GAME_CATEGORIES[c], poster));
+            gameLog("category=" + GAME_CATEGORIES[c] + " | img=" + poster);
+        }
+    } else {
+        for (var j = 0; j < games.length; j++) {
+            if (gameCategoryOf(games[j]) !== category) continue;
+            var mapped = gameItem(games[j]);
+            if (mapped) { items.push(mapped); GAME_CACHE.push(mapped); }
+        }
+    }
+    gameLog("list url=" + String(url || "") + " | category=" + (category || "(root)") + " | games=" + games.length + " | items=" + items.length);
+    return JSON.stringify({ items: items, pagination: { currentPage: 1, totalPages: 1 } });
+}
+
 function parseListResponse(html, url) {
     try {
+        if (isGameListUrl(url)) {
+            return gameListResponse(html, url);
+        }
         var $data = JSON.parse(getcate());
         var save = getparam(url,"save");
         var xxx = getparam(url,"type");
         var typeplugin = getparam(url,"typeplugin");
         var plugin = getparam(url,"plugin");
         var embed = getparam(url,"embed");
+        var reload = getparam(url,"reload");
+        if(reload){
+          reload = "&reload=true"
+        }
+        else{
+          reload = ""
+        }
         var items = [];
         if(typeplugin){
           if(embed){
@@ -281,41 +373,41 @@ function parseListResponse(html, url) {
           }
           if(typeplugin == "movie"){
             var link = "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=movie&plugin=" + plugin + embed
-            var img = "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxmovie_1.jpg?v=7";
+            var img = "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxmovie_1.jpg?v=7";
             var title = "VAX MOVIE"
           }
           if(typeplugin == "anime"){
             var link = "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=anime&plugin=" + plugin + embed
-            var img = "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxanime_1.jpg?v=7";
+            var img = "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxanime_1.jpg?v=7";
             var title = "VAX ANIME"
           }
           if(typeplugin == "short"){
             var link = "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=short&plugin=" + plugin + embed
-            var img = "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxshort_1.jpg?v=7";
+            var img = "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxshort_1.jpg?v=7";
             var title = "VAX SHORT"
           }
           if(typeplugin == "xxx"){
             var link = "https://vaxplugin.alokillgtv02.workers.dev/tv/movie.html?type=xxx&plugin=" + plugin + embed
-            var img = "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxxxx_1.jpg?v=7";
+            var img = "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxxxx_1.jpg?v=7";
             var title = "VAX XXX"
           }
           if(typeplugin == "news"){
             var link = "https://vaxplugin.alokillgtv02.workers.dev/tv/news/index.html?type=news&plugin=" + plugin
-            var img = "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxnew_1.jpg?v=7";
+            var img = "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxnew_1.jpg?v=7";
             var title = "VAX NEWS"
           }
           if(typeplugin == "manga"){
             var link = "https://vaxplugin.alokillgtv02.workers.dev/tv/manga/index.html?type=manga&plugin=" + plugin
-            var img = "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxmanga_1.jpg?v=7";
+            var img = "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxmanga_1.jpg?v=7";
             var title = "VAX MANGA"
           }
           if(typeplugin == "novel"){
             var link = "https://vaxplugin.alokillgtv02.workers.dev/tv/novel/index.html?type=novel&plugin=" + plugin
-            var img = "https://vaxplugin.alokillgtv02.workers.dev/tv/img/vaxnovel_1.jpg?v=7";
+            var img = "https://vaxplugins.alokillgtv05.workers.dev/tv/img/vaxnovel_1.jpg?v=7";
             var title = "VAX NOVEL"
           }
               items.push({
-                  "id": link,
+                  "id": link + reload,
                   "title": title,
                   "quality": "",
                   "episode_current": "",
@@ -333,7 +425,7 @@ function parseListResponse(html, url) {
             save = "";
           }
           var pass = "";
-          if(xxx.indexOf("xxx") > -1){
+          if(xxx && xxx.indexOf("xxx") > -1){
             pass = "&pass=xxx"
           }
   
@@ -342,8 +434,7 @@ function parseListResponse(html, url) {
               // ⭐ ĐỔI ?url= → ?m3u= để native không sniff và fetch URL đích
               //    Tránh log noise "Proxy request failed..." từ native
               var safeId = renameUrlToM3u(item.id);
-  
-              items.push({
+              var entry = {
                   "id": safeId + save + pass,
                   "title": item.title,
                   "quality": "",
@@ -352,7 +443,13 @@ function parseListResponse(html, url) {
                   "backdropUrl": item.img,
                   "year": "",
                   "lang": "Tìm từ khoá `clear` để reset nếu lỗi."
-              });
+              };
+              /* Chỉ thư mục game mới cần cờ folder; các mục phim giữ nguyên */
+              if (item.isFolder) {
+                  entry.isFolder = true;
+                  entry.slug = safeId + save + pass;
+              }
+              items.push(entry);
           })
         }     
 
@@ -387,7 +484,23 @@ function parseListResponse(html, url) {
 
 // ===== HÀM TẠO KHỐI CHI TIẾT PHIM BEGIN ======
 function parseMovieDetail(html, url) {
-    log("parseMovieDetail[url]: \n" + url);
+    var gameDetailUrl = String(url || '');
+    if (GAME_MAP[gameDetailUrl]) {
+        var game = GAME_MAP[gameDetailUrl];
+        gameLog("detail url=" + gameDetailUrl);
+        return JSON.stringify({
+            id: gameDetailUrl,
+            slug: gameDetailUrl,
+            title: game.title,
+            posterUrl: game.posterUrl || GAME_IMG,
+            backdropUrl: game.backdropUrl || GAME_IMG,
+            description: game.description || '',
+            category: game.category || 'GAME',
+            episode_current: 'WebView',
+            servers: [{ name: 'WebView', episodes: [{ id: gameDetailUrl, name: 'Chơi ngay', slug: gameDetailUrl }] }]
+        });
+    }
+    //log("parseMovieDetail[url]: \n" + url);
     try {
         // ⭐ URL sạch — đổi ?url= → ?m3u= phòng trường hợp URL vẫn còn sót
         //    (VD: user copy link cũ từ history, hoặc item.id chưa được rename)
@@ -400,8 +513,8 @@ function parseMovieDetail(html, url) {
         var server = getparam(safeUrl,"server");
 
         var id = safeUrl;
-        var posterUrl = "https://vaxplugin.alokillgtv02.workers.dev/tv/img/background.jpg?v=1";
-        var backdropUrl = "https://vaxplugin.alokillgtv02.workers.dev/tv/img/background.jpg?v=1";
+        var posterUrl = "https://vaxplugins.alokillgtv05.workers.dev/tv/img/background.jpg?v=1";
+        var backdropUrl = "https://vaxplugins.alokillgtv05.workers.dev/tv/img/background.jpg?v=1";
         var originName = "";
         var description = "Vax Tổng Hợp là một plugin chuyên dụng, khi bạn muốn mọi thứ đơn giản nhất, không cần cài quá nhiều plugin mà vẫn có đủ trải nghiệm đầy đủ nhất.";
         var director = "director";
@@ -626,19 +739,26 @@ function _lock(v){
   v.muted=false;
   v.play().then(function(){log("play OK");}).catch(function(e){log("autoplay fail "+e.message);v.muted=true;v.play().then(function(){log("play muted OK");}).catch(function(e2){log("play muted fail "+e2.message);});});
   function post(t,d){try{window.parent.postMessage(Object.assign({type:t},d||{}),"*");}catch(e){}}
-  v.addEventListener("timeupdate",function(){post("NGUONC_TIME",{time:v.currentTime,duration:v.duration});});
-  v.addEventListener("play",function(){post("NGUONC_STATE",{paused:false});});
-  v.addEventListener("pause",function(){post("NGUONC_STATE",{paused:true});});
+  function _postTime(){try{if(v&&isFinite(v.duration)&&v.duration>0)post("NGUONC_TIME",{time:v.currentTime||0,duration:v.duration});}catch(e){}}
+  v.addEventListener("timeupdate",_postTime);
+  v.addEventListener("loadedmetadata",_postTime);
+  v.addEventListener("durationchange",_postTime);
+  v.addEventListener("seeked",_postTime);
+  v.addEventListener("play",function(){post("NGUONC_STATE",{paused:false});_postTime();});
+  v.addEventListener("pause",function(){post("NGUONC_STATE",{paused:true});_postTime();});
+  if(!window.__streamcTimeIv)window.__streamcTimeIv=setInterval(_postTime,500);
   setTimeout(function(){try{var q=v.getVideoPlaybackQuality?v.getVideoPlaybackQuality():null;var rect=v.getBoundingClientRect();log("after3s t="+v.currentTime.toFixed(1)+" rs="+v.readyState+" paused="+v.paused+" frames="+(q?q.totalVideoFrames:-1)+" box="+Math.round(rect.left)+","+Math.round(rect.top)+","+Math.round(rect.width)+"x"+Math.round(rect.height)+" bodyKids="+document.body.children.length);}catch(e){log("dbg fail "+e.message);}},3000);
 }
 window.addEventListener("message",function(e){
   var d=e.data||{};if(!d.vaxCmd)return;
   var v=window.__vaxV;
   if(!v){log("cmd "+d.vaxCmd+" no video");return;}
-  log("cmd "+d.vaxCmd+(d.val?" val="+d.val:""));
+  log("cmd "+d.vaxCmd+(d.val!=null?" val="+d.val:""));
+  function _syncT(){try{if(isFinite(v.duration)&&v.duration>0)window.parent.postMessage({type:"NGUONC_TIME",time:v.currentTime||0,duration:v.duration},"*");}catch(err){}}
   if(d.vaxCmd==="toggle"){if(v.paused)v.play().catch(function(e){log("play fail "+e.message);});else v.pause();}
-  else if(d.vaxCmd==="seek+5"){if(isFinite(v.duration)&&v.duration>0){v.currentTime=Math.min(v.duration,v.currentTime+5);log("→"+v.currentTime.toFixed(1));}else{log("seek fail dur="+v.duration);}}
-  else if(d.vaxCmd==="seek-5"){if(isFinite(v.duration)&&v.duration>0){v.currentTime=Math.max(0,v.currentTime-5);log("→"+v.currentTime.toFixed(1));}else{log("seek fail dur="+v.duration);}}
+  else if(d.vaxCmd==="seek"){var _st=Number(d.val!=null?d.val:d.value);if(isFinite(_st)&&_st>=0){v.currentTime=(isFinite(v.duration)&&v.duration>0)?Math.min(v.duration,_st):_st;_syncT();}}
+  else if(d.vaxCmd==="seek+5"){if(isFinite(v.duration)&&v.duration>0){v.currentTime=Math.min(v.duration,v.currentTime+5);_syncT();log("→"+v.currentTime.toFixed(1));}else{log("seek fail dur="+v.duration);}}
+  else if(d.vaxCmd==="seek-5"){if(isFinite(v.duration)&&v.duration>0){v.currentTime=Math.max(0,v.currentTime-5);_syncT();log("→"+v.currentTime.toFixed(1));}else{log("seek fail dur="+v.duration);}}
   else if(d.vaxCmd==="vol+"){v.volume=Math.min(1,v.volume+0.1);v.muted=false;}
   else if(d.vaxCmd==="vol-"){v.volume=Math.max(0,v.volume-0.1);v.muted=false;}
   else if(d.vaxCmd==="blur"){try{var _a=document.activeElement;if(_a&&_a.blur)_a.blur();if(document.body&&document.body.blur)document.body.blur();try{window.blur();}catch(e2){}log("blur cmd");}catch(e){log("blur fail "+e.message);}}
@@ -999,7 +1119,42 @@ function _onReady(){
   post("NGUONC_STATE", { ready: true });
 }
 
+function _postVicdnTime(){
+  try{
+    var cur=0, dur=0;
+    if(__jw){
+      try{ cur=Number(__jw.getPosition())||0; dur=Number(__jw.getDuration())||0; }catch(e){}
+    }
+    var v=_getVideo();
+    if((!dur || !isFinite(dur) || dur<=0) && v){
+      dur=Number(v.duration)||0;
+    }
+    if((!cur || !isFinite(cur)) && v){
+      cur=Number(v.currentTime)||0;
+    }
+    if(isFinite(dur) && dur>0){
+      post("NGUONC_TIME",{time:cur,duration:dur});
+    }
+  }catch(e){}
+}
+
+function _bindVicdnVideo(){
+  var v=_getVideo();
+  if(!v || v.__vaxVicdnBound) return !!v;
+  v.__vaxVicdnBound=true;
+  try{
+    v.addEventListener("timeupdate",_postVicdnTime);
+    v.addEventListener("loadedmetadata",_postVicdnTime);
+    v.addEventListener("durationchange",_postVicdnTime);
+    v.addEventListener("seeked",_postVicdnTime);
+    v.addEventListener("play",function(){ post("NGUONC_STATE",{paused:false}); _postVicdnTime(); });
+    v.addEventListener("pause",function(){ post("NGUONC_STATE",{paused:true}); _postVicdnTime(); });
+  }catch(e){}
+  return true;
+}
+
 function bindJW(){
+  _bindVicdnVideo();
   if(__bound) return true;
   var p = _tryGetJw();
   if(!p) return false;
@@ -1007,9 +1162,20 @@ function bindJW(){
   log("✅ BOUND");
   try{
     p.on("ready", function(){ setTimeout(_onReady,300); });
-    p.on("play", function(){ post("NGUONC_STATE",{paused:false}); });
-    p.on("pause", function(){ post("NGUONC_STATE",{paused:true}); });
-    p.on("time", function(e){ post("NGUONC_TIME",{time:e.position||0,duration:e.duration||0}); });
+    p.on("play", function(){ post("NGUONC_STATE",{paused:false}); _postVicdnTime(); });
+    p.on("pause", function(){ post("NGUONC_STATE",{paused:true}); _postVicdnTime(); });
+    p.on("time", function(e){
+      var pos = (e && typeof e.position === "number") ? e.position : 0;
+      var dur = (e && typeof e.duration === "number" && e.duration > 0) ? e.duration : 0;
+      if (!dur) { var v = _getVideo(); if (v && isFinite(v.duration) && v.duration > 0) dur = v.duration; }
+      if (dur > 0) post("NGUONC_TIME",{time:pos,duration:dur});
+    });
+    p.on("seek", function(e){
+      var off = (e && typeof e.offset === "number") ? e.offset : ((p.getPosition && p.getPosition()) || 0);
+      var dur = (p.getDuration && p.getDuration()) || 0;
+      if (!dur) { var v = _getVideo(); if (v && isFinite(v.duration) && v.duration > 0) dur = v.duration; }
+      if (dur > 0) post("NGUONC_TIME",{time:off,duration:dur});
+    });
   }catch(e){}
   var iv = setInterval(function(){
     if(!__bound || __autoDone){ clearInterval(iv); return; }
@@ -1023,16 +1189,49 @@ function bindJW(){
   }, 6000);
   return true;
 }
+if(!window.__vicdnTimeIv){
+  window.__vicdnTimeIv=setInterval(function(){ _bindVicdnVideo(); _postVicdnTime(); },500);
+}
 
 function jwCmd(c, val){
   log("cmd "+c+(val!=null?" val="+val:""));
-  if(!__bound && !bindJW()) return;
+  if(!__bound) bindJW();
+  var v = _getVideo();
   try{
-    if(c==="toggle"){ var st=__jw.getState(); if(st==="playing") __jw.pause(); else __jw.play(); }
-    else if(c==="seek+5"){ var d=__jw.getDuration()||0; __jw.seek(Math.min(d,(__jw.getPosition()||0)+5)); }
-    else if(c==="seek-5"){ __jw.seek(Math.max(0,(__jw.getPosition()||0)-5)); }
-    else if(c==="vol+"){ __jw.setVolume(Math.min(100,(__jw.getVolume()||0)+10)); }
-    else if(c==="vol-"){ __jw.setVolume(Math.max(0,(__jw.getVolume()||0)-10)); }
+    if(c==="toggle"){
+      if(__jw){ var st=__jw.getState(); if(st==="playing") __jw.pause(); else __jw.play(); }
+      else if(v){ if(v.paused) v.play().catch(function(){}); else v.pause(); }
+    }
+    else if(c==="seek"){
+      var t = Number(val);
+      if(isFinite(t) && t >= 0){
+        var d0 = (__jw && __jw.getDuration) ? (__jw.getDuration()||0) : (v && isFinite(v.duration) ? v.duration : 0);
+        var tgt = d0 > 0 ? Math.min(d0, t) : t;
+        try{ if(__jw && __jw.seek) __jw.seek(tgt); }catch(e){}
+        try{ if(v) v.currentTime = tgt; }catch(e){}
+        _postVicdnTime();
+      }
+    }
+    else if(c==="seek+5" || c==="seek-5"){
+      var dlt = c==="seek+5" ? 5 : -5;
+      var d = (__jw && __jw.getDuration) ? (__jw.getDuration()||0) : 0;
+      var cur = (__jw && __jw.getPosition) ? (__jw.getPosition()||0) : 0;
+      if(!d && v && isFinite(v.duration)) d = v.duration||0;
+      if(!cur && v) cur = v.currentTime||0;
+      var target = Math.max(0, cur + dlt);
+      if(d > 0) target = Math.min(d, target);
+      try{ if(__jw && __jw.seek) __jw.seek(target); }catch(e){}
+      try{ if(v) v.currentTime = target; }catch(e){}
+      _postVicdnTime();
+    }
+    else if(c==="vol+"){
+      if(__jw && __jw.setVolume) __jw.setVolume(Math.min(100,(__jw.getVolume()||0)+10));
+      else if(v){ v.volume = Math.min(1, v.volume + 0.1); v.muted = false; }
+    }
+    else if(c==="vol-"){
+      if(__jw && __jw.setVolume) __jw.setVolume(Math.max(0,(__jw.getVolume()||0)-10));
+      else if(v){ v.volume = Math.max(0, v.volume - 0.1); v.muted = false; }
+    }
     else if(c==="quality"){
       var qi = parseInt(val,10);
       if(isNaN(qi) || qi < 0){ log("quality → auto (cao nhất)"); _setHighestQuality(); }
@@ -1075,7 +1274,7 @@ window.addEventListener("message", function(ev){
     return;
   }
 
-  jwCmd(d.vaxCmd, d.val);
+  jwCmd(d.vaxCmd, d.val != null ? d.val : d.value);
 });
 
 function _r(){ try{window.parent.postMessage({type:"vax_ready"},"*");}catch(e){} }
@@ -1093,7 +1292,7 @@ var iv2=setInterval(function(){
 function abyssJS() {
   return `
 var __ah = (location.hostname||"");
-if(__ah.indexOf("abysscdn")===-1 && __ah.indexOf("abyss.to")===-1 && __ah.indexOf("hydrax")===-1){ console.log("[ABYSS] skip "+__ah); return; }
+if(__ah.indexOf("abysscdn")===-1 && __ah.indexOf("abyss.to")===-1 && __ah.indexOf("hydrax")===-1 && __ah.indexOf("streamc")===-1){ console.log("[ABYSS] skip "+__ah); return; }
 console.log("[ABYSS] start | " + location.href);
 
 function log(m){try{console.log("[ABYSS] "+m);}catch(e){}}
@@ -1506,7 +1705,42 @@ function _onReady(){
   post("NGUONC_STATE", { ready: true });
 }
 
+function _postAbyssTime(){
+  try{
+    var cur=0, dur=0;
+    if(__jw){
+      try{ cur=Number(__jw.getPosition())||0; dur=Number(__jw.getDuration())||0; }catch(e){}
+    }
+    var v=_getVideo();
+    if((!dur || !isFinite(dur) || dur<=0) && v){
+      dur=Number(v.duration)||0;
+    }
+    if((!cur || !isFinite(cur)) && v){
+      cur=Number(v.currentTime)||0;
+    }
+    if(isFinite(dur) && dur>0){
+      post("NGUONC_TIME",{time:cur,duration:dur});
+    }
+  }catch(e){}
+}
+
+function _bindAbyssVideo(){
+  var v = _getVideo();
+  if(!v || v.__vaxAbyss) return !!v;
+  v.__vaxAbyss = true;
+  try{
+    v.addEventListener('timeupdate', _postAbyssTime);
+    v.addEventListener('loadedmetadata', _postAbyssTime);
+    v.addEventListener('durationchange', _postAbyssTime);
+    v.addEventListener('seeked', _postAbyssTime);
+    v.addEventListener('play', function(){ __playing=true; post("NGUONC_STATE",{paused:false}); _postAbyssTime(); });
+    v.addEventListener('pause', function(){ __playing=false; post("NGUONC_STATE",{paused:true}); _postAbyssTime(); });
+  }catch(e){}
+  return true;
+}
+
 function bindJW(){
+  _bindAbyssVideo();
   if(__bound) return true;
   var p = _tryGetJw();
   if(!p) return false;
@@ -1516,25 +1750,29 @@ function bindJW(){
     p.on("ready", function(){ log("event ready"); _onReady(); });
     p.on("levels", function(e){ log("event levels n="+((e.levels||[]).length)); _setHighestQuality(); _postLevels(); });
     p.on("levelsChanged", function(e){ log("level changed → "+e.currentQuality); _postLevels(); });
-    p.on("play", function(){ __playing=true; post("NGUONC_STATE",{paused:false}); });
-    p.on("pause", function(){ __playing=false; post("NGUONC_STATE",{paused:true}); });
-    p.on("time", function(e){ post("NGUONC_TIME",{time:e.position||0,duration:e.duration||0}); });
+    p.on("play", function(){ __playing=true; post("NGUONC_STATE",{paused:false}); _postAbyssTime(); });
+    p.on("pause", function(){ __playing=false; post("NGUONC_STATE",{paused:true}); _postAbyssTime(); });
+    p.on("time", function(e){
+      var pos = (e && typeof e.position === "number") ? e.position : 0;
+      var dur = (e && typeof e.duration === "number" && e.duration > 0) ? e.duration : 0;
+      if (!dur) { var v = _getVideo(); if (v && isFinite(v.duration) && v.duration > 0) dur = v.duration; }
+      if (dur > 0) post("NGUONC_TIME",{time:pos,duration:dur});
+    });
+    p.on("seek", function(e){
+      var off = (e && typeof e.offset === "number") ? e.offset : ((p.getPosition && p.getPosition()) || 0);
+      var dur = (p.getDuration && p.getDuration()) || 0;
+      if (!dur) { var v = _getVideo(); if (v && isFinite(v.duration) && v.duration > 0) dur = v.duration; }
+      if (dur > 0) post("NGUONC_TIME",{time:off,duration:dur});
+    });
     p.on("error", function(e){ log("jw error: " + (e && (e.message||e.message)||e)); });
   }catch(e){}
 
-  var v = _getVideo();
-  if(v && !v.__vaxAbyss){
-    v.__vaxAbyss = true;
-    try{
-      v.addEventListener('timeupdate', function(){ post("NGUONC_TIME",{time:v.currentTime,duration:v.duration}); });
-      v.addEventListener('play', function(){ __playing=true; post("NGUONC_STATE",{paused:false}); });
-      v.addEventListener('pause', function(){ __playing=false; post("NGUONC_STATE",{paused:true}); });
-    }catch(e){}
-  }
+  _bindAbyssVideo();
 
   var tries=0;
   var iv = setInterval(function(){
     tries++;
+    _bindAbyssVideo();
     var st=_state();
     if(st && st!=='idle' && st!=='') _onReady();
     /* Mỗi 2s thử lại quality — phòng trường hợp levels load trễ */
@@ -1547,6 +1785,9 @@ function bindJW(){
   setTimeout(function(){ if(!__autoDone){ __autoDone=true; } }, 6000);
   return true;
 }
+if(!window.__abyssTimeIv){
+  window.__abyssTimeIv = setInterval(function(){ _bindAbyssVideo(); _postAbyssTime(); }, 500);
+}
 
 function jwCmd(c, val){
   log("cmd "+c+(val!=null?" val="+val:""));
@@ -1554,17 +1795,31 @@ function jwCmd(c, val){
   var v=_getVideo();
   try{
     if(c==="toggle"){
-      if(_state()==="playing"){ if(__jw)__jw.pause(); else if(v)v.pause(); }
+      if(_state()==="playing" || (v && !v.paused)){ if(__jw)__jw.pause(); if(v)v.pause(); }
       else _forcePlay();
+    }
+    else if(c==="seek"){
+      var t = Number(val);
+      if(isFinite(t) && t >= 0){
+        var dur0=0;
+        if(__jw){ try{ dur0=__jw.getDuration()||0; }catch(e){} }
+        if(!dur0 && v){ dur0=v.duration||0; }
+        var tgt = dur0 > 0 ? Math.min(dur0, t) : t;
+        try{ if(__jw) __jw.seek(tgt); }catch(e){}
+        try{ if(v) v.currentTime=tgt; }catch(e){}
+        _postAbyssTime();
+      }
     }
     else if(c==="seek+5" || c==="seek-5"){
       var dlt = c==="seek+5" ? 5 : -5;
       var dur=0, cur=0;
       if(__jw){ try{ dur=__jw.getDuration()||0; cur=__jw.getPosition()||0; }catch(e){} }
-      if(!dur && v){ dur=v.duration||0; cur=v.currentTime||0; }
+      if(!dur && v){ dur=v.duration||0; }
+      if(!cur && v){ cur=v.currentTime||0; }
       var target=Math.max(0, cur+dlt); if(dur) target=Math.min(dur, target);
       try{ if(__jw) __jw.seek(target); }catch(e){}
       try{ if(v) v.currentTime=target; }catch(e){}
+      _postAbyssTime();
     }
     else if(c==="vol+" || c==="vol-"){
       var dv = c==="vol+" ? 10 : -10;
@@ -1613,7 +1868,7 @@ window.addEventListener("message", function(ev){
     return;
   }
 
-  jwCmd(d.vaxCmd, d.val);
+  jwCmd(d.vaxCmd, d.val != null ? d.val : d.value);
 });
 
 function _r(){ try{window.parent.postMessage({type:"vax_ready"},"*");}catch(e){} }
@@ -1971,10 +2226,297 @@ function buildCustomJS(url) {
 // ===== CUSTOM JS REGISTRY END ======
 // ===== CUSTOM JS REGISTRY END ======
 
-function parseDetailResponse(html, url) {
-    console.log("parseDetailResponse dang xu ly: " + url);
+function tv360Detail(url) {
+  var custom = "(function(){"
+    + "if(window.__VAX_TV360_LOADED__)return;"
+    + "var urls=["
+    + "'https://vaxplugin.alokillgtv02.workers.dev/tv/tv360-custom.js',"
+    + "'https://vaxplugin.alokillgtv.workers.dev/tv/tv360-custom.js'"
+    + "],i=0;"
+    + "function load(){if(i>=urls.length)return;var s=document.createElement('script');"
+    + "s.src=urls[i++]+'?t='+Date.now();s.onerror=load;"
+    + "(document.head||document.documentElement).appendChild(s);}load();"
+    + "})();";
+  return JSON.stringify({
+    url: url,
+    isEmbed: false,
+    orientation: "auto",
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Referer": "https://tv360.vn/",
+      "Origin": "https://tv360.vn",
+      "Sniffer": false,
+      "Block-AutoClick": "false",
+      "Block-Ads": false,
+      "Custom-Js": custom
+    },
+    subtitles: [{ lang: "", url: "" }]
+  });
+}
+
+function getGameJS(url) {
+  if (/crazygames\.com/i.test(String(url || ''))) {
+    return crazyGameJS();
+  }
+  return '';
+}
+
+function crazyGameJS() {
+  return `
+(function () {
+  'use strict';
+  if (window.__GLS_INIT) { return; }
+  window.__GLS_INIT = true;
+
+  var TAG        = '[GLS]';
+  var STYLE_ID   = '__gls_loader_style';
+  var ROOT_ID    = '__gls_iframe_root';
+  var IFRAME_SEL = 'iframe#game-iframe, iframe.GameContainerMobile_gameIframe__kYvt0, iframe.bs-GameContainer--game';
+  var AUTO_HIDE_MS = 3000;
+
+  function log()   { try { var a=[].slice.call(arguments); a.unshift(TAG); console.log.apply(console,a); } catch(e){} }
+  function warn()  { try { var a=[].slice.call(arguments); a.unshift(TAG); console.warn.apply(console,a); } catch(e){} }
+  function error() { try { var a=[].slice.call(arguments); a.unshift(TAG); console.error.apply(console,a); } catch(e){} }
+
+  log('boot v3, readyState=' + document.readyState);
+
+  /* ---------- Loader qua CSS pseudo-element (KHÔNG chèn DOM) ---------- */
+  var LOADER_CSS = ''
+    + 'html::before{content:"ĐANG TẢI GAME\\n Xin vui lòng chờ chút nhé.";'
+    + 'white-space:pre-wrap;position:fixed;top:0;left:0;right:0;bottom:0;'
+    + 'text-align:center;padding-top:40vh;box-sizing:border-box;'
+    + 'background:#0f0f14;color:#fff;'
+    + 'font:700 22px/1.7 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;'
+    + 'z-index:2147483647;pointer-events:auto;}'
+    + 'html::after{content:"";position:fixed;top:62%;left:50%;'
+    + 'width:46px;height:46px;margin:-23px 0 0 -23px;'
+    + 'border:4px solid rgba(255,255,255,.15);border-top-color:#9b6dff;border-radius:50%;'
+    + 'animation:__gls_spin .85s linear infinite;z-index:2147483647;pointer-events:auto;}'
+    + '@keyframes __gls_spin{to{transform:rotate(360deg)}}';
+
+  function injectLoaderStyle() {
+    if (document.getElementById(STYLE_ID)) { log('loader: style already present'); return true; }
+    var parent = document.head || document.documentElement;
+    if (!parent) { warn('loader: no parent yet'); return false; }
+    var s = document.createElement('style');
+    s.id = STYLE_ID;
+    s.textContent = LOADER_CSS;
+    parent.appendChild(s);
+    log('loader: style injected into ' + parent.tagName);
+    return true;
+  }
+
+  if (!injectLoaderStyle()) {
+    document.addEventListener('DOMContentLoaded', function () {
+      log('loader: retry style inject on DOMContentLoaded');
+      injectLoaderStyle();
+    }, { once: true });
+  }
+
+  var hidden = false;
+  function hideLoader(reason) {
+    if (hidden) { log('loader: HIDE skipped (already), reason=' + reason); return; }
+    hidden = true;
+    log('loader: HIDE begin, reason=' + reason);
     try {
-     if(url.indexOf("youtube") > -1){
+      var s = document.getElementById(STYLE_ID);
+      if (s && s.parentNode) { s.parentNode.removeChild(s); log('loader: style removed from DOM'); }
+      else { warn('loader: style element NOT FOUND'); }
+    } catch (e) { error('loader: hide threw', e); }
+    log('loader: HIDE end');
+  }
+
+  var autoHideTimer = setTimeout(function () { hideLoader('auto-30s'); }, AUTO_HIDE_MS);
+
+  /* ---------- Watch & Swap ---------- */
+  var swapped = false;
+  var watching = false;
+  var mo = null, pollId = 0, heartbeatId = 0;
+  var startTime = Date.now();
+  function elapsed() { return Date.now() - startTime; }
+  function findIframe() { try { return document.querySelector(IFRAME_SEL); } catch (e) { return null; } }
+
+  function stopWatching(reason) {
+    log('watch: STOP, reason=' + reason);
+    if (mo) { try { mo.disconnect(); } catch (e) {} mo = null; }
+    if (pollId) { clearInterval(pollId); pollId = 0; }
+    if (heartbeatId) { clearInterval(heartbeatId); heartbeatId = 0; }
+    watching = false;
+  }
+
+  function doSwap(iframe) {
+    if (swapped) { return; }
+    if (!iframe) { return; }
+    swapped = true;
+    log('swap: BEGIN at +' + elapsed() + 'ms, iframe.src=' + String(iframe.src || '').slice(0, 100));
+    stopWatching('swap-start');
+    clearTimeout(autoHideTimer);
+
+    /* A. Ẩn loading NGAY (bất chấp các bước sau có lỗi hay không) */
+    try { hideLoader('swap-pre-hide'); } catch (e) { error('swap A threw', e); }
+
+    /* B. Tạo root container fullscreen */
+    var root = null;
+    try {
+      root = document.getElementById(ROOT_ID);
+      if (!root) {
+        root = document.createElement('div');
+        root.id = ROOT_ID;
+        root.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;'
+          + 'width:100vw;height:100vh;margin:0;padding:0;border:0;'
+          + 'background:#000;z-index:2147483646;overflow:hidden;';
+        document.documentElement.appendChild(root);
+        log('swap B: root CREATED');
+      } else {
+        log('swap B: root exists');
+      }
+    } catch (e) { error('swap B threw', e); }
+
+    /* C. Move iframe sang root */
+    if (root) {
+      try {
+        root.appendChild(iframe);
+        iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;'
+          + 'border:0;margin:0;padding:0;display:block;';
+        log('swap C: iframe MOVED into root, src=' + String(iframe.src || '').slice(0, 100));
+      } catch (e) { error('swap C threw', e); }
+    } else {
+      error('swap C: SKIPPED (no root)');
+    }
+
+    /* D. Xoá sạch body */
+    try {
+      if (document.body) {
+        var n = document.body.childElementCount;
+        document.body.innerHTML = '';
+        log('swap D: body WIPED (removed ' + n + ' children)');
+      } else { warn('swap D: no body'); }
+    } catch (e) { error('swap D threw', e); }
+
+    /* E. Xoá <script> trong <head> (giữ <style>) */
+    try {
+      var head = document.head;
+      if (head) {
+        var scripts = head.querySelectorAll('script');
+        var removed = 0;
+        for (var i = 0; i < scripts.length; i++) {
+          try { var sc = scripts[i]; if (sc.parentNode) { sc.parentNode.removeChild(sc); removed++; } } catch (e2) {}
+        }
+        log('swap E: removed ' + removed + '/' + scripts.length + ' head scripts');
+      }
+    } catch (e) { error('swap E threw', e); }
+
+    /* F. Reset html/body: không viền, không cuộn */
+    try {
+      var d = document.documentElement.style;
+      d.margin='0'; d.padding='0'; d.overflow='hidden'; d.width='100%'; d.height='100%'; d.background='#000';
+      if (document.body) {
+        var b = document.body.style;
+        b.margin='0'; b.padding='0'; b.overflow='hidden'; b.width='100%'; b.height='100%'; b.background='#000';
+      }
+      log('swap F: style reset OK');
+    } catch (e) { error('swap F threw', e); }
+
+    /* G. Thử fullscreen (bọc kỹ) */
+    try {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        var p = document.documentElement.requestFullscreen();
+        if (p && typeof p.then === 'function') {
+          p.then(function () { log('swap G: fullscreen OK'); })
+           .catch(function (err) { warn('swap G: fullscreen REJECTED: ' + (err && err.message)); });
+        }
+      } else if (document.fullscreenElement) { log('swap G: already fullscreen'); }
+      else { warn('swap G: fullscreen API missing'); }
+    } catch (e) { warn('swap G threw', e); }
+
+    /* H. Verify sau 1s và 5s */
+    setTimeout(function () {
+      var okIframe    = !!findIframe();
+      var styleGone   = !document.getElementById(STYLE_ID);
+      var bodyEmpty   = !!(document.body && document.body.childElementCount === 0);
+      var rootOk      = !!document.getElementById(ROOT_ID);
+      log('verify+1s: iframe=' + okIframe + ' styleGone=' + styleGone
+          + ' bodyEmpty=' + bodyEmpty + ' rootOk=' + rootOk);
+      if (!styleGone) {
+        warn('verify+1s: style STILL PRESENT — force removing');
+        try { var s2 = document.getElementById(STYLE_ID); if (s2 && s2.parentNode) s2.parentNode.removeChild(s2); } catch (e) {}
+      }
+    }, 1000);
+
+    setTimeout(function () {
+      log('verify+5s: iframe=' + !!findIframe()
+          + ' styleGone=' + !document.getElementById(STYLE_ID)
+          + ' loaderHidden=' + hidden);
+    }, 5000);
+
+    log('swap: DONE (sync portion)');
+  }
+
+  function startWatching(reason) {
+    if (watching || swapped) { log('watch: skip, reason=' + reason); return; }
+    watching = true;
+    log('watch: START reason=' + reason + ', readyState=' + document.readyState);
+
+    var f = findIframe();
+    if (f) { log('watch: iframe already present'); doSwap(f); return; }
+
+    try {
+      mo = new MutationObserver(function () {
+        var el = findIframe();
+        if (el) { log('watch: iframe FOUND via MutationObserver'); doSwap(el); }
+      });
+      mo.observe(document.documentElement || document, { childList: true, subtree: true });
+      log('watch: MutationObserver attached');
+    } catch (e) { error('watch: MO setup threw', e); }
+
+    pollId = setInterval(function () {
+      var el = findIframe();
+      if (el) { log('watch: iframe FOUND via polling'); doSwap(el); }
+    }, 300);
+    log('watch: poll every 300ms started');
+
+    heartbeatId = setInterval(function () {
+      if (swapped) { return; }
+      log('watch: heartbeat +' + elapsed() + 'ms, iframe=' + (findIframe() ? 'FOUND' : 'waiting'));
+    }, 2000);
+    log('watch: heartbeat every 2s started');
+  }
+
+  if (document.documentElement) { startWatching('immediate'); }
+  else {
+    document.addEventListener('DOMContentLoaded', function () {
+      startWatching('domcontentloaded');
+    }, { once: true });
+  }
+})();
+  `;
+}
+
+function parseDetailResponse(html, url) {
+ //   console.log("parseDetailResponse dang xu ly: " + url);
+    try {
+    if (GAME_MAP[String(url || '')]) {
+        var gamePlayUrl = String(url || '');
+        gameLog("play url=" + gamePlayUrl + " | customJs=" + (getGameJS(gamePlayUrl) ? "yes" : "no"));
+        return JSON.stringify({
+          url: gamePlayUrl,
+          isEmbed: false,
+          orientation: 'auto',
+          headers: {
+            'Referer': 'https://vaxplugins.alokillgtv05.workers.dev/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Sniffer': false,
+            'Block-AutoClick': 'true',
+            'Block-Ads': false,
+            'Custom-Js': getGameJS(gamePlayUrl)
+          },
+          subtitles: []
+        });
+      }
+      if(/tv360\.vn/i.test(url)){
+       return tv360Detail(url);
+     }
+     if(url.indexOf("youtube_embed") > -1){
        return youtube();
      }
       else{
@@ -1994,7 +2536,7 @@ function parseDetailResponse(html, url) {
           + " | isEmbed=" + isEmbedUrl
           + " | CustomJs.len=" + (CUSTOM_JS ? CUSTOM_JS.length : 0));
 
-        if(safeUrl.match(/manga|novel|news|game/)){
+        if(safeUrl.match(/manga|novel|news|game|plugin=vaxlive/i)){
           var xoay = "auto"
           CUSTOM_JS = "";
           // "orientation": "auto", // hoặc "portrait" / "landscape"
@@ -2023,13 +2565,13 @@ function parseDetailResponse(html, url) {
             url: ""
           }]
         });
-        console.log("Return Parse:\n" + $return);
+        //console.log("Return Parse:\n" + $return);
         return $return;
       }
       // ⭐ URL sạch — đổi ?url= → ?m3u= phòng trường hợp native gửi lại URL gốc
       
     } catch (e) {
-      console.log("parseDetailResponse[err]:\n " + e);
+    //  console.log("parseDetailResponse[err]:\n " + e);
       return JSON.stringify({
         url: "https://vaxplugin.alokillgtv02.workers.dev/blankvd.mp4",
         mimeType: "video/mp4",
@@ -2039,12 +2581,33 @@ function parseDetailResponse(html, url) {
   }
 
   function parseEmbedResponse(html, url) {
-    log("parseEmbedResponse [url]: " + url);
+  //  log("parseEmbedResponse [url]: " + url);
     try {
+      if (GAME_MAP[String(url || '')]) {
+        var gameEmbedUrl = String(url || '');
+        gameLog("embed url=" + gameEmbedUrl);
+        return JSON.stringify({
+          url: gameEmbedUrl,
+          mimeType: "",
+          isEmbed: false,
+          orientation: "auto",
+          headers: {
+            "Referer": "https://vaxplugins.alokillgtv05.workers.dev/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Sniffer": false,
+            "Block-AutoClick": "true",
+            "Block-Ads": false,
+            "Block-Css": "",
+            "Custom-Js": getGameJS(gameEmbedUrl)
+          },
+          subtitles: []
+        });
+      }
+      if(/tv360\.vn/i.test(url)) return tv360Detail(url);
       // ⭐ URL sạch
       var safeUrl = renameUrlToM3u(url);
       var $return = JSON.stringify({
-        url: safeUrl,
+        url: safeUrl + "&reload=true",
         mimeType: "",
         isEmbed: false,
         headers: {
@@ -2085,7 +2648,7 @@ function iframe64(url){
           if (!slug) return "";
           if (slug.indexOf('http') === 0) return slug;
           var detailUrl = BASEURL + "/" + slug;
-          log("getUrlDetail[url]: \n" + detailUrl);
+       //   log("getUrlDetail[url]: \n" + detailUrl);
           return detailUrl;
       } catch (e) {
           log("getUrlDetail[err]:\n " + e);
@@ -2205,4 +2768,4 @@ function iframe64(url){
   }
 
 }
-// ==== HIDEMENU ====
+// ==== HIDEMENU ===
