@@ -13,6 +13,13 @@
     "tag": "Game Tiếng Việt",
     "category": "Game Tiếng Việt"
   },
+ {
+    "name": "Trả Nghiệp Online",
+    "url": "https://play.tranghiep.com/",
+    "image": "https://daibaothapmandalataythien.org/sites/default/files/images/hell_realm.jpg",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+  },
   {
     "name": "Karaoke - Nghe Nhạc Online",
     "url": "https://www.ngoichung.vn",
