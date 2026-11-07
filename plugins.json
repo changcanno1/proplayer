@@ -4,7 +4,7 @@
      {
       "id": "game",
       "name": "GAME [LX]",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/GameLX_plugin.js",
       "iconUrl": "https://cdn-icons-png.flaticon.com/512/10339/10339556.png"
     },
