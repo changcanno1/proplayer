@@ -206,6 +206,13 @@
       "iconUrl": "https://anidoki.com/favicon-192x192.png"
     },
     {
+      "id": "vaxtv",
+      "name": "VAX TỔNG HỢP [MOVIE]",
+      "version": "2.0.4",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VAXTV_plugins.js",
+      "iconUrl": "https://vaxplugin.alokillgtv02.workers.dev/img/vaxtv.png"
+    },
+    {
       "id": "ThethaoTV",
       "name": "[Sport] ThethaoTV",
       "version": "1.0.3",
