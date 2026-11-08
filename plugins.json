@@ -11,7 +11,7 @@
     {
       "id": "vsmov",
       "name": "vsmov",
-      "version": "2.3.0",
+      "version": "2.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
@@ -72,8 +72,8 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/vicdn.png"
     },
     {
-      "id": "SaigonFilm",
-      "name": "SaigonFilm [MOVIE]",
+      "id": "saigonphim",
+      "name": "[MOVIE] Sài Gòn Phim",
       "version": "1.5.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/saigonfilm_plugin.js",
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAvC1dIB0emUqIfQbIFdMc0K-utn3P_x5KpqZs0LA6GQ&s=10"
