@@ -135,6 +135,13 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
+      "id": "film4K",
+      "name": "[MOVIE] film4K",
+      "version": "2.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/film4K_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/film4k.png"
+    },
+    {
       "id": "phimngan_net",
       "name": "Phim Ngắn Net",
       "version": "2.0.0",
