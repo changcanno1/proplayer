@@ -79,8 +79,8 @@
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAvC1dIB0emUqIfQbIFdMc0K-utn3P_x5KpqZs0LA6GQ&s=10"
     },
    {
-      "id": "PhimBom",
-      "name": "PhimBom",
+      "id": "phimbom",
+      "name": "Phim Bom [MOVIE]",
       "version": "2.3.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/PhimBom_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/phimbom.png"
