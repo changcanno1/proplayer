@@ -100,8 +100,8 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
     },
     {
-      "id": "Phimhay1",
-      "name": "[MOVIE] Phimhay1",
+      "id": "cityphim",
+      "name": "City Phim [MOVIE]",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup1_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
@@ -114,29 +114,29 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
    {
-      "id": "Phimhay3",
-      "name": "[MOVIE] Phimhay3",
-      "version": "2.60",
+      "id": "novahd",
+      "name": "Nova-Pick VSub 2",
+      "version": "2.6.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup3_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
-      "id": "Phimhay4",
-      "name": "[MOVIE] Phimhay4",
+      "id": "phimlongtieng",
+      "name": "Phim Lồng Tiếng [MOVIE]",
       "version": "2.2.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup4_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
-      "id": "Phimhay5",
-      "name": "[MOVIE] Phimhay5",
+      "id": "bilutv",
+      "name": "Bilutv [MOVIE]",
       "version": "2.2.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Bilutv_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
-      "id": "film4K",
-      "name": "[MOVIE] film4K",
+      "id": "film4k",
+      "name": "Film4K",
       "version": "2.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/film4K_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/film4k.png"
