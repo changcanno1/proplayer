@@ -23,8 +23,8 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
      {
-      "id": "Phim HDCS",
-      "name": "[MOVIE] Phim HDCS",
+      "id": "phimhdcs",
+      "name": "PhimHDCS",
       "version": "1.2.2",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup2_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
