@@ -6,9 +6,9 @@ function getManifest() {
     return JSON.stringify({
         "id": "phimhdcs",
         "name": "PhimHDCS",
-        "version": "1.2.2",
+        "version": "1.2.3",
         "baseUrl": "https://phimhdcss.com",
-        "iconUrl": "https://phimhdcss.com/favicon.ico",
+        "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/phimhdcs.png",
         "isEnabled": true,
         "playerType": "exoplayer",
         "type": "MOVIE"
