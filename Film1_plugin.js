@@ -144,7 +144,7 @@ function getManifest() {
     return JSON.stringify({
         id: "film1",
         name: "Film 1",
-        version: "1.0.3",
+        version: "1.0.4",
         author: "VAX",
         description: "Film 1, nguồn phim chất lượng có 4K.",
         BASEURL: BASEURL,
