@@ -185,13 +185,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/netshort.png"
     },
     {
-      "id": "Mê Phim Ngắn",
-      "name": "Mê Phim Ngắn",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/mephimngan_plugin.js",
-      "iconUrl": "https://r2.gamomephim.com/site/logo-1784305321242.png"
-    },
-    {
       "id": "yanhh3d",
       "name": "Yanhh3d [ANIME]",
       "version": "3.4.0",
