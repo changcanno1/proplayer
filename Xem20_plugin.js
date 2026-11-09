@@ -19,27 +19,6 @@ var POPUP_HTML = `<div style="
     line-height: 1.65;
     font-size: 14px;
     gap: 14px;
-">
-    <p style="margin: 0;">
-        Đầu tiên để dùng được nguồn này, bạn phải vào trang cài đặt plugin và nhấn vào <b style="color:#f43f5e">đăng nhập</b>.
-        Hoặc bạn có thể cuộn xuống dòng bên dưới để đăng nhập.
-        Sau đó sẽ mở ra trang đăng nhập trên web. Đăng ký hoặc đăng nhập vào tài khoản của bạn mà dùng.
-        Xem20 là nguồn phim được Upload lên FSHARE, họ dùng cơ chế getlink riêng của họ để lấy link download
-        hoặc để xem trực tuyến.
-    </p>
-    <p style="margin: 0;">
-        Vì thế họ rất nghiêm ngặt, và giới hạn mỗi IP chỉ cho phép dùng <b style="color:#38bdf8">50GB băng thông</b>.
-        Vượt băng thông bạn phải chờ tới <b style="color:#38bdf8">0 giờ ngày mai</b> mới phục hồi.
-    </p>
-    <p style="margin: 0;">
-        Tuy nhiên bạn có thể lách luật bằng cách dùng các app VPN xịn có thể đổi IP sang quốc gia khác
-        như <b style="color:#22c55e">UltraSurf VPN</b>… Khi chuyển IP khác bạn sẽ xem được.
-    </p>
-    <p style="margin: 0;">
-        Tuy dùng Fshare nhưng server của họ bóp băng thông khá nhiều nên xem chậm là bình thường nhé,
-        được cái phim rất nhiều dạng <b style="color:#a78bfa">MKV 4K</b> độ nét cao hơn hẳn.
-    </p>
-</div>`;
 // https://xem20.net/login
 // ============ HYBRID COOKIE / SHARED ACCOUNT ============
 var SHARED_EMAIL = "alokillgtv@gmail.com";
