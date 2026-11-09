@@ -7,18 +7,6 @@
 
 var BASE = "https://xem20.net";
 var UA = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/122.0.0.0 Mobile Safari/537.36";
-var POPUP_HTML = `<div style="
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: stretch;
-    min-height: 100%;
-    padding: 8px 4px;
-    box-sizing: border-box;
-    text-align: left;
-    line-height: 1.65;
-    font-size: 14px;
-    gap: 14px;
 // https://xem20.net/login
 // ============ HYBRID COOKIE / SHARED ACCOUNT ============
 var SHARED_EMAIL = "alokillgtv@gmail.com";
