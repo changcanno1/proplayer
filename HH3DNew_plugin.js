@@ -17,7 +17,6 @@ function getManifest() {
         "isEnabled": true,
         "layoutType": "HORIZONTAL",
         "author": "Alokillgtv",
-        popup_html: popup_html,
         "type": "ANIME",
         "playerType": "exoplayer"
     });
