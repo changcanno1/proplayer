@@ -1,6 +1,5 @@
 BASEURL = "https://onflix.lat";
 BASEAPI = "https://k8s.onflixcdn.com/api";
-var popup_html = "";
 function getManifest() {
 	return JSON.stringify({
 		"id": "onflix",
