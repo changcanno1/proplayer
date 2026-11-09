@@ -287,6 +287,14 @@ function phimApiTitleFromUrl(url) {
   return "";
 }
 
+function isPhim4kUrl(url) {
+  return /api\.phim4k\.space\/rest-api\/v130\//i.test(String(url || ""));
+}
+
+function isPhimApiUrl(url) {
+  return /phimapi\.com\//i.test(String(url || ""));
+}
+
 function phimApiHasPlayable(servers) {
   if (!Array.isArray(servers)) return false;
   for (var i = 0; i < servers.length; i++) {
@@ -314,7 +322,7 @@ function phimApiDetailJson(json, url) {
         id: link
       });
     }
-    if (list.length) servers.push({ name: server.server_name || "PhimAPI", episodes: list });
+    if (list.length) servers.push({ name: "Nguồn dự phòng", episodes: list });
   }
   if (!phimApiHasPlayable(servers)) return "";
   var category = Array.isArray(movie.category) ? movie.category.map(function (c) { return c.name; }).join(", ") : "";
@@ -507,7 +515,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "saigonphim",
       "name": "[MOVIE] Sài Gòn Phim",
-      "version": "1.5.1",
+      "version": "1.5.2",
       "author": "Alokillgtv",
       "BASEURL": BASEURL,
       "baseUrl": BASEURL,
@@ -663,7 +671,7 @@ function getManifest() {
           }
           var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
           log("getUrlList output=" + finalUrl);
-          if (!USE_PHIMAPI && phim4kProbeList(finalUrl)) return finalUrl;
+           if (!USE_PHIMAPI) return finalUrl;
           var fallbackUrl = phimApiUrlForSource(finalUrl, page);
           log("getUrlList fallback=" + fallbackUrl);
           return fallbackUrl;
@@ -704,7 +712,7 @@ function getManifest() {
   
           var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
           log("getUrlSearch output=" + finalUrl);
-          if (!USE_PHIMAPI && phim4kProbeList(finalUrl)) return finalUrl;
+           if (!USE_PHIMAPI) return finalUrl;
           var fallbackUrl = phimApiUrlForSource(finalUrl, page);
           log("getUrlSearch fallback=" + fallbackUrl);
           return fallbackUrl;
@@ -911,16 +919,20 @@ function parseListResponse(html, $url) {
         // 1) Parse trang hiện tại (luôn luôn)
         var $data   = JSON.parse(html);
         if (phim4kListBad($data)) {
-            var badListFallback = phimApiFallbackList($url);
-            if (badListFallback) return badListFallback;
+            if (USE_PHIMAPI) {
+                var badListFallback = phimApiFallbackList($url);
+                if (badListFallback) return badListFallback;
+            }
         }
         var curList = extractRawList($data);
         log("phim4k list raw=" + curList.length);
         mergeInto(items, seen, curList, $url);
         log("phim4k list mapped=" + items.length);
         if (!items.length) {
-            var fallbackList = phimApiFallbackList($url);
-            if (fallbackList) return fallbackList;
+            if (USE_PHIMAPI) {
+                var fallbackList = phimApiFallbackList($url);
+                if (fallbackList) return fallbackList;
+            }
         }
 
         // 2) CHỈ ở page 1 mới fetch thêm page 30 & 31 rồi gộp + xáo trộn
@@ -953,8 +965,10 @@ function parseListResponse(html, $url) {
 
     } catch (e) {
         log("phim4k list error: " + e);
-        var fallbackList = phimApiFallbackList($url);
-        if (fallbackList) return fallbackList;
+        if (USE_PHIMAPI) {
+            var fallbackList = phimApiFallbackList($url);
+            if (fallbackList) return fallbackList;
+        }
         return JSON.stringify({
             "items": [],
             "pagination": {
@@ -1037,27 +1051,27 @@ function formatLabelName(rawName, prefix, counts) {
 
     if (isRemux) {
         counts.numRemux++;
-        typeLabel = "☀️ Server Fix (AUTO)";
+        typeLabel = "Chất lượng tự động";
         versionNum = counts.numRemux;
         priority = 1;
     } else if (is4K) {
         counts.num4k++;
-        typeLabel = "🌟 Server VIP (2160P)";
+        typeLabel = "Chất lượng cao (2160P)";
         versionNum = counts.num4k;
         priority = 1;
     } else if (is2K) {
         counts.num2k++;
-        typeLabel = "⭐ Server Max (1440P)";
+        typeLabel = "Chất lượng cao (1440P)";
         versionNum = counts.num2k;
         priority = 2;
     } else if (is1080) {
         counts.num1080++;
-        typeLabel = "✨ Server Thường (1080P)";
+        typeLabel = "Chất lượng tốt (1080P)";
         versionNum = counts.num1080;
         priority = 3;
     } else {
         counts.numOther++;
-        typeLabel = "🌞 Server Khác";
+        typeLabel = "Chất lượng khác";
         versionNum = counts.numOther;
         priority = 4;
     }
@@ -1084,27 +1098,27 @@ function formatLabelName(rawName, prefix, counts) {
     let priority = 99;
     if (isRemux) {
         counts.numRemux++;
-        typeLabel = "☀️ Server FIX (AUTO)";
+        typeLabel = "Chất lượng tự động";
         versionNum = counts.numRemux;
         priority = 1;
     } else if (is4K) {
         counts.num4k++;
-        typeLabel = "🌟 Server VIP (2160P)";
+        typeLabel = "Chất lượng cao (2160P)";
         versionNum = counts.num4k;
         priority = 1;
     } else if (is2K) {
         counts.num2k++;
-        typeLabel = "⭐ Server MAX (1440P)";
+        typeLabel = "Chất lượng cao (1440P)";
         versionNum = counts.num2k;
         priority = 2;
     } else if (is1080) {
         counts.num1080++;
-        typeLabel = "✨ Server THƯỜNG (1080P)";
+        typeLabel = "Chất lượng tốt (1080P)";
         versionNum = counts.num1080;
         priority = 3;
     } else {
         counts.numOther++;
-        typeLabel = "🌞 Server Khác (AUTO)";
+        typeLabel = "Chất lượng khác";
         versionNum = counts.numOther;
         priority = 4;
     }
@@ -1131,7 +1145,7 @@ function parseMovieDetail(html, url) {
     // log("========== parseMovieDetail START ==========");
     // log("[URL] " + url);
     // log("[HTML length] " + (html ? html.length : 0));
-    var phimApiDirect = phimApiSlugFromUrl(url);
+    var phimApiDirect = isPhimApiUrl(url) ? phimApiSlugFromUrl(url) : "";
     if (phimApiDirect) {
         log("phimapi direct slug=" + phimApiDirect);
         var phimApiDirectOut = phimApiFallbackDetail(url);
@@ -1143,8 +1157,10 @@ function parseMovieDetail(html, url) {
         log("phim4k detail parsed title=" + ($data && ($data.title || $data.name)) + " isTV=" + ($data && $data.is_tvseries) + " videos=" + ($data && $data.videos ? $data.videos.length : 0) + " seasons=" + ($data && $data.season ? $data.season.length : 0));
         if (phim4kDetailFatal($data)) {
             log("phim4k detail fatal/maintenance");
-            var phim4kEarlyFallback = phimApiFallbackDetail(url);
-            if (phim4kEarlyFallback) return phim4kEarlyFallback;
+            if (!isPhim4kUrl(url)) {
+                var phim4kEarlyFallback = phimApiFallbackDetail(url);
+                if (phim4kEarlyFallback) return phim4kEarlyFallback;
+            }
         }
 
         var posterUrl   = $data.thumbnail_url;
@@ -1480,7 +1496,7 @@ function parseMovieDetail(html, url) {
 
                 for (var ei = 0; ei < aJson.episodes.length; ei++) {
                     var srv = aJson.episodes[ei];
-                    var srvName = srv.server_name || "PhimAPI";
+                            var srvName = "Nguồn dự phòng";
                     var srvData = srv.server_data || [];
                     // log("[m3u8] Server \"" + srvName + "\" có " + srvData.length + " tập");
 
@@ -1650,24 +1666,15 @@ function parseMovieDetail(html, url) {
                 var firstEp = group[0];
                 var idsArr  = [];
 
-                // Nguồn phimapi lên đầu
-                var apiSources = apiEpMap[key] || [];
-                apiSources.forEach(function(src) {
-                    idsArr.push({
-                        name: "⚡ Server Nhanh " + src.name + " (1080P)",
-                        url:  src.url
-                    });
-                });
-
-                // Nguồn phim4k phía sau
+                // Nguồn chính lên đầu; nguồn phụ chỉ là dự phòng.
                 var tagCounter = {};
                 group.forEach(function(ep) {
                     tagCounter[ep._tag] = (tagCounter[ep._tag] || 0) + 1;
 
                     var baseLabel;
-                    if (ep._tag === "4K")         baseLabel = "🌟 Server VIP (2160P)";
-                    else if (ep._tag === "1080p") baseLabel = "✨ Server Thường (1080P)";
-                    else                          baseLabel = "🌞 Server Khác";
+                    if (ep._tag === "4K")         baseLabel = "Chất lượng cao (2160P)";
+                    else if (ep._tag === "1080p") baseLabel = "Chất lượng tốt (1080P)";
+                    else                          baseLabel = "Nguồn dự phòng";
 
                     if (ep._hasSub) baseLabel += " Vietsub";
 
@@ -1675,6 +1682,14 @@ function parseMovieDetail(html, url) {
                     if (sameTagTotal > 1) baseLabel += " " + tagCounter[ep._tag];
 
                     idsArr.push({ name: baseLabel, url: ep.id });
+                });
+
+                var apiSources = apiEpMap[key] || [];
+                apiSources.forEach(function(src) {
+                    idsArr.push({
+                        name: "Nguồn dự phòng (1080P)",
+                        url: src.url
+                    });
                 });
 
                 episodes.push({
@@ -1685,21 +1700,13 @@ function parseMovieDetail(html, url) {
                 });
             });
 
-            servers.push({ name: "Nguồn Phim", episodes: episodes });
+            servers.push({ name: "Danh sách tập", episodes: episodes });
 
         } else {
             // ----- MOVIE -----
             var movieIds = [];
             var labelCounts = { numRemux: 0, num4k: 0, num2k: 0, num1080: 0, numOther: 0 };
             var videosArr = $data.videos || [];
-
-            // Server nhanh phimapi ưu tiên lên đầu
-            if (apiFull) {
-                movieIds.push({
-                    name: "⚡ Server Nhanh " + apiFull.name + " (1080P)",
-                    url: apiFull.url
-                });
-            }
 
             videosArr.forEach(function(box, index) {
                 var $obj = {};
@@ -1725,7 +1732,14 @@ function parseMovieDetail(html, url) {
                 });
             });
 
-            servers.push({ name: "Server 1", episodes: movieIds.length ? [{
+            if (apiFull) {
+                movieIds.push({
+                    name: "Nguồn dự phòng (1080P)",
+                    url: apiFull.url
+                });
+            }
+
+            servers.push({ name: "Danh sách tập", episodes: movieIds.length ? [{
                 id: movieIds[0].url,
                 name: "Xem ngay",
                 slug: "full",
@@ -1736,7 +1750,7 @@ function parseMovieDetail(html, url) {
         // ====================================================================
         // [3] OVERRIDE METADATA
         // ====================================================================
-        if (apiData) {
+        if (apiData && !isPhim4kUrl(url)) {
             if (apiData.poster_url)   posterUrl   = apiData.poster_url;
             if (apiData.thumb_url)    backdropUrl = apiData.thumb_url;
             if (apiData.content)      description = apiData.content;
@@ -1774,8 +1788,10 @@ function parseMovieDetail(html, url) {
         // ====================================================================
         log("phim4k detail servers=" + servers.length + " playable=" + phimApiHasPlayable(servers));
         if (!phimApiHasPlayable(servers)) {
-            var phim4kNoStreams = phimApiFallbackDetail(url);
-            if (phim4kNoStreams) return phim4kNoStreams;
+            if (!isPhim4kUrl(url)) {
+                var phim4kNoStreams = phimApiFallbackDetail(url);
+                if (phim4kNoStreams) return phim4kNoStreams;
+            }
         }
         var $return = JSON.stringify({
             id:              url || "",
@@ -1806,8 +1822,10 @@ function parseMovieDetail(html, url) {
         log("parseMovieDetail error: " + e);
         // log("[FATAL] parseMovieDetail EXCEPTION: " + e);
         // log("========== parseMovieDetail END (ERROR) ==========");
-        var phim4kCatchFallback = phimApiFallbackDetail(url);
-        if (phim4kCatchFallback) return phim4kCatchFallback;
+        if (!isPhim4kUrl(url)) {
+            var phim4kCatchFallback = phimApiFallbackDetail(url);
+            if (phim4kCatchFallback) return phim4kCatchFallback;
+        }
         return JSON.stringify({
             id: "error",
             title: "error",
@@ -1959,7 +1977,11 @@ function iframe64(url){
           }
           var detailUrl = slug.charAt(0) === "/" ? BASEURL + slug : BASEURL + "/" + slug;
           log("getUrlDetail output=" + detailUrl);
-          if (!USE_PHIMAPI && phim4kProbeDetail(detailUrl)) {
+           if (isPhim4kUrl(detailUrl)) {
+               log("getUrlDetail keep primary source");
+               return detailUrl;
+           }
+           if (!USE_PHIMAPI && phim4kProbeDetail(detailUrl)) {
               log("getUrlDetail use phim4k");
               return detailUrl;
           }
