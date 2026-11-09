@@ -41,30 +41,209 @@ var POPUP_HTML = `<div style="
     </p>
 </div>`;
 // https://xem20.net/login
-// ============ COOKIE NATIVE ============
-var res = httpRequest(BASE, {
-    method: "GET"
-});
-var checkHTML = res.body;
+// ============ HYBRID COOKIE / SHARED ACCOUNT ============
+var SHARED_EMAIL = "alokillgtv@gmail.com";
+var SHARED_PASS = "Vaxplayer";
+var _sharedCookieCache = "";
+var _sharedCookieExpire = 0;
+
+function _extractCookiesFromRes(res, jar) {
+  jar = jar || {};
+  if (!res) return jar;
+  var setC = [];
+  if (res.setCookies && res.setCookies instanceof Array) {
+    setC = res.setCookies;
+  } else if (res.headers && res.headers["set-cookie"]) {
+    var raw = res.headers["set-cookie"];
+    if (raw instanceof Array) setC = raw;
+    else setC = [raw];
+  } else if (res.headers && res.headers["Set-Cookie"]) {
+    var raw2 = res.headers["Set-Cookie"];
+    if (raw2 instanceof Array) setC = raw2;
+    else setC = [raw2];
+  }
+  for (var i = 0; i < setC.length; i++) {
+    var item = String(setC[i] || "").split(";")[0];
+    var eq = item.indexOf("=");
+    if (eq > 0) {
+      var k = item.substring(0, eq).trim();
+      var v = item.substring(eq + 1).trim();
+      if (k) jar[k] = v;
+    }
+  }
+  return jar;
+}
+
+function _cookieJarToString(jar) {
+  var parts = [];
+  for (var k in jar) {
+    if (jar.hasOwnProperty(k) && jar[k]) {
+      parts.push(k + "=" + jar[k]);
+    }
+  }
+  return parts.join("; ");
+}
+
+function _loginSharedAccount() {
+  var now = Date.now();
+  if (_sharedCookieCache && now < _sharedCookieExpire) {
+    return _sharedCookieCache;
+  }
+
+  // Thử đọc từ localStorage nếu có
+  try {
+    if (typeof localStorage !== "undefined") {
+      var cached = localStorage.getItem("xem20_shared_session");
+      var exp = parseInt(localStorage.getItem("xem20_shared_expire") || "0", 10);
+      if (cached && exp && now < exp) {
+        _sharedCookieCache = cached;
+        _sharedCookieExpire = exp;
+        return cached;
+      }
+    }
+  } catch (e) {}
+
+  var loginUrl = BASE + "/login";
+  var jar = {};
+
+  var r1 = httpRequest(loginUrl, {
+    method: "GET",
+    headers: {
+      "User-Agent": UA,
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+    }
+  });
+  if (!r1 || !r1.body) return "";
+  _extractCookiesFromRes(r1, jar);
+
+  var tokenMatch = r1.body.match(/name="_token"\s+value="([^"]+)"/);
+  var csrfToken = tokenMatch ? tokenMatch[1] : "";
+  if (!csrfToken) return "";
+
+  var postBody = "_token=" + encodeURIComponent(csrfToken)
+      + "&login=" + encodeURIComponent(SHARED_EMAIL)
+      + "&password=" + encodeURIComponent(SHARED_PASS)
+      + "&remember=on";
+
+  var r2 = httpRequest(loginUrl, {
+    method: "POST",
+    headers: {
+      "User-Agent": UA,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Referer": loginUrl,
+      "Origin": BASE,
+      "Cookie": _cookieJarToString(jar)
+    },
+    body: postBody
+  });
+  if (!r2) return "";
+  _extractCookiesFromRes(r2, jar);
+
+  var finalCookie = _cookieJarToString(jar);
+  if (finalCookie && finalCookie.indexOf("phimhdchill-session") !== -1) {
+    _sharedCookieCache = finalCookie;
+    _sharedCookieExpire = now + (12 * 3600 * 1000); // 12h
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem("xem20_shared_session", finalCookie);
+        localStorage.setItem("xem20_shared_expire", String(_sharedCookieExpire));
+      }
+    } catch (e) {}
+    console.log("[xem20] ✓ Đăng nhập tài khoản dùng chung thành công");
+    return finalCookie;
+  }
+  return "";
+}
+
+// Kiểm tra xem cookie có thực sự đã đăng nhập hay chỉ là cookie khách
+var _cachedCookieValidity = {};
+
+function _isCookieLoggedIn(cookieStr) {
+  if (!cookieStr || String(cookieStr).indexOf("phimhdchill-session") === -1) return false;
+  var now = Date.now();
+  if (_cachedCookieValidity[cookieStr] && (now - _cachedCookieValidity[cookieStr].time) < 1800000) { // 30 phút
+    return _cachedCookieValidity[cookieStr].valid;
+  }
+
+  var r = httpRequest(BASE + "/", {
+    method: "GET",
+    headers: {
+      "User-Agent": UA,
+      "Cookie": cookieStr
+    }
+  });
+  var isValid = false;
+  if (r && r.body) {
+    // Nếu chưa đăng nhập, trang chủ sẽ hiện form login: id="cd-login-form"
+    if (r.body.indexOf('id="cd-login-form"') === -1 && (r.body.indexOf('cd-card') !== -1 || r.body.indexOf('/profile') !== -1)) {
+      isValid = true;
+    }
+  }
+  _cachedCookieValidity[cookieStr] = { valid: isValid, time: now };
+  return isValid;
+}
+
+function _getNativeCookie() {
+  try {
+    if (typeof getCookie === "function") {
+      var ck = getCookie(BASE);
+      if (ck && String(ck).indexOf("phimhdchill-session") !== -1) {
+        var strCk = String(ck).trim();
+        // Phải kiểm tra xem cookie native này đã đăng nhập tài khoản chưa!
+        if (_isCookieLoggedIn(strCk)) {
+          return strCk;
+        } else {
+          console.log("[xem20] Cookie native WebView chỉ là cookie khách (chưa đăng nhập), chuyển sang tài khoản dùng chung");
+        }
+      }
+    }
+  } catch(e) {
+    console.log("[xem20] getCookie err:", e.message);
+  }
+  return "";
+}
+
+function _getEffectiveCookie() {
+  // 1. Ưu tiên cookie cá nhân từ Native WebView (nếu đã đăng nhập)
+  var nativeCk = _getNativeCookie();
+  if (nativeCk) {
+    console.log("[xem20] Sử dụng cookie tài khoản riêng của user");
+    return nativeCk;
+  }
+  // 2. Không có cookie riêng hoặc user chưa login trong WebView -> dùng tài khoản dùng chung
+  var sharedCk = _loginSharedAccount();
+  if (sharedCk) {
+    console.log("[xem20] Sử dụng cookie tài khoản dùng chung");
+    return sharedCk;
+  }
+  return "";
+}
+
 var isLogin = true;
-if(checkHTML.indexOf("https://xem20.net/login") > -1){
-   isLogin = false;
-   popHTML = POPUP_HTML;
-  console.log("Chưa Đăng Nhập")
+var popHTML = "";
+var _initialCk = _getNativeCookie();
+if (!_initialCk) {
+  _initialCk = _loginSharedAccount();
 }
-else{
+if (_initialCk) {
+  isLogin = true;
   POPUP_HTML = "";
-  console.log("Đã đăng nhập")
+  console.log("[xem20] Sẵn sàng phục vụ (Đã đăng nhập)");
+} else {
+  isLogin = false;
+  popHTML = POPUP_HTML;
+  console.log("[xem20] Chưa có phiên đăng nhập");
 }
+
 // ============ MANIFEST ============ 
 function getManifest() {
   return JSON.stringify({
     id: "xem20",
     name: "Xem20 [MOVIE]",
-    version: "1.1",
+    version: "1.2.1",
     baseUrl: "https://xem20.net/login",
     type: "MOVIE",
-    info: "Đầu tiên để dùng được nguồn này, bạn phải vào trang cài đặt plugin và nhấn vào đăng nhập..Sau đó sẽ mở ra trang đăng nhập trên web. Đăng ký hoặc đăng nhập vào tài khoản của bạn mà dùng.Xem20 là nguồn phim được Upload lên FSHARE, họ dùng cơ chế getlink riêng của họ để lấy link download hoặc để xem trực tuyến.",
+    info: "Nguồn phim Xem20 chất lượng cao FShare. Hỗ trợ cơ chế Hybrid: Tự động dùng tài khoản hệ thống dùng chung hoặc tài khoản cá nhân nếu bạn đã đăng nhập qua WebView.",
     layoutType: "VERTICAL",
     "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/xem20.png",
     playerType: "exoplayer",
@@ -75,28 +254,16 @@ function getManifest() {
     isEnabled: true
   });
 }
-function _getNativeCookie() {
-  try {
-    var ck = getCookie(BASE);
-    if (ck && String(ck).indexOf("phimhdchill-session") !== -1) {
-      return String(ck);
-    }
-  } catch(e) {
-    console.log("[xem20] getCookie err:", e.message);
-  }
-  return "";
-}
+
 function _checkCookieOrWarn() {
-  var ck = _getNativeCookie();
+  var ck = _getEffectiveCookie();
   if (ck) {
-    console.log("[xem20] ✓ cookie native OK, len=" + ck.length + "\n" + JSON.stringify(ck));
-    return true;
+    console.log("[xem20] ✓ cookie OK, len=" + ck.length);
+    return ck;
   }
-  else{
-    popHTML = POPUP_HTML
-  }
-  console.log("[xem20] ✗ không có cookie — user cần login trong WebView");
-  toast("Vui lòng đăng nhập xem20.net trong trình duyệt của app trước");
+  popHTML = POPUP_HTML;
+  console.log("[xem20] ✗ không có cookie");
+  toast("Không thể lấy phiên đăng nhập xem20. Vui lòng thử lại sau.");
   return "";
 }
 
@@ -147,6 +314,23 @@ function getUrlList(slug, filtersJson) {
 
 // ============ PARSE LIST ============
 function parseListResponse(html, apiUrl) {
+  if (!html || html.length < 100 || html.indexOf('id="cd-login-form"') !== -1 || html.indexOf('cd-card') === -1) {
+    // Nếu trang trả về trang login (do request ban đầu từ app chưa kèm cookie), tự fetch lại với cookie hiệu lực
+    var effCookie = _getEffectiveCookie();
+    if (effCookie) {
+      var rList = httpRequest(apiUrl, {
+        method: "GET",
+        headers: {
+          "User-Agent": UA,
+          "Cookie": effCookie
+        }
+      });
+      if (rList && rList.body && rList.body.indexOf('id="cd-login-form"') === -1 && rList.body.indexOf('cd-card') !== -1) {
+        html = rList.body;
+      }
+    }
+  }
+
   if (!html || html.length < 100) return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
   var $doc = _$(html);
   var items = [];
@@ -186,9 +370,24 @@ function getUrlDetail(slug) {
 }
 
 function parseMovieDetail(html, apiUrl, datasend) {
+  var movieUrl = apiUrl.indexOf("http") === 0 ? apiUrl : (BASE + "/" + apiUrl.replace(/^\//, ""));
+
+  // Nếu html trả về trang đăng nhập hoặc không có nội dung phim, tự fetch lại bằng cookie hiệu lực
+  if (!html || html.length < 100 || html.indexOf('id="cd-login-form"') !== -1 || html.indexOf('cd-release') === -1) {
+    var effCookie = _getEffectiveCookie();
+    if (effCookie) {
+      var rDetail = httpRequest(movieUrl, {
+        method: "GET",
+        headers: { "User-Agent": UA, "Cookie": effCookie }
+      });
+      if (rDetail && rDetail.body && rDetail.body.indexOf('cd-release') !== -1) {
+        html = rDetail.body;
+      }
+    }
+  }
+
   if (!html) return JSON.stringify({ id: apiUrl, title: "", servers: [] });
   var $doc = _$(html);
-  var movieUrl = apiUrl.indexOf("http") === 0 ? apiUrl : (BASE + "/" + apiUrl.replace(/^\//, ""));
 
   var title = $doc.find(".cd-title").first().text().trim() || $doc.find("h1").first().text().trim();
   var origin = $doc.find(".cd-download-hero__origin").first().text().trim();
@@ -256,17 +455,21 @@ function parseMovieDetail(html, apiUrl, datasend) {
     });
     if (eps.length > 0) servers.push({ name: "Bản tải", episodes: eps });
   }
-  if(isLogin == false || isLogin == "false"){
-    servers = [];
-    servers.push({
-      name: "Bạn chưa đăng nhập để xem phim.",
-      episodes: [{
-        name: "Vào phần plugin để đăng nhập",
-        slug: "loi1",
-        id: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4"
-      }]
-    })
+
+  // Nếu chưa có tập nào do chưa đăng nhập, thử đăng nhập tài khoản dùng chung
+  if (servers.length === 0) {
+    var effCookie = _getEffectiveCookie();
+    if (effCookie && html.indexOf("https://xem20.net/login") !== -1) {
+      var refetch = httpRequest(movieUrl, {
+        method: "GET",
+        headers: { "User-Agent": UA, "Cookie": effCookie }
+      });
+      if (refetch && refetch.body && refetch.body.indexOf("https://xem20.net/login") === -1) {
+        return parseMovieDetail(refetch.body, apiUrl, datasend);
+      }
+    }
   }
+
   return JSON.stringify({
     id: movieUrl,
     title: title || origin || "Phim",
