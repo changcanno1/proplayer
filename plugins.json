@@ -74,7 +74,7 @@
     {
       "id": "saigonphim",
       "name": "[MOVIE] Sài Gòn Phim",
-      "version": "1.5.1",
+      "version": "1.5.2",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/saigonfilm_plugin.js",
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAvC1dIB0emUqIfQbIFdMc0K-utn3P_x5KpqZs0LA6GQ&s=10"
     },
