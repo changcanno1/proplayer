@@ -8,7 +8,7 @@ function getManifest() {
     return JSON.stringify({
       "id": "phimlongtieng",
       "name": "Phim Lồng Tiếng [MOVIE]",
-      "version": "2.2",
+      "version": "2.4",
       "author": "Alokillgtv",
       "info": "",
       "baseUrl": "https://www.1phim23.com",
@@ -41,7 +41,7 @@ function getManifest() {
 {
 // Tạo List phim ở menu Home
   function getHomeSections() {
-      localStorage.clear();
+      /* localStorage.clear(); // disabled: làm mất lịch sử/cache */
       return JSON.stringify([
           {"slug": "/index.php?do=phim&act=searchs&year=2026&phim_group=1","title": "Phim Lẻ","type": "Horizontal"},
           {"slug": "/index.php?do=phim&act=searchs&year=2026&phim_group=2","title": "Phim Bộ","type": "Horizontal"},
@@ -125,23 +125,23 @@ console.log("BASEURL " + BASEURL);
     "name": "Phim Chiến Tranh"
   },
   {
-    "link": "/index.php?do=phim&act=searchs&phim_theloai=the-loai/phim-than-thoai",
+    "link": "/the-loai/phim-than-thoai/",
     "name": "Phim Thần Thoại"
   },
   {
-    "link": "/index.php?do=phim&act=searchs&phim_theloai=the-loai/phim-vien-tuong",
+    "link": "/the-loai/phim-vien-tuong/",
     "name": "Phim Viễn Tưởng"
   },
   {
-    "link": "/index.php?do=phim&act=searchs&phim_theloai=the-loai/phim-co-trang",
+    "link": "/the-loai/phim-co-trang/",
     "name": "Phim Cổ Trang"
   },
   {
-    "link": "/index.php?do=phim&act=searchs&phim_theloai=the-loai/am-nhac",
+    "link": "/the-loai/am-nhac/",
     "name": "Âm Nhạc"
   },
   {
-    "link": "/index.php?do=phim&act=searchs&phim_theloai=the-loai/tv-show/",
+    "link": "/the-loai/tv-show/",
     "name": "TV Show"
   }
 ]`;
@@ -186,7 +186,8 @@ console.log("BASEURL " + BASEURL);
           if (path) {
               resultUrl += (path.indexOf("/") === 0 ? "" : "/") + path;
           }
-          if (page > 0 && resultUrl.indexOf("page") === -1 && resultUrl.indexOf("phim-moi") == -1 && resultUrl.indexOf("search") == -1) {
+          var _isSearchPath = /\/search\//i.test(resultUrl);
+          if (page > 0 && resultUrl.indexOf("page") === -1 && resultUrl.indexOf("phim-moi") == -1 && !_isSearchPath) {
               
               if(resultUrl.indexOf("?") > -1){
                 paramPage = "&" + paramPage;
@@ -199,7 +200,7 @@ console.log("BASEURL " + BASEURL);
           if (page > 0 && resultUrl.indexOf("phim-moi") > -1) {
               resultUrl += "-" + paramPage.replace("=","") + "-" + page + "/";
           }
-          if (page > 0 && resultUrl.indexOf("search") > -1) {
+          if (page > 0 && _isSearchPath) {
               resultUrl += page + "/";
           }
           var finalUrl = resultUrl.replace(/([^:]\/)\/+/g, "$1");
@@ -290,11 +291,12 @@ function parseListResponse(html, $url) {
             var match = this.find(".name").text();
             var year = 2026
             if (match) {
-                year = match.match(/(\d+)$/)[0]
+                var ym = match.match(/(\d+)$/);
+                if (ym) year = ym[1];
             }
             var lang = episode_current.replace(/\d+\/\d+/, "");
 
-            if (title.length > 1 && poster.length > 5) {
+            if (title && title.length > 1 && poster && poster.length > 5) {
                 items.push({
                     "id": id || "",
                     "title": title || "",
