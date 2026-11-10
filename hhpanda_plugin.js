@@ -1,36 +1,38 @@
 //var BASEURL = "https://hhpanda.st"; 
 var iddomain = "hhpanda"
-BASEURL = "https://vkey.vn/" + iddomain;
+BASEURL = "https://hhpanda.st"
 var LOGGER = false;
+NEWDOMAIN = false;
 // https://www.whoreshub.com/categories/4k-porn/
 function getManifest() {
     return JSON.stringify({
       "id": "hhpanda",
-      "name": "[ANIME] HHPanda",
+      "name": "HHPanda [ANIME]",
       "description": "Anime siêu hay.",
-      "version": "1.6.4",
+      "version": "2.3",
       "info": "",
       "baseUrl": BASEURL,
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hhpanda.png",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/hhpanda.png",
       "isEnabled": true,
       "adblock": false,
       "type": "ANIME",
-      "playerType": "embed"
+      "playerType": "exoplayer"
     })
 };
 
-if (typeof httpRequest === "function") {
-  var res = httpRequest("https://vaxplugin.alokillgtv.workers.dev/jsonStore/domain.json?debug=9780752&time=2323", {method: "POST"});
-  if (res && res.isSuccessful) {
-    var resobj = JSON.parse(res.body);
-    BASEURL = resobj[iddomain].new;   
-  } else {
-    BASEURL = "https://vkey.vn/" + iddomain;
-  }
-} else {
-  BASEURL = "https://vkey.vn/" + iddomain;
-}
-
+if (NEWDOMAIN) {
+    if (typeof httpRequest === "function") {
+        var res = httpRequest("https://vaxplugin.alokillgtv.workers.dev/jsonStore/domain.json?debug=9780752&time=2323", {
+            method: "POST"
+        });
+        if (res && res.isSuccessful) {
+            var resobj = JSON.parse(res.body);
+            if (resobj[iddomain]) {
+                BASEURL = resobj[iddomain].new;
+            }
+        } 
+    } 
+} 
 BASELINK = BASEURL;
 console.log("BASEURL " + BASEURL);
 
@@ -590,7 +592,7 @@ function parseDetailResponse(html, pageUrl, datasend) {
     console.log("parseDetail:\n" + pageUrl)
     try {
         var $doc = _$(html);
-        var currentlink = $doc.find("meta[property='og:url']").attr("content");
+        var currentlink = $doc.find("meta[property='og:url']").attr("content") || pageUrl;
         var matchC = currentlink.match(/sv(\d+)/i);
         var currentserver = 1;
         var currenttap = 1;
@@ -604,8 +606,8 @@ function parseDetailResponse(html, pageUrl, datasend) {
         if(currentlink.indexOf("-full") > -1){
           currenttap = "tap-full";
         }
-        var currentid = $doc.find("#main-contents").attr("data-id");
-        var typecurrent = $doc.find("#halim-ajax-list-server").find("span:first").attr("data-type");
+        var currentid = $doc.find("#main-contents").attr("data-id") || $doc.find("[data-id]").attr("data-id");
+        var typecurrent = $doc.find("#halim-ajax-list-server").find("span:first").attr("data-type") || "pro";
         var framelink = `https://hhpanda.st/player/player.php?action=dox_ajax_player&post_id=${currentid}&chapter_st=${currenttap}&type=${typecurrent}&sv=${currentserver}`;
         var $dataSv = {};
         $dataSv.movieid = currentid;
@@ -622,7 +624,7 @@ function parseDetailResponse(html, pageUrl, datasend) {
             maxEpi = this.find(".halim-episode").find("a").length;
 
             this.find(".halim-episode").each(function() {
-                type = this.find("a:first").attr("data-sv");
+                type = this.find("a:first").attr("data-sv") || type;
             });
 
             servers.push({
@@ -645,6 +647,101 @@ function parseDetailResponse(html, pageUrl, datasend) {
         });
         $dataSv.HQ = serverHQ;
 
+        // === GIAI MA STREAMFREE DIRECT LINK CHO EXOPLAYER (PORT TU CS3) ===
+        try {
+            if (typeof httpRequest === "function") {
+                var candidateTypes = [typecurrent, "pro", "tiktik", "vip4k", "vip4kv2"];
+                for (var ti = 0; ti < candidateTypes.length; ti++) {
+                    var curType = candidateTypes[ti];
+                    var testPlayerUrl = "https://hhpanda.st/player/player.php?action=dox_ajax_player&post_id=" + currentid + "&chapter_st=" + currenttap + "&type=" + curType + "&sv=" + currentserver;
+                    var resPlayer = httpRequest(testPlayerUrl, {
+                        method: "GET",
+                        headers: {
+                            "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+                            "Referer": pageUrl
+                        }
+                    });
+                    if (resPlayer && resPlayer.isSuccessful && resPlayer.body) {
+                        var pbody = resPlayer.body;
+                        
+                        // 1. Kiem tra link direct m3u8 thong thuong neu co
+                        var m3u8m = pbody.match(/(https?:\/\/[^\s"'<>]+\.(?:m3u8)(?:\?[^\s"'<>]*)?)/i);
+                        if (!m3u8m) m3u8m = pbody.match(/"file"\s*:\s*"([^"]+\.(?:m3u8|mp4)[^"]*)"/i);
+                        if (m3u8m && m3u8m[1]) {
+                            var direct = m3u8m[1].replace(/\\/g, "");
+                            log("parseDetailResponse[direct]: " + direct);
+                            return JSON.stringify({
+                                url: direct,
+                                isEmbed: false,
+                                mimeType: direct.indexOf(".m3u8") !== -1 ? "application/x-mpegURL" : "video/mp4",
+                                headers: {
+                                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+                                    "Referer": "https://hhpanda.st/"
+                                },
+                                subtitles: []
+                            });
+                        }
+
+                        // 2. Tim link embed streamfree.vip
+                        var sfm = pbody.match(/(https?:\/\/(?:www\.)?streamfree\.vip\/embed\/(?:v|vt)\/[A-Za-z0-9_-]+)/i);
+                        if (sfm && sfm[1]) {
+                            var sfurl = sfm[1];
+                            log("parseDetailResponse[streamfree-embed]: " + sfurl);
+
+                            // Giai ma truc tiep qua AppCrypto Native (nhanh va chuan xac nhat)
+                            var sfJson = "";
+                            if (typeof AppCrypto !== 'undefined' && AppCrypto.resolveStreamfree) {
+                                sfJson = AppCrypto.resolveStreamfree(sfurl, pageUrl);
+                            }
+                            if (sfJson) {
+                                var session = JSON.parse(sfJson);
+                                if (session && session.m3u8Url) {
+                                    log("parseDetailResponse[exoplayer-m3u8]: " + session.m3u8Url);
+                                    return JSON.stringify({
+                                        url: session.m3u8Url,
+                                        isEmbed: false,
+                                        mimeType: "application/x-mpegURL",
+                                        headers: session.headers,
+                                        subtitles: []
+                                    });
+                                }
+                            }
+
+                            // Fallback: Tai embed HTML va build session
+                            var resSf = httpRequest(sfurl, {
+                                method: "GET",
+                                headers: {
+                                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+                                    "Referer": pageUrl
+                                }
+                            });
+                            if (resSf && resSf.isSuccessful && resSf.body) {
+                                var sfJson2 = "";
+                                if (typeof AppCrypto !== 'undefined' && AppCrypto.buildStreamfreeSession) {
+                                    sfJson2 = AppCrypto.buildStreamfreeSession(sfurl, resSf.body);
+                                }
+                                if (sfJson2) {
+                                    var session2 = JSON.parse(sfJson2);
+                                    if (session2 && session2.m3u8Url) {
+                                        log("parseDetailResponse[exoplayer-m3u8-from-html]: " + session2.m3u8Url);
+                                        return JSON.stringify({
+                                            url: session2.m3u8Url,
+                                            isEmbed: false,
+                                            mimeType: "application/x-mpegURL",
+                                            headers: session2.headers,
+                                            subtitles: []
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch(ex) {
+            log("parseDetailResponse[streamfree-err]: " + ex);
+        }
+
         var bypassJs = checkRaw(customJS($dataSv),true);
         console.log("parseDetailResponse[url]: \n" + framelink + "\ndataSv:\n" + JSON.stringify($dataSv));
         
@@ -659,7 +756,6 @@ function parseDetailResponse(html, pageUrl, datasend) {
             },
             subtitles: []
         });
-     // console.log("Return Data:\n" + $return)
       return $return
     } catch (e) {
         console.log("parseDetailResponse[err]:\n " + e);
@@ -1059,6 +1155,60 @@ function customJS(config) {
 
 
 
+
+function parseEmbedResponse(html, url) {
+    log("parseEmbedResponse[url]: \n" + url);
+    try {
+        if (!html) return JSON.stringify({ url: "", isEmbed: false, headers: {}, subtitles: [] });
+        var linkstream = "";
+        // Try direct m3u8/mp4
+        var m = html.match(/(https?:\\?\/\\?\/[^\s"'<>]+\.(?:m3u8)(?:\?[^\s"'<>]*)?)/i);
+        if (!m) m = html.match(/(https?:\/\/[^\s"'<>]+\.(?:m3u8)(?:\?[^\s"'<>]*)?)/i);
+        if (!m) m = html.match(/"file"\s*:\s*"([^"]+\.(?:m3u8|mp4)[^"]*)"/i);
+        if (!m) m = html.match(/source\s*src\s*=\s*['"]([^'"]+\.(?:m3u8|mp4)[^'"]*)['"]/i);
+        if (m && m[1]) {
+            linkstream = m[1].replace(/\\/g, "");
+        }
+        if (linkstream) {
+            log("parseEmbedResponse[stream]: \n" + linkstream);
+            return JSON.stringify({
+                url: linkstream,
+                isEmbed: false,
+                mimeType: linkstream.indexOf(".m3u8") !== -1 ? "application/x-mpegURL" : "video/mp4",
+                headers: {
+                    "Referer": url || "https://streamfree.vip/",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+                },
+                subtitles: []
+            });
+        }
+        // Check for streamfree
+        if (url && url.indexOf("streamfree") > -1) {
+            // try to find any .m3u8
+            var m2 = html.match(/(https?:\/\/[^"'\\s]+\.m3u8[^"'\\s]*)/i);
+            if (m2 && m2[1]) {
+                linkstream = m2[1].replace(/\\/g, "");
+                return JSON.stringify({
+                    url: linkstream,
+                    isEmbed: false,
+                    mimeType: "application/x-mpegURL",
+                    headers: {
+                        "Referer": url,
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+                    },
+                    subtitles: []
+                });
+            }
+        }
+    } catch (e) {
+        log("parseEmbedResponse[err]:\n " + e);
+    }
+    return JSON.stringify({ 
+        url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
+        mimeType: "video/mp4", 
+        isEmbed: false, headers: {}, subtitles: [] 
+    });
+}
 
 function parseCategoriesResponse(apiResponseJson) {
     var listurl = getLISTmenu();
