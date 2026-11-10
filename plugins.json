@@ -155,12 +155,12 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/film4K_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/film4k.png"
     },
-       {
-      "id": "phimngan",
-      "name": "Phim Ngắn [SHORT]",
-      "version": "2.8.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet2_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv02.workers.dev/img/phimngan.png"
+    {
+      "id": "phimngan_net",
+      "name": "Phim Ngắn Net",
+      "version": "2.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
+      "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75"
     },
     {
       "id": "pinedrama",
@@ -184,19 +184,19 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/YiniTV_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yini.png"
     },
-   {
-      "id": "phimngan_net",
-      "name": "Phim Ngắn Net",
-      "version": "2.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
-      "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75"
-    },
     {
       "id": "netshort",
       "name": "Netshort [SHORT]",
       "version": "2.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Netshort_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/netshort.png"
+    },
+    {
+      "id": "phimngan",
+      "name": "Phim Ngắn [SHORT]",
+      "version": "2.8.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet2_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv02.workers.dev/img/phimngan.png"
     },
     {
       "id": "yanhh3d",
