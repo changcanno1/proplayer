@@ -163,13 +163,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv02.workers.dev/img/phimngan.png"
     },
     {
-      "id": "phimngan_net",
-      "name": "Phim Ngắn Net",
-      "version": "2.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
-      "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75"
-    },
-    {
       "id": "pinedrama",
       "name": "PineDrama",
       "version": "1.0.2",
@@ -190,6 +183,13 @@
       "version": "1.1.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/YiniTV_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/yini.png"
+    },
+   {
+      "id": "phimngan_net",
+      "name": "Phim Ngắn Net",
+      "version": "2.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet_plugin.js",
+      "iconUrl": "https://phimngan.net/_next/image?url=%2Fimages%2Fbrand%2Flogo-primary-horizontal.png&w=256&q=75"
     },
     {
       "id": "netshort",
