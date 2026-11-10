@@ -142,6 +142,13 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
+      "id": "clbpxVIP",
+      "name": "CLB Phim Xưa VIP",
+      "version": "2.3.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/CLBphimxua_plugins.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/clbpxVIP.png"
+    },
+    {
       "id": "film4k",
       "name": "Film4K",
       "version": "2.1.0",
