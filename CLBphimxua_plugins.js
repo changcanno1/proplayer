@@ -1,113 +1,25 @@
 BASEURL = "https://clbphimxua.com";
 BASESOURCE = "";
-function getValidCookie() {
-    var domain = "https://clbphimxua.com";
-    var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
-    // 1. Kiểm tra Cookie hiện tại của domain bằng getSetCookies
-    console.log("[LOG] -> Kiểm tra trạng thái đăng nhập qua getSetCookies...");
-    var checkCookies = getSetCookies(domain, { "User-Agent": userAgent });
-    var checkCookieStr = "";
-
-    if (checkCookies && checkCookies.length > 0) {
-        checkCookieStr = checkCookies.map(function(c) { 
-            return c.split(";")[0].trim(); 
-        }).join("; ");
-    }
-
-    // 2. Nếu đã có cookie wordpress_logged_in_ -> Dùng luôn, KHÔNG cần đăng nhập lại
-    if (checkCookieStr && checkCookieStr.indexOf("wordpress_logged_in_") !== -1) {
-        console.log("[LOG] -> ĐÃ ĐĂNG NHẬP SẴN! Dùng lại Cookie hiện tại.");
-        return checkCookieStr;
-    }
-
-    // 3. Nếu chưa đăng nhập -> Mới tiến hành POST đăng nhập
-    console.log("[LOG] -> CHƯA ĐĂNG NHẬP! Tiến hành gửi POST đăng nhập...");
-    return loginAndGetCookie();
-}
-
-function loginAndGetCookie() {
-    var domain = "https://clbphimxua.com";
-    var loginUrl = domain + "/wp-login.php";
-    var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
-    // Bước 1: Dùng getSetCookies lấy test cookie ban đầu
-    var initCookiesArr = getSetCookies(loginUrl, { "User-Agent": userAgent });
-    var initialCookies = "";
-
-    if (initCookiesArr && initCookiesArr.length > 0) {
-        initialCookies = initCookiesArr.map(function(c) { 
-            return c.split(";")[0].trim(); 
-        }).join("; ");
-    }
-    
-    if (initialCookies.indexOf("wordpress_test_cookie") === -1) {
-        initialCookies += (initialCookies ? "; " : "") + "wordpress_test_cookie=WP%20Cookie%20check";
-    }
-
-    // Bước 2: POST đăng nhập
-    var bodyData = "log=" + encodeURIComponent("gun95941@gmail.com") +
-                   "&pwd=" + encodeURIComponent("123456") +
-                   "&rememberme=forever" +
-                   "&wp-submit=" + encodeURIComponent("Đăng nhập") +
-                   "&redirect_to=" + encodeURIComponent(domain + "/wp-admin/") +
-                   "&testcookie=1";
-
-    var loginRes = httpRequest(loginUrl, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Cookie": initialCookies,
-            "Origin": domain,
-            "Referer": loginUrl,
-            "User-Agent": userAgent
-        },
-        body: bodyData
-    });
-
-    // Bước 3: Lấy Set-Cookie xác thực trả về
-    var authCookiesArr = [];
-    if (loginRes && loginRes.setCookies) {
-        authCookiesArr = loginRes.setCookies.map(function(c) { 
-            return c.split(";")[0].trim(); 
-        });
-    }
-
-    var fullCookieStr = authCookiesArr.join("; ");
-
-    if (fullCookieStr && fullCookieStr.indexOf("wordpress_") !== -1) {
-       // toast("Đăng nhập thành công!");
-        return fullCookieStr;
-    } else {
-      //  toast("Đăng nhập thất bại!");
-        return "";
-    }
-}
-
-// Chạy kiểm tra phiên trước
-var cookie = getValidCookie();
+var D1_API = "https://data.drivepcthuan.workers.dev"; // D1 Worker Master API
 
 function getManifest() {
     return JSON.stringify({
         "id": "clbpxVIP",
         "name": "CLB Phim Xưa VIP",
-        "version": "2.2",
-        "info": "",
+        "version": "2.3.1",
+        "info": "Tăng tốc siêu nhanh khi duyệt phim.",
         "BASEURL": "https://clbphimxua.com",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/clbpxVIP.png",
         "headers": {
-            "Host": "clbphimxua.com",
             "Referer": "https://clbphimxua.com",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Cookie": cookie
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         },
         "isEnabled": true,
         "isAdult": false,
         "adblock": false,
         "type": "MOVIE",
         "author": "alokillgtv",
-        "playerType": "exoplayer",
-        "layoutType": "HORIZONTAL"
+        "playerType": "exoplayer"
     });
 }
 
@@ -209,19 +121,12 @@ function getFilterConfig() {
 function getUrlList(slug, filtersJson) {
     var filters = JSON.parse(filtersJson || "{}");
     var page = filters.page || 1;
-    var baseUrl = BASEURL;
+    var cat = (slug === '' || slug === 'home') ? 'home' : slug;
 
-    if (slug === '' || slug === 'home') {
-        if (page > 1) {
-            return baseUrl + "/page/" + page + "/";
-        }
-        return baseUrl + "/";
-    }
-
-    if (page > 1) {
-        return baseUrl + "/category/" + slug + "/page/" + page + "/";
-    }
-    return baseUrl + "/category/" + slug + "/";
+    // Trỏ thẳng về API D1 List để lấy cực nhanh
+    var d1ListUrl = D1_API + "/api/list?plugin=clbpx&category=" + encodeURIComponent(cat) + "&page=" + page;
+    console.log("[CLBPX-D1] getUrlList -> " + d1ListUrl);
+    return d1ListUrl;
 }
 
 function getUrlSearch(keyword, filtersJson) {
@@ -233,10 +138,26 @@ function getUrlSearch(keyword, filtersJson) {
     return BASEURL + "/?s=" + encodeURIComponent(keyword);
 }
 
-function getUrlDetail(slug) {
+function getUrlDetail(slug, datasend) {
     if (!slug) return "";
-    if (slug.indexOf("http") === 0) return slug;
-    return BASEURL + "/" + slug + "/";
+    
+    // ⭐ KỸ THUẬT 0ms: Nếu item đã có sẵn full chi tiết trong datasend (do D1 list trả về)
+    if (datasend && datasend.indexOf('"servers"') > -1) {
+        console.log("[CLBPX-D1] getUrlDetail -> Có sẵn datasend 0ms cho slug: " + slug);
+        return datasend;
+    }
+
+    // Nếu slug đã là URL hoàn chỉnh của clbphimxua
+    if (slug.indexOf("http") === 0 && slug.indexOf("drivepcthuan.workers.dev") === -1) {
+        return slug;
+    }
+
+    // Trả về API D1 Detail URL để App/Webview fetch JSON
+    return D1_API + "/api/detail?plugin=clbpx&slug=" + encodeURIComponent(slug);
+}
+
+function parseCategoriesResponse(apiResponseJson) {
+    return getPrimaryCategories();
 }
 
 function getUrlCategories() {
@@ -255,9 +176,65 @@ function getUrlYears() {
 // PARSERS
 // =============================================================================
 
-function parseListResponse(htmlResponse, url) {
-    console.log("list\n" + url);
+function checkAndSyncNewFilmsAsync() {
+    try {
+        console.log("[CLBPX-D1] Đang quét ngầm web gốc để cập nhật phim mới...");
+        var webRes = httpRequest(BASEURL + "/");
+        if (!webRes || !webRes.isSuccessful || !webRes.body) return;
 
+        var regex = /<article.*?id="post-(\d+)".*?<a href="([^"]+)".*?<img.*?src="([^"]+)".*?alt="([^"]+)"/gi;
+        var match;
+        var metaRecords = [];
+
+        while ((match = regex.exec(webRes.body)) !== null) {
+            var pId = parseInt(match[1], 10);
+            var link = match[2];
+            var thumb = match[3];
+            var title = match[4].replace(/&#8211;/g, '-').replace(/&#8217;/g, "'").trim();
+            var sMatch = link.match(/clbphimxua\.com\/([^\/]+)\/?/);
+            var slug = sMatch ? sMatch[1] : "";
+
+            if (slug) {
+                metaRecords.push({
+                    plugin: "clbpx",
+                    slug: slug,
+                    post_id: pId,
+                    title: title,
+                    poster: thumb,
+                    category: "home",
+                    has_detail: 0
+                });
+            }
+        }
+
+        if (metaRecords.length > 0) {
+            httpRequest(D1_API + "/api/sync", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-Sync-Key": "vax_auto_sync" },
+                body: JSON.stringify(metaRecords)
+            });
+            console.log("[CLBPX-D1] Đã sync ngầm " + metaRecords.length + " metadata phim mới lên D1!");
+        }
+    } catch(err) {
+        console.log("[CLBPX-D1] checkAndSyncNewFilmsAsync err: " + err);
+    }
+}
+
+function parseListResponse(htmlResponse, url) {
+    console.log("[CLBPX-D1] parseListResponse URL: " + url + " | length: " + (htmlResponse ? htmlResponse.length : 0));
+
+    // 1. Nếu response từ D1 API (đã là JSON chuẩn { items, pagination })
+    try {
+        var d1Data = JSON.parse(htmlResponse);
+        if (d1Data && d1Data.items && Array.isArray(d1Data.items) && d1Data.items.length > 0) {
+            console.log("[CLBPX-D1] Trả về " + d1Data.items.length + " phim trực tiếp từ D1 Master!");
+            return htmlResponse;
+        }
+    } catch(e) {
+        console.log("[CLBPX-D1] parseListResponse JSON.parse err: " + e);
+    }
+
+    // 2. Nếu fallback là HTML từ web gốc
     var items = [];
     var regex = /<article.*?id="post-[^>]+>[\s\S]*?<a href="([^"]+)".*?>\s*<figure[\s\S]*?<img.*?src="([^"]+)".*?alt="([^"]+)".*?>/gi;
     var match;
@@ -300,7 +277,7 @@ function parseListResponse(htmlResponse, url) {
         currentPage = parseInt(curPageMatch[1]);
         if (currentPage > totalPages) totalPages = currentPage;
     }
-    //console.log("list:\n" + JSON.stringify(items));
+
     return JSON.stringify({
         items: items,
         pagination: {
@@ -385,8 +362,14 @@ function BASE64ENCODE(str) {
     }
 }
 
-function parseMovieDetail(htmlResponse) {
+function parseMovieDetail(htmlResponse, url, datasend) {
     try {
+        // ⭐ 1. Nếu htmlResponse vốn là JSON MovieDetail từ D1 trả về (từ getUrlDetail 0ms)
+        if (htmlResponse && typeof htmlResponse === 'string' && htmlResponse.indexOf('{"id":') === 0 && htmlResponse.indexOf('"servers"') > -1) {
+            console.log("[CLBPX-D1] parseMovieDetail -> Sử dụng trực tiếp JSON từ D1 (0ms)!");
+            return htmlResponse;
+        }
+
         var id = "";
         var title = "";
         var posterUrl = "";
@@ -466,17 +449,13 @@ function parseMovieDetail(htmlResponse) {
             boldSections.push(bMatch[1]);
         }
 
-        // ✅ Đã sửa: Chuẩn hóa URL bằng Regex cực kỳ an toàn, không lo lỗi crash
+        // ✅ Chuẩn hóa URL bằng Regex cực kỳ an toàn
         function normalizeEpUrl(rawUrl) {
             if (!rawUrl) return "";
-            // Loại bỏ domain cũ nếu có (http://domain.com hoặc https://domain.com)
             var pathAndQuery = rawUrl.replace(/^https?:\/\/[^\/]+/i, '');
-
-            // Bắt buộc phải có dấu / ở đầu đường dẫn
             if (!pathAndQuery.startsWith('/')) {
                 pathAndQuery = '/' + pathAndQuery;
             }
-
             return "https://example.com" + pathAndQuery;
         }
 
@@ -514,7 +493,6 @@ function parseMovieDetail(htmlResponse) {
                     var vMatch = epUrl.match(/[?&]v=([a-zA-Z0-9_-]+)/);
                     var videoId = vMatch ? vMatch[1] : "";
                     if (videoId) saveEp.push(videoId);
-                    var link = BASEURL + "?"
                     sectionEpisodes.push({
                         id: epUrl,
                         name: epLabel,
@@ -554,7 +532,6 @@ function parseMovieDetail(htmlResponse) {
                 var vMatch = epUrl.match(/[?&]v=([a-zA-Z0-9_-]+)/);
                 var videoId = vMatch ? vMatch[1] : "";
                 if (videoId) fallbackSaveEp.push(videoId);
-                var link = "https://sc.k-20.xyz/stream/series/clbpx:lo2b09rr074-2q1390mfi:" + videoId + ".json"
                 episodes.push({
                     id: epUrl,
                     name: epLabel,
@@ -591,6 +568,30 @@ function parseMovieDetail(htmlResponse) {
             casts: "",
             datasend: ""
         });
+
+        // ⭐ 2. LAZY SYNC: Tự động gửi Full Detail này lên D1 lưu lại cho những người sau!
+        try {
+            var sMatch = (url || "").match(/clbphimxua\.com\/([^\/]+)\/?/);
+            var realSlug = sMatch ? sMatch[1] : id;
+            if (realSlug && servers.length > 0) {
+                console.log("[CLBPX-D1] Tự động sync Full Detail lên D1 cho slug: " + realSlug);
+                httpRequest(D1_API + "/api/sync", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "X-Sync-Key": "vax_auto_sync" },
+                    body: JSON.stringify([{
+                        plugin: "clbpx",
+                        slug: realSlug,
+                        title: title,
+                        poster: posterUrl,
+                        year: year,
+                        has_detail: 1,
+                        detail_json: $return
+                    }])
+                });
+            }
+        } catch(syncErr) {
+            console.log("[CLBPX-D1] Lazy sync err: " + syncErr);
+        }
 
         console.log("return parseMovie\n" + $return);
         return $return;
