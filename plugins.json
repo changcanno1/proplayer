@@ -142,13 +142,6 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
-      "id": "xem20",
-      "name": "Xem20 [MOVIE]",
-      "version": "1.2.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Xem20_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/xem20.png"
-    },
-    {
       "id": "film4k",
       "name": "Film4K",
       "version": "2.1.0",
