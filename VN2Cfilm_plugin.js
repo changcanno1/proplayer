@@ -1,5 +1,5 @@
-var BASEURL = "https://www.vn2c.my";
-var BASEAPI = "https://www.vn2c.my";
+var BASEURL = "https://www.vn2d.my/";
+var BASEAPI = "https://www.vn2d.my/";
 var BASELINK = BASEURL;
 var popup_html = "";
 // https://raw.githubusercontent.com/alokillgtv03/vaxplugins/main/img/phimchill.ico
