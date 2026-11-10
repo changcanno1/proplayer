@@ -15,12 +15,12 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VsmovHT_plugin.js",
       "iconUrl": "https://vsmov.com/VSmov.png"
     },
-    {
-      "id": "nguoncnew",
-      "name": "Phim NguonC VIP",
-      "version": "2.2.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
+     {
+      "id": "danet",
+      "name": "DANET [MOVIE]",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/danet_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/danet.png"
     },
      {
       "id": "phimhdcs",
@@ -30,11 +30,18 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
-      "id": "rophim",
-      "name": "RP Mới [MOVIE]",
-      "version": "2.4.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+      "id": "vicdn",
+      "name": "Nguồn Vicdn",
+      "version": "2.6",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/vicdn.png"
+   },
+   {
+      "id": "nguoncnew",
+      "name": "Phim NguonC VIP",
+      "version": "2.2.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
     {
       "id": "danet",
@@ -42,6 +49,13 @@
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/danet_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/danet.png"
+    },
+     {
+      "id": "rophim",
+      "name": "RP Mới [MOVIE]",
+      "version": "2.4.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
     {
       "id": "vn2c",
@@ -58,18 +72,11 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
     },
     {
-      "id": "bluphim",
-      "name": "Blu Phim [MOVIE]",
-      "version": "1.0.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/BLUFilm_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/bluphim.png"
-    },
-    {
-      "id": "vicdn",
-      "name": "Nguồn Vicdn",
-      "version": "2.6",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/VicDN_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/vicdn.png"
+      "id": "film2",
+      "name": "Film 2 [MOVIE]",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/film2_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film2.png"
     },
     {
       "id": "saigonphim",
