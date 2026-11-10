@@ -43,9 +43,7 @@ function getHomeSections() {
     return JSON.stringify([
         { "slug": "/", "title": "Đề Xuất & Mới Cập Nhật", "type": "Grid" },
         { "slug": "/phim-ai", "title": "Phim AI", "type": "Grid" },
-        { "slug": "/xuong-phim", "title": "Phim Người Đóng", "type": "Grid" },
-        { "slug": "/phim-ngan-trung-quoc", "title": "Phim Ngắn Trung Quốc", "type": "Grid" }
-    ]);
+       ]);
 }
 
 function getPrimaryCategories() {
