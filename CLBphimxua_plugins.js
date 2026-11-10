@@ -22,12 +22,6 @@ function getManifest() {
         "playerType": "exoplayer"
     });
 }
-
-
-
-
-
-
 function getHomeSections() {
     return JSON.stringify([{
         slug: 'home',
