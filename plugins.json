@@ -192,13 +192,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/netshort.png"
     },
     {
-      "id": "phimngan",
-      "name": "Phim Ngắn [SHORT]",
-      "version": "2.8.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/phimngannet2_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv02.workers.dev/img/phimngan.png"
-    },
-    {
       "id": "yanhh3d",
       "name": "Yanhh3d [ANIME]",
       "version": "3.4.0",
