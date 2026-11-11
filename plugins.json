@@ -39,7 +39,7 @@
    {
       "id": "nguoncnew",
       "name": "Phim NguonC VIP",
-      "version": "2.2.0",
+      "version": "3.2.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
