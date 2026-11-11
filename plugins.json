@@ -43,13 +43,6 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
-    {
-      "id": "danet",
-      "name": "DANET [MOVIE]",
-      "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/danet_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/danet.png"
-    },
      {
       "id": "rophim",
       "name": "RP Mới [MOVIE]",
@@ -72,6 +65,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
     },
     {
+      "id": "film1",
+      "name": "Film 1",
+      "version": "1.0.4",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film1_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
+    {
       "id": "film2",
       "name": "Film 2 [MOVIE]",
       "version": "1.0.0",
@@ -79,13 +79,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film2.png"
     },
     {
-      "id": "saigonphim",
-      "name": "[MOVIE] Sài Gòn Phim",
-      "version": "1.5.2",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/saigonfilm_plugin.js",
-      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAvC1dIB0emUqIfQbIFdMc0K-utn3P_x5KpqZs0LA6GQ&s=10"
+      "id": "film4k",
+      "name": "Film4K",
+      "version": "2.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/film4K_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/film4k.png"
     },
-   {
+    {
       "id": "phimbom",
       "name": "Phim Bom [MOVIE]",
       "version": "2.3.0",
@@ -107,24 +107,17 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
     },
     {
+      "id": "saigonphim",
+      "name": "[MOVIE] Sài Gòn Phim",
+      "version": "1.5.2",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/saigonfilm_plugin.js",
+      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAvC1dIB0emUqIfQbIFdMc0K-utn3P_x5KpqZs0LA6GQ&s=10"
+    },
+    {
       "id": "cityphim",
       "name": "City Phim [MOVIE]",
       "version": "1.0.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup1_plugin.js",
-      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
-    },
-    {
-      "id": "film1",
-      "name": "Film 1",
-      "version": "1.0.4",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film1_plugin.js",
-      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
-    },
-   {
-      "id": "novahd",
-      "name": "Nova-Pick VSub 2",
-      "version": "2.6.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup3_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
@@ -148,12 +141,20 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/CLBphimxua_plugins.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/clbpxVIP.png"
     },
+     {
+      "id": "novahd",
+      "name": "Nova-Pick VSub 2",
+      "version": "2.6.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup3_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
     {
-      "id": "film4k",
-      "name": "Film4K",
-      "version": "2.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/film4K_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/film4k.png"
+      "id": "shortflix",
+      "name": "shortflix",
+      "version": "1.4.2",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortflixupda_plugin.js",
+      "iconUrl": "https://m.media-amazon.com/images/I/61fJ78I23IL.png",
+      "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
     },
     {
       "id": "phimngan_net",
@@ -168,14 +169,6 @@
       "version": "1.0.2",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/pinedrama_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/pinedrama.jpg"
-    },
-    {
-      "id": "shortflix",
-      "name": "shortflix",
-      "version": "1.4.2",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Shortflixupda_plugin.js",
-      "iconUrl": "https://m.media-amazon.com/images/I/61fJ78I23IL.png",
-      "info": "Phim ngắn hay, đăng nhập ggacount phụ để xem."
     },
     {
       "id": "yini",
