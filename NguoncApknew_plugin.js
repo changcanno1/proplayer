@@ -1,17 +1,76 @@
 // =============================================================================
 // CONFIGURATION & METADATA
 // =============================================================================
+/* =============================================================================
+   NGUONC DIRECT SCRAPE — GHI CHÚ KỸ THUẬT (cập nhật 2026-10)
+
+   LUỒNG ĐANG DÙNG (không cần WebView, không cần hook crypto):
+   1) POST <embed.php?hash=...>
+      body: {
+        action:"bootstrap",
+        referrer:"https://embed.streamc.xyz/",   // referer tin cậy => turnstileEnabled=false
+        frame_origins:["https://embed.streamc.xyz"],
+        request_grant:true,
+        playlist_format:"hls",                   // "hls" trả playlist RÕ, không mã hóa
+        bootstrap_format:"json",                 // tránh envelope AES-GCM của bootstrap
+        pretty_url:true, path_chunks:true
+      }
+      -> { bootstrap, video, turnstileEnabled, api, ... }
+
+   2) POST cùng URL
+      body: {
+        action:"issue", bootstrap:<token>, turnstile_response:"",
+        playlist_format:"hls", pretty_url:true, path_chunks:true,
+        frame_origins:["https://embed.streamc.xyz"]
+      }
+      -> { playlist:"https://embedN.streamc.xyz/<token>" }
+
+   3) GET playlist (kèm Referer/Origin = origin của embed)
+      -> #EXTM3U rõ; segment thường là .png nhưng thực chất là MPEG-TS.
+
+   4) Trả về:
+      - m3u8Content: playlist đã chuyển URL tương đối thành tuyệt đối (cho ExoPlayer/VAAPP).
+      - url: blob URL của chính playlist nếu môi trường có Blob/URL.createObjectURL
+             (cho WebView/web player dùng HLS.js). Native QuickJS không có Blob nên bỏ qua.
+
+   CÁC ĐIỂM CẦN SỬA NHANH KHI WEB ĐỔI:
+   - Lỗi 403 {"error":"verification_required"}:
+       Server đang bật Turnstile. Thử đổi referrer trong refs[] (embed.streamc.xyz,
+       phim.nguonc.com) hoặc bổ sung origin mới vào frame_origins.
+   - Playlist có #ENC-AESGCM:
+       Server ép định dạng aesgcm-v2. Khi đó:
+         key = HMAC-SHA256("stream-derive-v1", videoHash)
+         iv  = giá trị sau "#ENC-AESGCM;iv="
+         data= các dòng sau "#EXT-X-B65" (base64, 16 byte cuối là GCM tag)
+       Giải mã AES-GCM rồi mới trả m3u8.
+   - Bootstrap trả {"format":"aesgcm-v1","iv","data"}:
+       Đang bị ép envelope. Đổi bootstrap_format về "json"; nếu vẫn lỗi thì giải mã
+       AES-GCM với key = SHA256("stream-bootstrap-v1\n" + apiUrl), AAD = chuỗi đó.
+   - Segment trả 403:
+       Referer phải đúng origin của embed (vd: https://embed15.streamc.xyz/),
+       không dùng origin của CDN hay phim.nguonc.com.
+   - Playlist 404 / hết hạn:
+       Token issue có TTL ngắn; gọi lại bootstrap + issue, không cache playlist quá lâu.
+   - Đổi domain player:
+       Chỉ cần thay NGUONC_REF và danh sách refs[]; logic còn lại giữ nguyên.
+   - WebView vẫn mở iframe dù plugin đã direct:
+       Hook cũ (hookplugin.js bản cũ) đang ghi đè parseDetailResponse.
+       Plugin tự khoá parseDetailResponse ở cuối file để hook không ghi đè được,
+       đồng thời tự xoá __HTTP_CACHE__ và tự fallback embed khi direct lỗi.
+============================================================================= */
 var popuphtml = "";
 function getManifest() {
     return JSON.stringify({
         "id": "nguoncnew",
         "name": "Phim NguonC VIP",
-        "version": "2.2",
+        "version": "3.2",
         "baseUrl": "https://phim.nguonc.com",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/nguoncnew.png",
         "isEnabled": true,
         "type": "MOVIE",
-        "playerType": "embedtoexoplay"
+        "popup_html": popuphtml,
+        "author": "Alokillgtv",
+        "playerType": "exoplayer"
     });
 }
 
@@ -206,10 +265,11 @@ function parseMovieDetail(apiResponseJson) {
     try {
         var response = JSON.parse(apiResponseJson);
         // Normalize movie object (supports standard and potential variants)
-        var movie = response.movie || response.data?.item || response.data || {};
+        var movie = response.movie || (response.data && response.data.item) || response.data || {};
 
         // Normalize episodes
-        var rawEpisodes = movie.episodes || response.episodes || response.data?.item?.episodes || [];
+        var rawEpisodes = movie.episodes || response.episodes
+            || (response.data && response.data.item && response.data.item.episodes) || [];
 
         var servers = [];
         if (Array.isArray(rawEpisodes)) {
@@ -287,239 +347,190 @@ function parseMovieDetail(apiResponseJson) {
 }
 
 
-function parseDetailResponse(html, url) {
-    try {
-        var customjs = runJS();
-        return JSON.stringify({
-            "url": url,
-            "headers": {
-                "Referer": "https://embed.streamc.xyz/",
-                "Origin": "https://embed.streamc.xyz/",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-                // Đánh lừa thuật toán Client Hints của tường lửa
-                "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-                "Sec-Ch-Ua-Mobile": "?1",
-                "Sec-Ch-Ua-Platform": '"Android"',
-                
-                // Khai báo kiểu dữ liệu được chấp nhận giống như trình duyệt thật
-                "Accept": "*/*",
-                "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
-                "X-Requested-With": "com.android.chrome",
-                "Block-Ads": false,
-                "Block-Css": "",
-                "Custom-Js": customjs.trim()
-            },
-            "subtitles": []
-        });
-        
-    } catch (e) {
-      return JSON.stringify({ 
-        url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", 
-        mimeType: "video/mp4", 
-        isEmbed: false, headers: {}, subtitles: [] 
-      });
-    }
+var NGUONC_UA = "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
+var NGUONC_REF = "https://embed.streamc.xyz/";
+
+function nguoncOrigin(url) {
+    var m = /^(https?:\/\/[^\/]+)/i.exec(String(url || ""));
+    return m ? m[1] : "";
 }
 
-
-
-function runJS(referer) {
-    return `
-function bridgeLog(msg, check) {
-    try {
-      if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
-        window.SnifferBridge.log(msg);
-        if (check === true && typeof window.SnifferBridge.toast === 'function') {
-          window.SnifferBridge.toast(msg, 1000);
-        }
-      } else if (typeof console !== 'undefined' && console.log) {
-        console.log(msg);
-      }
-    } catch(e) {}
+function nguoncPostJson(api, payload, referer) {
+    return httpRequest(api, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "*/*",
+            "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+            "User-Agent": NGUONC_UA,
+            "Referer": referer || NGUONC_REF,
+            "Origin": nguoncOrigin(api)
+        },
+        body: JSON.stringify(payload)
+    });
 }
 
-(function injectCSS() {
-  try {
-    const cssStyle = "body,html,*{display:none!important;background:black!important;opacity:0!important;z-index:-999999}";
-    const styleElement = document.createElement('style');
-    styleElement.type = 'text/css';
-    styleElement.setAttribute('data-injected-by', 'custom-script');
+function nguoncBootstrap(api, referer) {
+    var frameOrigin = String(referer || NGUONC_REF).replace(/\/+$/, "");
+    var res = nguoncPostJson(api, {
+        action: "bootstrap",
+        referrer: referer || NGUONC_REF,
+        frame_origins: [frameOrigin],
+        request_grant: true,
+        playlist_format: "hls",
+        pretty_url: true,
+        path_chunks: true,
+        bootstrap_format: "json"
+    }, referer);
+    if (!res || res.status !== 200) throw new Error("bootstrap HTTP " + (res ? res.status : "?"));
+    return JSON.parse(res.body);
+}
 
-    if (styleElement.styleSheet) {
-      styleElement.styleSheet.cssText = cssStyle;
-    } else {
-      styleElement.appendChild(document.createTextNode(cssStyle));
+function nguoncAbsoluteUrl(base, rel) {
+    rel = String(rel || "").trim();
+    if (!rel) return rel;
+    if (/^(https?:|data:|blob:)/i.test(rel)) return rel;
+    if (rel.indexOf("//") === 0) {
+        var pm = /^(https?:)/i.exec(base);
+        return pm ? pm[1] + rel : rel;
     }
+    if (rel.charAt(0) === "/") return nguoncOrigin(base) + rel;
+    if (rel.charAt(0) === "#") return base + rel;
+    if (rel.charAt(0) === "?") return base.split("?")[0] + rel;
+    var i = base.lastIndexOf("/");
+    return (i > base.indexOf("://") + 2 ? base.substring(0, i + 1) : base + "/") + rel;
+}
 
-    const targetNode = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
-
-    if (targetNode) {
-      targetNode.appendChild(styleElement);
-      bridgeLog("Chèn css ẩn trang thành công.");
-    } else {
-      document.addEventListener('DOMContentLoaded', function () {
-        (document.head || document.documentElement).appendChild(styleElement);
-      });
-    }
-  } catch (error) {
-    bridgeLog('Không thể chèn CSS:', error);
-  }
-})();
-
-(function initCryptoHookSniffer() {
-  if (window.__CRYPTO_SNIFFER_INITIALIZED__) return;
-  window.__CRYPTO_SNIFFER_INITIALIZED__ = 1;
-
-  var hasDispatchedAny = 0;
-  var isFinished = 0;
-  var timeoutTimer = null;
-
-  bridgeLog("Đang tiến hành giải mã, xin chờ....", true);
-
-  // 1. Timeout 20 giây bảo vệ
-  timeoutTimer = setTimeout(function() {
-    if (hasDispatchedAny === 0 && isFinished === 0) {
-      isFinished = 1;
-      bridgeLog("❌ [TIMEOUT] Đã quá 20 giây nhưng không bắt được dữ liệu giải mã!", false);
-      bridgeLog("Không tìm thấy link video (Hết thời gian 20s).", true);
-      
-      if (window.SnifferBridge && typeof window.SnifferBridge.play === 'function') {
-        window.SnifferBridge.play("https://google.com", "");
-      }
-    }
-  }, 20000);
-
-  function stopTimeout() {
-    if (timeoutTimer) {
-      clearTimeout(timeoutTimer);
-      timeoutTimer = null;
-    }
-  }
-
-  // 2. Kiểm tra M3U8 hợp lệ
-  function isValidM3U8(content) {
-    if (typeof content !== 'string') return false;
-    var trimmed = content.trim();
-    return trimmed.indexOf('#EXTM3U') === 0 && 
-          (trimmed.indexOf('#EXTINF') !== -1 || trimmed.indexOf('#EXT-X-STREAM-INF') !== -1);
-  }
-
-  // 3. Xử lý URL segment.
-  //    Mặc định dùng VAX LOCAL: phát blob M3U8 tại 127.0.0.1, segment trỏ thẳng CDN
-  //    và ExoPlayer tự đính kèm Referer (truyền qua playM3u8Content) -> không cần worker.
-  //    Đổi USE_WORKER = true nếu muốn đi qua Cloudflare worker proxy.
-  var STREAM_WORKER = "https://streamfile.alokillgtv.workers.dev/proxy";
-  var USE_WORKER = false;
-
-  function wrapWithWorker(u) {
-    var abs = u;
-    try { abs = new URL(u, location.href).href; } catch (e) { abs = u; }
-    if (!USE_WORKER) return abs;
-    return STREAM_WORKER + "?referer=" + encodeURIComponent(location.origin + "/") + "&url=" + encodeURIComponent(abs);
-  }
-
-  function logFirstFiles(m3u8, n) {
-    var ls = m3u8.split("\\n");
-    var segs = [];
-    for (var i = 0; i < ls.length && segs.length < n; i++) {
-      var s = ls[i].trim();
-      if (s === "" || s.charAt(0) === "#") continue;
-      segs.push(s);
-    }
-    return segs.join("\\n");
-  }
-
-  function rewriteM3U8ToWorker(content) {
-    var lines = content.split(/\\r?\\n/);
-    var out = [];
-    var segCount = 0;
+function nguoncAbsolutizePlaylist(m3u8, base) {
+    var lines = String(m3u8 || "").split(/\r?\n/);
     for (var i = 0; i < lines.length; i++) {
-      var t = lines[i].trim();
-      if (t === "") continue;
-      if (t.charAt(0) === "#") {
-        out.push(lines[i].replace(/URI="([^"]+)"/g, function (m, u) { return 'URI="' + wrapWithWorker(u) + '"'; }));
-        continue;
-      }
-      segCount++;
-      // CDN chặn 403 segment đầu tiên (streamaaa0000.png) -> bỏ để player bắt đầu từ segment kế tiếp
-      if (segCount === 1) {
-        if (out.length && out[out.length - 1].indexOf("#EXTINF") === 0) out.pop();
-        bridgeLog('⏭️ Bỏ segment đầu (CDN 403) để tránh lỗi phát.');
-        continue;
-      }
-      out.push(wrapWithWorker(t));
-    }
-    return out.join("\\n");
-  }
-
-  // 3. Chuyển M3U8 về App
-  function dispatchM3u8ToApp(m3u8Content) {
-    if (!m3u8Content || hasDispatchedAny === 1) return;
-    hasDispatchedAny = 1;
-    isFinished = 1;
-    stopTimeout();
-
-    bridgeLog('🎯 [CRYPTO-HOOK] Giải mã thành công M3U8! Đang gửi lên App...');
-    bridgeLog("🎯 Bắt link thành công! Đang xử lý video...", true);
-
-    var finalM3U8 = m3u8Content;
-    try { finalM3U8 = rewriteM3U8ToWorker(m3u8Content); }
-    catch (e) { bridgeLog('⚠️ rewrite m3u8 lỗi: ' + e.message); finalM3U8 = m3u8Content; }
-
-    try {
-      if (window.SnifferBridge && typeof window.SnifferBridge.log === 'function') {
-        window.SnifferBridge.log("M3U8 (5 file đầu)\\n" + logFirstFiles(finalM3U8, 5));
-      }
-      bridgeLog('🎯 Đang bắn m3u8 cho native');
-      SnifferBridge.playM3u8Content(finalM3U8, location.href, JSON.stringify({
-        "Referer": location.origin + "/",
-        "Origin": location.origin,
-        "User-Agent": navigator.userAgent
-      }));
-    } catch(e) {
-      bridgeLog('❌ [DISPATCH ERROR]: ' + e.message);
-    }
-  }
-
-  // 4. HOOK TRỰC TIẾP VÀO WEB CRYPTO API (crypto.subtle.decrypt)
-  try {
-    if (window.crypto && window.crypto.subtle && window.crypto.subtle.decrypt) {
-      const originalDecrypt = window.crypto.subtle.decrypt;
-
-      window.crypto.subtle.decrypt = async function() {
-        // Thực thi hàm giải mã gốc của trình duyệt
-        const decryptedBuffer = await originalDecrypt.apply(this, arguments);
-
-        if (isFinished === 0 && decryptedBuffer) {
-          try {
-            // Chuyển kết quả vừa giải mã từ ArrayBuffer sang chuỗi Text
-            const textDecoder = new TextDecoder("utf-8");
-            const decodedText = textDecoder.decode(decryptedBuffer);
-
-            // Kiểm tra xem dữ liệu sau khi giải mã có phải là file M3U8 không
-            if (isValidM3U8(decodedText)) {
-              dispatchM3u8ToApp(decodedText);
-            }
-          } catch (err) {
-            // Bỏ qua các dữ liệu giải mã không phải text (ví dụ giải mã mảng byte hình ảnh/audio)
-          }
+        var t = lines[i].trim();
+        if (!t) continue;
+        if (t.charAt(0) !== "#") {
+            lines[i] = nguoncAbsoluteUrl(base, t);
+            continue;
         }
-
-        return decryptedBuffer;
-      };
-
-      bridgeLog('🚀 [INIT] Hook Crypto.subtle.decrypt thành công!');
-    } else {
-      bridgeLog('❌ Web Crypto API không khả dụng trên WebView này!');
+        lines[i] = lines[i].replace(/URI="([^"]+)"/g, function (m, u) {
+            return 'URI="' + nguoncAbsoluteUrl(base, u) + '"';
+        });
     }
-  } catch (e) {
-    bridgeLog('❌ [HOOK ERROR]: ' + e.message);
-  }
-
-})();
-  `;
+    return lines.join("\n");
 }
 
+function nguoncResolve(embedUrl) {
+    var api = String(embedUrl || "").split("|")[0];
+    if (!/^https?:\/\//i.test(api)) throw new Error("URL embed không hợp lệ");
+
+    var refs = [NGUONC_REF, "https://phim.nguonc.com/"];
+    var boot = null;
+    var lastError = null;
+    for (var i = 0; i < refs.length; i++) {
+        try {
+            var candidate = nguoncBootstrap(api, refs[i]);
+            if (!candidate.turnstileEnabled && candidate.bootstrap) {
+                boot = candidate;
+                break;
+            }
+            lastError = new Error("Turnstile bật với referer " + refs[i]);
+        } catch (e) {
+            lastError = e;
+        }
+    }
+    if (!boot) throw (lastError || new Error("Không lấy được bootstrap"));
+
+    var requestApi = boot.api || api;
+    var frameOrigin = NGUONC_REF.replace(/\/+$/, "");
+    var issueRes = nguoncPostJson(requestApi, {
+        action: "issue",
+        bootstrap: boot.bootstrap,
+        turnstile_response: "",
+        playlist_format: "hls",
+        pretty_url: true,
+        path_chunks: true,
+        frame_origins: [frameOrigin]
+    }, NGUONC_REF);
+    if (!issueRes || issueRes.status !== 200) throw new Error("issue HTTP " + (issueRes ? issueRes.status : "?"));
+    var issue = JSON.parse(issueRes.body);
+    if (!issue.playlist) throw new Error("issue không trả playlist");
+
+    var apiOrigin = nguoncOrigin(requestApi);
+    var playlistOrigin = nguoncOrigin(issue.playlist) || apiOrigin;
+    var plRes = httpRequest(issue.playlist, {
+        method: "GET",
+        headers: {
+            "Accept": "*/*",
+            "User-Agent": NGUONC_UA,
+            "Referer": NGUONC_REF,
+            "Origin": apiOrigin
+        }
+    });
+    if (!plRes || plRes.status !== 200) throw new Error("playlist HTTP " + (plRes ? plRes.status : "?"));
+    var m3u8 = String(plRes.body || "").replace(/^\uFEFF/, "").trim();
+    if (m3u8.indexOf("#EXTM3U") !== 0) throw new Error("Playlist không hợp lệ");
+    m3u8 = nguoncAbsolutizePlaylist(m3u8, issue.playlist);
+
+    var result = {
+        m3u8Content: m3u8,
+        baseUrl: issue.playlist,
+        url: issue.playlist,
+        mimeType: "application/x-mpegURL",
+        isEmbed: false,
+        headers: {
+            "User-Agent": NGUONC_UA,
+            "Referer": playlistOrigin + "/",
+            "Origin": playlistOrigin,
+            "Accept": "*/*"
+        },
+        subtitles: []
+    };
+
+    try {
+        if (typeof Blob !== "undefined" && typeof URL !== "undefined" && URL.createObjectURL) {
+            result.url = URL.createObjectURL(new Blob([m3u8], { type: "application/vnd.apple.mpegurl" })) + "#.m3u8";
+        }
+    } catch (e) {
+        console.log("NguonC blob URL error: " + (e && e.message ? e.message : e));
+    }
+
+    return result;
+}
+
+function nguoncEmbedResult(url) {
+    var api = String(url || "").split("|")[0];
+    return {
+        url: api,
+        mimeType: "text/html",
+        isEmbed: true,
+        headers: {
+            "Referer": NGUONC_REF,
+            "Origin": NGUONC_REF,
+            "User-Agent": NGUONC_UA,
+            "Accept": "*/*",
+            "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7"
+        },
+        subtitles: []
+    };
+}
+
+function parseDetailResponse(html, url) {
+    var api = String(url || html || "").split("|")[0];
+    try {
+        /* WebView: httpRequest() cache theo URL, prefetch có thể đã lưu HTML embed.
+           Xoá cache để POST bootstrap/issue chạy thật. */
+        try {
+            if (typeof window !== "undefined" && window.__HTTP_CACHE__ && api) {
+                delete window.__HTTP_CACHE__[api];
+            }
+        } catch (cacheErr) {}
+
+        var result = nguoncResolve(api);
+        console.log("NguonC direct: " + nguoncOrigin(result.baseUrl) + " (" + result.m3u8Content.split(/\r?\n/).length + " dòng, url=" + (result.url.indexOf("blob:") === 0 ? "blob" : "playlist") + ")");
+        return JSON.stringify(result);
+    } catch (e) {
+        console.log("NguonC direct error: " + (e && e.message ? e.message : e) + " → fallback embed");
+        return JSON.stringify(nguoncEmbedResult(api));
+    }
+}
 
 
 
@@ -590,3 +601,19 @@ function getImageUrl(path) {
     // Base image URL for NguonC
     return "https://img.phimapi.com/" + path;
 }
+
+/* WebView: chặn hook cũ ghi đè parseDetailResponse và ép iframe.
+   Plugin tự lo cache + fallback embed nên không cần hook nguoncnew nữa. */
+(function () {
+    try {
+        if (typeof window === "undefined" || typeof document === "undefined" || typeof window.parseDetailResponse !== "function") return;
+        Object.defineProperty(window, "parseDetailResponse", {
+            value: window.parseDetailResponse,
+            configurable: false,
+            writable: false
+        });
+        console.log("[NGUONC] parseDetailResponse locked (direct)");
+    } catch (e) {
+        console.log("[NGUONC] lock parseDetailResponse fail: " + (e && e.message ? e.message : e));
+    }
+})();
