@@ -5,7 +5,7 @@
     "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/chuaonline.png",
     "tag": "Game Tiếng Việt",
     "category": "Game Tiếng Việt"
-  },
+},
 {
     "name": "Cầu duyên Online",
     "url": "https://cauduyen.gymmap.vn",
@@ -10591,9 +10591,9 @@
     "category": "Thể Thao"
   },
   {
-    "name": "Poki Game",
-    "url": "https://poki.com/en/mobile",
-    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKN1bN8C8c4KJvPvHNxEJLGwxW0C0e9J_xiRrrSX275A&s=10",
+    "name": "Board Game",
+    "url": "https://boardgamevui.com/",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9iHZr_04-jtAyv91SonvTHaxaZsoq7ZSZOHjrx-n8gw&s=10",
     "tag": "Chơi Online",
     "category": "Chơi Online"
   },
@@ -10601,6 +10601,13 @@
     "name": "Game hay",
     "url": "https://dautri.com/",
     "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQuB7ifsesHQfA86X4HzqrVbUF1xn0D1jmPJ1zmAtkr-A&s=10",
+    "tag": "Chơi Online",
+    "category": "Chơi Online"
+  },
+  {
+    "name": "Poki Game",
+    "url": "https://poki.com/en/mobile",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKN1bN8C8c4KJvPvHNxEJLGwxW0C0e9J_xiRrrSX275A&s=10",
     "tag": "Chơi Online",
     "category": "Chơi Online"
   },
