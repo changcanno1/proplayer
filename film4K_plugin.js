@@ -608,4 +608,4 @@ function buildMenu(menuStr, type) {
         menulist.push(menuItem);
     }
     return menulist;
-}
+} 
