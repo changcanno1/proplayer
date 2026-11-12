@@ -10606,7 +10606,7 @@
   },
 {
     "name": "Giải trí Game",
-    "url": "https://mobile.synapp.vn/",
+    "url": "https://mobile.synapp.vn/?fbclid=IwdGRjcAViiJJleHRuA2FlbQIxMQBwZG9mBWZkaWQWUSG397xXyrjXHUv53LwtiVpg5oOwcnNydGMGYXBwX2lkCjY2Mjg1NjgzNzkAAR_B_pHYl-Lkx13d0GkJE3d6XPUo9Bmei1uvoxvoa_8bHxGBjv11HZYhmZYlCQ_aem_P9FU-wMNwu-2uKdDhQfnTQ",
     "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSX8Dh3o1hp5_7XU5vak0KVFXqnE0FGeVyEQdQaMNpTmQ&s",
     "tag": "Chơi Online",
     "category": "Chơi Online"
