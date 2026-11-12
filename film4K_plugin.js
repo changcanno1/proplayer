@@ -16,8 +16,8 @@ function _f4kWarn() {
     try { console.warn.apply(console, ['[film4k]'].concat([].slice.call(arguments))); } catch(e){}
 }
 
-var SITE = "https://film4k.net";
-var BASEURL = "https://film4k.net";
+var SITE = "https://film4k.pl";
+var BASEURL = "https://film4k.pl";
 var API = SITE + "/api";
 var UA = "Mozilla/5.0 (Linux; Android 13; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
 
