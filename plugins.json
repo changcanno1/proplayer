@@ -43,13 +43,6 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
     },
-     {
-      "id": "rophim",
-      "name": "RP Mới [MOVIE]",
-      "version": "2.4.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
-    },
     {
       "id": "vn2c",
       "name": "PhimVn2C",
@@ -91,13 +84,6 @@
       "version": "1.1.2",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film4_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film4.png"
-    },
-    {
-      "id": "film4k",
-      "name": "Film4K",
-      "version": "2.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/film4K_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/film4k.png"
     },
     {
       "id": "phimbom",
@@ -149,11 +135,25 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
+      "id": "film4k",
+      "name": "Film4K",
+      "version": "2.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/film4K_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/film4k.png"
+    },
+    {
       "id": "clbpxVIP",
       "name": "CLB Phim Xưa VIP",
       "version": "2.3.1",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/CLBphimxua_plugins.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/clbpxVIP.png"
+    },
+    {
+      "id": "rophim",
+      "name": "RP Mới [MOVIE]",
+      "version": "2.4.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
     },
      {
       "id": "novahd",
