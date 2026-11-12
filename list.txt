@@ -10604,6 +10604,13 @@
     "tag": "Chơi Online",
     "category": "Chơi Online"
   },
+{
+    "name": "Giải trí Game",
+    "url": "https://mobile.synapp.vn/",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSX8Dh3o1hp5_7XU5vak0KVFXqnE0FGeVyEQdQaMNpTmQ&s",
+    "tag": "Chơi Online",
+    "category": "Chơi Online"
+  },
   {
     "name": "Poki Game",
     "url": "https://poki.com/en/mobile",
