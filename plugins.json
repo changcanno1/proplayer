@@ -79,6 +79,20 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film2.png"
     },
     {
+      "id": "film3",
+      "name": "Film 3",
+      "version": "1.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film3_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film3.png"
+    },
+    {
+      "id": "film4",
+      "name": "Film 4 [MOVIE]",
+      "version": "1.1.2",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film4_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film4.png"
+    },
+    {
       "id": "film4k",
       "name": "Film4K",
       "version": "2.1.0",
