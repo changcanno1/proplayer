@@ -128,6 +128,13 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
+      "id": "dexter",
+      "name": "Dexter",
+      "version": "1.3.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/dexter_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/dexter.png"
+    },
+    {
       "id": "film4k",
       "name": "Film4K",
       "version": "2.1.0",
