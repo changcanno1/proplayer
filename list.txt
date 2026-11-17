@@ -7,6 +7,13 @@
     "category": "Game Tiếng Việt"
 },
 {
+    "name": "Ngắm Sao Online",
+    "url": "https://vnstella.io.vn",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8fDHwQwt3BTwXxeQHTbuPyadVfnSnA4jM7pmo1Xh1vQ&s=10",
+    "tag": "Game Tiếng Việt",
+    "category": "Game Tiếng Việt"
+},
+{
     "name": "Cầu duyên Online",
     "url": "https://cauduyen.gymmap.vn",
     "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwtXQ4MkANpDJ2o3deoVb5Yn7P32ON40vZyhGbgh4C-g&s=10",
