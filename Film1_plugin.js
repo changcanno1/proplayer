@@ -16,12 +16,30 @@ var XIAO_CONFIG = {
     EMAIL: "drivepcthuan@gmail.com",
     PASSWORD: "Vaxplayer",
     LOGIN_TOKEN: "bypass",
+    /* Cập nhật thủ công khi phiên đăng nhập hết hạn. Không ghi cookie vào log. */
+    COOKIE: "PHPSESSID=ksvq1qofua51fcoe525amsbkem; _ga=GA1.1.353079367.1794765783; g_state={\"i_l\":0,\"i_ll\":1794765812574,\"i_e\":{\"enable_itp_optimization\":24},\"i_et\":1794765812574}; phimhay_auth=1846%3A78e30aa5bb2c4faf0b09d9cec61f9b82675bb29c48686dc65c1d05a594c735bc; _zGkKfTdV1x=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxODQ2LCJ1c2VybmFtZSI6InRodV9uX2xfbmdfaHV5Iiwicm9sZSI6InVzZXIiLCJpYXQiOjE3OTQ3NjU4MzAsImV4cCI6MTc5NzM1NzgzMH0.edWNswJMbFl-QfvscaVXHDHC0NScOLivF3wFVztkCjU; _TyWUq0AhxV=eyJ1c2VyX2lkIjoxODQ2LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc5NDc2NTgzMCwiZXhwIjoxNzk3MzU3ODMwfQ.3RNOvFwYbuiNZkw0FkM_1pi5VOm-j6nnmUmtN9DTj7M; a_popup_lastView=1794767654801; _ga_SD3VEJNRF5=GS2.1.s1794765782$o1$g1$t1794767655$j57$l0$h0",
     USER_AGENT: "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/127 Safari/537.36"
 };
 
 var BASEURL = XIAO_CONFIG.BASE_URL;
 var XIAO_ACCESS_TOKEN = "";
 var XIAO_NATIVE_CACHE = {};
+var XIAO_EPISODE_NEXT = {};
+
+/* _zGkKfTdV1x là JWT access token được WebView gửi lại dưới dạng Bearer. */
+function xiaoTokenFromCookie() {
+    var cookie = String(XIAO_CONFIG.COOKIE || "");
+    var match = cookie.match(/(?:^|;\s*)_zGkKfTdV1x=([^;]+)/i);
+    return match ? decodeURIComponent(match[1]) : "";
+}
+
+function xiaoEnsureToken() {
+    if (XIAO_ACCESS_TOKEN) return XIAO_ACCESS_TOKEN;
+    XIAO_ACCESS_TOKEN = xiaoTokenFromCookie();
+    if (XIAO_ACCESS_TOKEN) xiaoLog("Đã lấy access token từ cookie");
+    else xiaoLog("Cookie không có _zGkKfTdV1x access token");
+    return XIAO_ACCESS_TOKEN;
+}
 var XIAO_NATIVE_CACHE_ID = 0;
 
 function xiaoLog(message) {
@@ -43,6 +61,7 @@ function xiaoParseJson(raw, fallback) {
 }
 
 function xiaoHeaders(includeAuth) {
+    if (includeAuth) xiaoEnsureToken();
     var headers = {
         "Accept": "application/json, text/plain, */*",
         "Content-Type": "application/json",
@@ -54,6 +73,7 @@ function xiaoHeaders(includeAuth) {
     if (includeAuth && XIAO_ACCESS_TOKEN) {
         headers.Authorization = "Bearer " + XIAO_ACCESS_TOKEN;
     }
+    if (XIAO_CONFIG.COOKIE) headers.Cookie = XIAO_CONFIG.COOKIE;
     return headers;
 }
 
@@ -97,42 +117,27 @@ function xiaoHttpPlayback(url, context) {
 }
 
 function xiaoLogin() {
-    if (XIAO_ACCESS_TOKEN) {
-        xiaoLog("Đã có access token, bỏ qua login");
+    /* Cookie được cập nhật thủ công ở XIAO_CONFIG.COOKIE; không gọi CAPTCHA login. */
+    if (XIAO_CONFIG.COOKIE) {
+        xiaoLog("Dùng cookie cấu hình, bỏ qua login");
         return true;
     }
-
-    xiaoLog("Bắt đầu login: " + XIAO_CONFIG.EMAIL);
-    var response = xiaoHttp(BASEURL + "/v1/auth/login", "POST", {
-        email: XIAO_CONFIG.EMAIL,
-        password: XIAO_CONFIG.PASSWORD,
-        token: XIAO_CONFIG.LOGIN_TOKEN
-    }, false);
-
-    if (!response || !response.isSuccessful) {
-        xiaoLog("Login thất bại: status=" + (response ? response.status : "null") +
-            " body=" + xiaoPreview(response && response.body));
-        return false;
-    }
-
-    var json = xiaoParseJson(response.body, {});
-    var tokens = json.result && json.result.tokens;
-    XIAO_ACCESS_TOKEN = (tokens && tokens.access && tokens.access.token) ||
-        (tokens && tokens.token) || "";
-
-    if (!XIAO_ACCESS_TOKEN) {
-        xiaoLog("Login response không có access token: " + xiaoPreview(response.body, 500));
-        return false;
-    }
-
-    xiaoLog("Login thành công, token length=" + XIAO_ACCESS_TOKEN.length);
-    return true;
+    xiaoLog("Thiếu cookie cấu hình, bỏ qua login");
+    return false;
 }
 
 function xiaoWithAuth(url) {
     /* App cắt phần sau pipe rồi dùng nó làm HTTP header. */
-    if (!xiaoLogin()) return url;
-    return url + "|Authorization=Bearer " + XIAO_ACCESS_TOKEN;
+    xiaoEnsureToken();
+    var headers = [];
+    if (XIAO_ACCESS_TOKEN) headers.push(["Authorization", "Bearer " + XIAO_ACCESS_TOKEN]);
+    if (XIAO_CONFIG.COOKIE) headers.push(["Cookie", XIAO_CONFIG.COOKIE]);
+    if (!headers.length) return url;
+    var parts = [];
+    for (var i = 0; i < headers.length; i++) {
+        parts.push(encodeURIComponent(headers[i][0]) + "=" + encodeURIComponent(headers[i][1]));
+    }
+    return url + "|" + parts.join("&");
 }
 
 function xiaoImage(path) {
@@ -144,7 +149,7 @@ function getManifest() {
     return JSON.stringify({
         id: "film1",
         name: "Film 1",
-        version: "1.0.4",
+        version: "1.0.5",
         author: "VAX",
         description: "Film 1, nguồn phim chất lượng có 4K.",
         BASEURL: BASEURL,
@@ -321,13 +326,160 @@ function parseSearchResponse(raw, apiUrl) {
 
 function xiaoSubtitle(url) {
     if (!url) return [];
-    return [{ url: url, language: "vi", label: "Phụ đề" }];
+    return [{ url: url, lang: "vi", language: "vi", label: "Phụ đề" }];
 }
 
 /* Inject vào WebView: chặn redirect, chống click tạo phòng, bỏ qua quảng cáo, dọn sạch DOM, OSD điều khiển chuẩn VAX */
-function xiaoWebPlayerScript() {
+function xiaoSniffer4kScript() {
+    xiaoEnsureToken();
+    var cookiePairs = String(XIAO_CONFIG.COOKIE || "").split(/;\s*/).filter(Boolean);
+    var cookieJson = JSON.stringify(cookiePairs).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    var bearerToken = String(XIAO_ACCESS_TOKEN || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     return "(function(){" +
-        "if(window.__XIAO_CLEAN_PLAYER__)return;window.__XIAO_CLEAN_PLAYER__=1;" +
+        "if(window.__XIAO_4K_SNIFFER__)return;window.__XIAO_4K_SNIFFER__=1;" +
+        "var sent=false,lastCtx='',bearer='" + bearerToken + "';" +
+        "try{if(location.hostname.indexOf('xiaofilm')>=0){var cps=JSON.parse('" + cookieJson + "');for(var ci=0;ci<cps.length;ci++){var eq=cps[ci].indexOf('=');var ck=eq>0?cps[ci].slice(0,eq).trim():'';if(ck&&document.cookie.indexOf(ck+'=')<0){document.cookie=cps[ci]+'; path=/; domain=.xiaofilm.online';}}}}catch(e){}" +
+        "function log(s){try{console.log('[Xiao4KSniff] '+s);if(window.SnifferBridge&&window.SnifferBridge.log)window.SnifferBridge.log('[Xiao4KSniff] '+s);}catch(e){}}" +
+        "function decodePack(raw){" +
+            "var t=String(raw||'').trim();" +
+            "if(t.indexOf('XIAO_PACK_V2:')!==0)return t;" +
+            "var e=t.substring(13).split('').reverse().join('').replace(/-/g,'+').replace(/_/g,'/');" +
+            "while(e.length%4)e+='=';" +
+            "var bin=atob(e),bytes=new Uint8Array(bin.length);" +
+            "for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);" +
+            "return typeof TextDecoder!=='undefined'?new TextDecoder('utf-8').decode(bytes):decodeURIComponent(escape(bin));" +
+        "}" +
+        "function bufToText(buf){" +
+            "try{var u8=new Uint8Array(buf);if(typeof TextDecoder!=='undefined')return new TextDecoder('utf-8').decode(u8);" +
+            "var s='';for(var i=0;i<u8.length;i++)s+=String.fromCharCode(u8[i]);return s;}catch(e){return '';}" +
+        "}" +
+        "function sendStream(m3u8OrUrl,baseUrl,ctx,isPlaylist){" +
+            "if(sent)return;sent=true;" +
+            "var hdrs={Referer:location.href,Origin:'https://xiaofilm.online','User-Agent':navigator.userAgent};" +
+            "if(document.cookie)hdrs.Cookie=document.cookie;" +
+            "if(bearer)hdrs.Authorization='Bearer '+bearer;" +
+            "if(ctx||lastCtx)hdrs['X-Playback-Context']=ctx||lastCtx;" +
+            "var hdrStr=JSON.stringify(hdrs);" +
+            "log('Found 4K stream isPlaylist='+isPlaylist+' base='+baseUrl);" +
+            "if(window.SnifferBridge){" +
+                "if(isPlaylist&&window.SnifferBridge.playM3u8Content){window.SnifferBridge.playM3u8Content(m3u8OrUrl,baseUrl,hdrStr);}" +
+                "else if(window.SnifferBridge.play){window.SnifferBridge.play(m3u8OrUrl,hdrStr);}" +
+            "}" +
+        "}" +
+        "function inspectBody(url,body,ctx,fetchFn){" +
+            "if(!body||sent)return;" +
+            "var text=String(body);" +
+            "if(/playback_grant\\.php/i.test(url)){" +
+                "log('Grant body: '+text.slice(0,260).replace(/\\s+/g,' '));" +
+                "try{" +
+                    "var j=JSON.parse(text);" +
+                    "if(j&&j.c)lastCtx=String(j.c).trim();" +
+                    "if(j&&j.success&&j.url&&fetchFn){" +
+                        "var gh={'X-Playback-Context':lastCtx};" +
+                        "if(bearer)gh.Authorization='Bearer '+bearer;" +
+                        "fetchFn(j.url,{headers:gh,credentials:'include'}).then(function(r){return r.text();}).then(function(t){inspectBody(j.url,t,lastCtx);}).catch(function(){});" +
+                    "}" +
+                "}catch(e){}" +
+                "return;" +
+            "}" +
+            "var trimmed=text.trim();" +
+            "if(trimmed.indexOf('XIAO_PACK_V2:')===0||trimmed.indexOf('#EXTM3U')===0){" +
+                "var dec=decodePack(trimmed);" +
+                "log('Decoded len='+dec.length+' lines='+dec.split(/\\r?\\n/).slice(0,12).join(' | '));" +
+                "if(dec.indexOf('#EXTM3U')===0){sendStream(dec,url,ctx,true);return;}" +
+                "var m=dec.match(/https?:\\/\\/[^\\s\"']+\\.m3u8(?:\\?[^\\s\"']*)?/i);" +
+                "if(m)sendStream(m[0],m[0],ctx,false);" +
+            "}" +
+        "}" +
+        "function isInterestingUrl(u){return /playback_grant|secure-play|\\/grant\\/|\\.m3u8|stream|media4k/i.test(String(u||''));}" +
+        "function hookWin(w){" +
+            "try{" +
+                "if(!w||w.__XIAO_HOOKED__)return;w.__XIAO_HOOKED__=1;" +
+                "var origFetch=w.fetch;" +
+                "if(origFetch){" +
+                    "w.fetch=function(input,init){" +
+                        "var url=typeof input==='string'?input:(input&&input.url)||'';" +
+                        "if(/(?:^|\\/)ad-policy(?:[/?#]|$)/i.test(url)){" +
+                            "return Promise.resolve(new w.Response(JSON.stringify({status:true,skip_ads:true}),{status:200,headers:{'Content-Type':'application/json'}}));" +
+                        "}" +
+                        "var ctx='';" +
+                        "try{" +
+                            "var h=init&&init.headers;" +
+                            "if(h){ctx=typeof h.get==='function'?(h.get('X-Playback-Context')||h.get('x-playback-context')||''):(h['X-Playback-Context']||h['x-playback-context']||'');}" +
+                            "if(!ctx&&input&&input.headers&&typeof input.headers.get==='function'){ctx=input.headers.get('X-Playback-Context')||'';}" +
+                            "if(bearer&&/playback_grant\\.php|\\/secure-play\\//i.test(url)){" +
+                                "init=init||{};" +
+                                "if(!init.headers)init.headers={};" +
+                                "if(typeof init.headers.set==='function'){if(!init.headers.get('Authorization'))init.headers.set('Authorization','Bearer '+bearer);}" +
+                                "else if(!init.headers.Authorization&&!init.headers.authorization){init.headers.Authorization='Bearer '+bearer;}" +
+                                "arguments[1]=init;" +
+                            "}" +
+                        "}catch(e){}" +
+                        "return origFetch.apply(this,arguments).then(function(res){" +
+                            "try{" +
+                                "var rUrl=(res&&res.url)||url;" +
+                                "if(isInterestingUrl(rUrl)){" +
+                                    "log('fetch hit: '+rUrl);" +
+                                    "res.clone().arrayBuffer().then(function(ab){inspectBody(rUrl,bufToText(ab),ctx,origFetch);}).catch(function(){});" +
+                                "}" +
+                            "}catch(e){}" +
+                            "return res;" +
+                        "});" +
+                    "};" +
+                "}" +
+                "var XHR=w.XMLHttpRequest;" +
+                "if(XHR&&XHR.prototype&&!XHR.prototype.__XIAO_HOOKED__){" +
+                    "XHR.prototype.__XIAO_HOOKED__=1;" +
+                    "var oOpen=XHR.prototype.open,oSet=XHR.prototype.setRequestHeader,oSend=XHR.prototype.send;" +
+                    "XHR.prototype.open=function(m,u){this.__xiaoUrl=String(u||'');this.__xiaoCtx='';return oOpen.apply(this,arguments);};" +
+                    "XHR.prototype.setRequestHeader=function(k,v){if(String(k||'').toLowerCase()==='x-playback-context')this.__xiaoCtx=String(v||'');return oSet.apply(this,arguments);};" +
+                    "XHR.prototype.send=function(){" +
+                        "var self=this;" +
+                        "this.addEventListener('load',function(){" +
+                            "try{" +
+                                "var u=self.responseURL||self.__xiaoUrl||'';" +
+                                "if(!isInterestingUrl(u))return;" +
+                                "log('xhr hit: '+u+' type='+(self.responseType||'text'));" +
+                                "if(!self.responseType||self.responseType==='text'){inspectBody(u,self.responseText,self.__xiaoCtx);}" +
+                                "else if(self.responseType==='arraybuffer'&&self.response){inspectBody(u,bufToText(self.response),self.__xiaoCtx);}" +
+                                "else if(self.responseType==='blob'&&self.response&&self.response.text){self.response.text().then(function(t){inspectBody(u,t,self.__xiaoCtx);});}" +
+                            "}catch(e){}" +
+                        "});" +
+                        "return oSend.apply(this,arguments);" +
+                    "};" +
+                "}" +
+            "}catch(e){}" +
+        "}" +
+        "function scanFrames(){" +
+            "try{" +
+                "var frames=document.querySelectorAll('iframe');" +
+                "for(var i=0;i<frames.length;i++){" +
+                    "var f=frames[i];" +
+                    "if(!f.__xiaoBound){f.__xiaoBound=1;log('iframe seen: '+(f.src||'no-src'));f.addEventListener('load',function(){try{hookWin(this.contentWindow);}catch(e){}});}" +
+                    "try{if(f.contentWindow)hookWin(f.contentWindow);}catch(e){}" +
+                "}" +
+            "}catch(e){}" +
+        "}" +
+        "hookWin(window);" +
+        "try{if(!window.__XIAO_TRACE_DONE__&&location.hostname.indexOf('xiaofilm')>=0){window.__XIAO_TRACE_DONE__=1;fetch(location.origin+'/cdn-cgi/trace').then(function(r){return r.text();}).then(function(t){var ip=(t.match(/^ip=(.+)$/m)||[])[1]||'?',ht=(t.match(/^http=(.+)$/m)||[])[1]||'?',lc=(t.match(/^loc=(.+)$/m)||[])[1]||'?';log('WebView trace: ip='+ip+' http='+ht+' loc='+lc);}).catch(function(e){log('WebView trace err: '+e.message);});}}catch(e){}" +
+        "scanFrames();" +
+        "try{new MutationObserver(scanFrames).observe(document.documentElement||document,{childList:true,subtree:true});}catch(e){}" +
+        "setInterval(function(){" +
+            "if(sent)return;" +
+            "scanFrames();" +
+            "try{var sk=document.querySelector('.direct-preroll-skip');if(sk){sk.disabled=false;sk.removeAttribute('disabled');sk.click();}}catch(e){}" +
+        "},200);" +
+        "log('4K sniffer ready on '+location.href);" +
+    "})();";
+}
+
+function xiaoWebPlayerScript(nextEpisodeUrl) {
+    var autoNextUrl = String(nextEpisodeUrl || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\r?\n/g, "");
+    return "(function(){" +
+        "console.log('[XiaoTest] script-start '+location.href);" +
+        (autoNextUrl ? "setTimeout(function(){try{if(sessionStorage.getItem('__XIAO_AUTO_NEXT_DONE__')){console.log('[XiaoTest] auto-next already done');return;}sessionStorage.setItem('__XIAO_AUTO_NEXT_DONE__','1');console.log('[XiaoTest] auto-next firing '+location.href);window.location.href='" + autoNextUrl + "';}catch(e){console.log('[XiaoTest] auto-next error '+e.message);}},10000);" : "") +
+        "var __xiaoDocRoot=document.documentElement||document;" +
+        "if(__xiaoDocRoot.__XIAO_CLEAN_PLAYER__)return;__xiaoDocRoot.__XIAO_CLEAN_PLAYER__=1;" +
         "var curVideo=null,mutedAd=false,skippedAd=false,cleaned=false,ctrlTimer=null,toastTimer=null,hudTimer=null;" +
         "function log(s){try{console.log('[XiaoClean] '+s)}catch(e){}}" +
 
@@ -711,7 +863,20 @@ function xiaoWebPlayerScript() {
             "showControls(4000);" +
         "}" +
 
-        "/* 12. DỌN SẠCH DOM VÀ GẮN VIDEO FULL MÀN HÌNH */" +
+        "/* 12. ÉP VIDEO BẮT ĐẦU TỪ ĐẦU SAU KHI PLAYER TỰ KHÔI PHỤC */" +
+        "function forceStartAtZero(v){" +
+            "if(!v||v.__xfStartReset)return;v.__xfStartReset=true;" +
+            "var active=true,started=false,tries=0,timer=null;" +
+            "function reset(){if(!active||!v)return;try{if(isFinite(v.duration)&&v.duration>0){v.currentTime=0;started=true;log('Đã đưa video về đầu sau khi player khôi phục vị trí');}}catch(e){}}" +
+            "function finish(){active=false;if(timer)clearInterval(timer);v.removeEventListener('playing',onPlaying);v.removeEventListener('canplay',onPlaying);v.removeEventListener('loadedmetadata',onReady);v.removeEventListener('durationchange',onReady);v.removeEventListener('seeked',onSeeked);}" +
+            "function onPlaying(){started=true;reset();setTimeout(reset,350);setTimeout(reset,1000);setTimeout(function(){reset();finish();},2200);}" +
+            "function onReady(){if(started)reset();}" +
+            "function onSeeked(){if(started&&tries<6){tries++;setTimeout(reset,80);}}" +
+            "v.addEventListener('playing',onPlaying,true);v.addEventListener('canplay',onPlaying,true);" +
+            "v.addEventListener('loadedmetadata',onReady,true);v.addEventListener('durationchange',onReady,true);v.addEventListener('seeked',onSeeked,true);" +
+            "timer=setInterval(function(){if(!active){clearInterval(timer);return;}tries++;if(v.readyState>=2&&isFinite(v.duration)&&v.duration>0){reset();}if(tries>32)finish();},150);" +
+            "}" +
+        "/* 13. DỌN SẠCH DOM VÀ GẮN VIDEO FULL MÀN HÌNH */" +
         "function cleanAndAttach(v){" +
             "if(cleaned)return;cleaned=true;" +
             "clearInterval(adInterval);" +
@@ -728,28 +893,47 @@ function xiaoWebPlayerScript() {
                 "}" +
             "}" +
 
+            "forceStartAtZero(v);" +
             "createOSD(v);" +
             "var curtain=document.getElementById('xf-loading-layer');" +
             "if(curtain){curtain.style.transition='opacity 0.5s';curtain.style.opacity='0';setTimeout(function(){try{curtain.remove();}catch(e){}},600);}" +
             "v.play().catch(function(){});" +
         "}" +
 
-        "/* 13. VÒNG LẶP THEO DÕI VIDEO CHÍNH */" +
-        "var checkVideoInterval=setInterval(function(){" +
-            "blockRoom();" +
-            "var videos=document.querySelectorAll('video');" +
-            "for(var i=0;i<videos.length;i++){" +
-                "var v=videos[i];" +
-                "if(v.classList.contains('direct-preroll-video'))continue;" +
-                "if(v.readyState>=2||v.currentTime>0||(!v.paused&&v.duration>30)){" +
-                    "clearInterval(checkVideoInterval);" +
-                    "curVideo=v;" +
-                    "cleanAndAttach(v);" +
-                    "break;" +
-                "}" +
-            "}" +
-        "},250);" +
+         "/* 13. VÒNG LẶP THEO DÕI VIDEO CHÍNH */" +
+         "var checkVideoTries=0,checkVideoInterval=setInterval(function(){" +
+             "blockRoom();checkVideoTries++;" +
+             "var videos=document.querySelectorAll('video'),candidate=null;" +
+             "for(var i=0;i<videos.length;i++){" +
+                 "var v=videos[i];" +
+                 "if(v.classList.contains('direct-preroll-video'))continue;" +
+                 "candidate=v;" +
+                 "var hasSource=!!(v.currentSrc||v.src||v.getAttribute('src'));" +
+                 "var hasMetadata=v.readyState>=1||isFinite(v.duration)&&v.duration>0;" +
+                 "if(hasSource&&(hasMetadata||v.readyState>=2)||v.currentTime>0||(!v.paused&&v.duration>0)){" +
+                     "clearInterval(checkVideoInterval);curVideo=v;" +
+                     "log('Đã tìm thấy video chính readyState='+v.readyState+' src='+(hasSource?'yes':'no'));" +
+                     "cleanAndAttach(v);return;" +
+                 "}" +
+             "}" +
+             "if(checkVideoTries%8===0)log('Đang tìm video chính count='+videos.length+' candidate='+(candidate?'yes':'no'));" +
+             "if(candidate&&checkVideoTries>=20){" +
+                 "clearInterval(checkVideoInterval);curVideo=candidate;" +
+                 "log('Fallback gắn video chính chưa có metadata readyState='+candidate.readyState);" +
+                 "cleanAndAttach(candidate);" +
+             "}" +
+         "},250);" +
+
     "})();";
+}
+
+function xiaoFindNextEpisode(info) {
+    info = info || {};
+    var key = String(info.slug || "") + "|" + String(info.eid || "") + "|" + String(info.sid || "");
+    var next = XIAO_EPISODE_NEXT[key];
+    xiaoLog("Custom-JS auto-next " + (next && next.url ? "ready" : "missing") +
+        " eid=" + (info.eid || "") + " sid=" + (info.sid || ""));
+    return next && next.url ? next.url : "";
 }
 
 function xiaoBuildEpisodes(seasons, movieSlug) {
@@ -858,11 +1042,58 @@ function xiaoBuildEpisodes(seasons, movieSlug) {
         episodes[e].id = episodes[e].ids[0].url;
     }
 
+    /* Test chuyển tập: ghép mỗi server 4K với cùng server ở tập kế tiếp. */
+    for (var currentIndex = 0; currentIndex < episodes.length - 1; currentIndex++) {
+        var currentIds = episodes[currentIndex].ids || [];
+        var nextIds = episodes[currentIndex + 1].ids || [];
+        for (var ci = 0; ci < currentIds.length; ci++) {
+            var currentUrl = String(currentIds[ci].url || "");
+            if (!/\/xiaofilm_episode\//i.test(currentUrl)) continue;
+            var currentInfo = {};
+            try {
+                currentInfo = JSON.parse(decodeURIComponent(currentUrl.split("/xiaofilm_episode/")[1].split("|")[0]));
+            } catch (e1) { continue; }
+            for (var ni = 0; ni < nextIds.length; ni++) {
+                var nextUrl = String(nextIds[ni].url || "");
+                if (!/\/xiaofilm_episode\//i.test(nextUrl)) continue;
+                var nextInfo = {};
+                try {
+                    nextInfo = JSON.parse(decodeURIComponent(nextUrl.split("/xiaofilm_episode/")[1].split("|")[0]));
+                } catch (e2) { continue; }
+                if (String(nextInfo.name || "") !== String(currentInfo.name || "")) continue;
+                XIAO_EPISODE_NEXT[String(currentInfo.slug || "") + "|" + String(currentInfo.eid || "") + "|" + String(currentInfo.sid || "")] = {
+                    url: BASEURL + "/xem-phim/" + encodeURIComponent(nextInfo.slug || currentInfo.slug || "") +
+                        "?ver=7&sv=2&eid=" + encodeURIComponent(nextInfo.eid || "") +
+                        "&sid=" + encodeURIComponent(nextInfo.sid || "") +
+                        "&sn=" + encodeURIComponent(nextInfo.name || "")
+                };
+                break;
+            }
+        }
+    }
+
     xiaoLog("Build episodes=" + episodes.length);
     return episodes;
 }
 
 /* Decode payload playlist mà player web nhận từ grant endpoint. */
+function xiaoPlaylistSummary(playlist) {
+    var text = String(playlist || "");
+    var lines = text.split(/\r?\n/);
+    var variants = [], uris = [];
+    for (var i = 0; i < lines.length; i++) {
+        if (/^#EXT-X-STREAM-INF:/i.test(lines[i])) {
+            variants.push(lines[i].substring(18, 260));
+        } else if (lines[i] && lines[i].charAt(0) !== "#" && uris.length < 4) {
+            uris.push(lines[i].substring(0, 260));
+        }
+        if (variants.length >= 8 && uris.length >= 4) break;
+    }
+    return "lines=" + lines.length + " variants=" + variants.length +
+        " first=" + xiaoPreview(variants.join(" || "), 700) +
+        " uris=" + xiaoPreview(uris.join(" || "), 700);
+}
+
 function xiaoDecodePack(raw) {
     var text = String(raw || "").trim();
     if (text.indexOf("XIAO_PACK_V2:") !== 0) return text;
@@ -900,12 +1131,12 @@ function xiaoDecodePack(raw) {
 function xiaoResolveNative(ticket) {
     var ticketUrl = String(ticket || "");
     if (!/\/secure-play\//i.test(ticketUrl) || !xiaoLogin()) return "";
+    if (ticketUrl.indexOf("native_subtitles=") < 0) {
+        ticketUrl += (ticketUrl.indexOf("?") >= 0 ? "&" : "?") + "native_subtitles=0";
+    }
     if (XIAO_NATIVE_CACHE[ticketUrl]) {
         xiaoLog("Native cache hit ticket");
         return XIAO_NATIVE_CACHE[ticketUrl];
-    }
-    if (ticketUrl.indexOf("native_subtitles=") < 0) {
-        ticketUrl += (ticketUrl.indexOf("?") >= 0 ? "&" : "?") + "native_subtitles=0";
     }
     xiaoLog("Native xin playback grant ticket=" + xiaoPreview(ticketUrl, 160));
     var grantResponse = xiaoHttp(BASEURL + "/api/playback_grant.php", "POST", {
@@ -913,16 +1144,22 @@ function xiaoResolveNative(ticket) {
         transport: "hlsjs"
     }, true);
     var grant = xiaoParseJson(grantResponse && grantResponse.body, {});
+    xiaoLog("Native grant ok=" + !!(grant && grant.success) +
+        " url=" + xiaoPreview(grant && grant.url, 220) +
+        " contextLen=" + String(grant && grant.c || "").length);
     if (!grantResponse || !grantResponse.isSuccessful || !grant.success || !grant.url) {
-        xiaoLog("Native grant thất bại status=" + (grantResponse && grantResponse.status));
+        xiaoLog("Native grant thất bại status=" + (grantResponse && grantResponse.status) +
+            " body=" + xiaoPreview(grantResponse && grantResponse.body, 300));
         return "";
     }
 
     var mediaResponse = xiaoHttpPlayback(grant.url, grant.c || "");
     var decoded = xiaoDecodePack(mediaResponse && mediaResponse.body);
     if (decoded.indexOf("#EXTM3U") === 0) {
-        xiaoLog("Native giải mã thành công playlist length=" + decoded.length);
+        xiaoLog("Native giải mã thành công playlist length=" + decoded.length + " " + xiaoPlaylistSummary(decoded));
         XIAO_NATIVE_CACHE[ticketUrl] = {
+            /* grant.url trả payload mã hóa khi tải lại; chỉ dùng làm base cho URI segment. */
+            url: ticketUrl,
             content: decoded,
             baseUrl: grant.url,
             context: grant.c || "",
@@ -930,6 +1167,7 @@ function xiaoResolveNative(ticket) {
                 "Referer": BASEURL + "/xem-phim/" + (ticketUrl.match(/session\/([^/?#]+)/)?.[1] || ""),
                 "Origin": BASEURL,
                 "User-Agent": XIAO_CONFIG.USER_AGENT,
+                "Cookie": XIAO_CONFIG.COOKIE,
                 "X-Playback-Context": String(grant.c || "").trim()
             }
         };
@@ -968,15 +1206,36 @@ function parseMovieDetail(raw, apiUrl, datasend) {
         return JSON.stringify({ id: "", title: "", servers: [] });
     }
 
-    if (!xiaoLogin()) {
-        xiaoLog("Không thể login trước khi gọi seasons");
-        return JSON.stringify({ id: slug, title: movie.name || movie.title || slug, servers: [] });
-    }
+    var hasCookie = xiaoLogin();
+    if (!hasCookie) xiaoLog("Thiếu cookie trước khi gọi seasons");
 
     var seasonsUrl = BASEURL + "/v1/movie/seasons?mId=" + encodeURIComponent(slug);
-    var seasonsResponse = xiaoHttp(seasonsUrl, "GET", null, true);
+    var seasonsResponse = xiaoHttp(seasonsUrl, "GET", null, false);
+    if ((!seasonsResponse || !seasonsResponse.isSuccessful) && hasCookie) {
+        xiaoLog("Seasons không thành công, thử lại cùng cookie không Authorization");
+        seasonsResponse = xiaoHttp(seasonsUrl, "GET", null, false);
+    }
     var seasonsJson = xiaoParseJson(seasonsResponse && seasonsResponse.body, {});
-    var episodes = xiaoBuildEpisodes(seasonsJson.result || [], slug);
+    var seasonData = seasonsJson.result || seasonsJson.seasons || seasonsJson.data || [];
+    if (seasonData && !Array.isArray(seasonData) && Array.isArray(seasonData.seasons)) {
+        seasonData = seasonData.seasons;
+    }
+    var episodes = xiaoBuildEpisodes(seasonData, slug);
+    if (!episodes.length) {
+        var embeddedSeasons = movie.seasons || movie.season_list || movie.seasonList ||
+            movie.episodes || detailJson.seasons || detailJson.season_list || [];
+        if (embeddedSeasons && !Array.isArray(embeddedSeasons) && Array.isArray(embeddedSeasons.seasons)) {
+            embeddedSeasons = embeddedSeasons.seasons;
+        }
+        var fallbackEpisodes = xiaoBuildEpisodes(embeddedSeasons, slug);
+        if (fallbackEpisodes.length) {
+            episodes = fallbackEpisodes;
+            xiaoLog("Dùng seasons embedded trong detail: episodes=" + episodes.length);
+        }
+    }
+    xiaoLog("Seasons result status=" + (seasonsResponse && seasonsResponse.status) +
+        " seasons=" + (Array.isArray(seasonData) ? seasonData.length : 0) +
+        " episodes=" + episodes.length);
 
     return JSON.stringify({
         id: slug,
@@ -1008,31 +1267,63 @@ function getStreamLink(episodeId, datasend) {
         webId = rawId.substring("xiaofilmweb:".length);
     }
 
-    if (webId) {
-        var info = {};
-        try { info = JSON.parse(decodeURIComponent(webId)); } catch (e) {
-            try { info = JSON.parse(webId); } catch (e2) {
-                xiaoLog("4K ID parse lỗi: " + e.message + " raw=" + xiaoPreview(webId, 180));
-            }
-        }
-        var playerUrl = BASEURL + "/xem-phim/" + encodeURIComponent(info.slug || "") +
-            "?ver=7&sv=2&eid=" + encodeURIComponent(info.eid || "") +
-            "&sid=" + encodeURIComponent(info.sid || "") + "&sn=" + encodeURIComponent(info.name || "");
-        xiaoLog("4K WebView player=" + playerUrl + " | eid=" + (info.eid || "missing") +
-            " sid=" + (info.sid || "missing"));
+     if (webId) {
+         var info = {};
+         try { info = JSON.parse(decodeURIComponent(webId)); } catch (e) {
+             try { info = JSON.parse(webId); } catch (e2) {
+                 xiaoLog("4K ID parse lỗi: " + e.message + " raw=" + xiaoPreview(webId, 180));
+             }
+         }
+         var ticket = info.ticket || "";
+          /* Test WebView 4K trước khi hoàn thiện chuyển tập bằng Custom-JS. */
+          if (ticket && /\/secure-play\//i.test(ticket) && false) {
+
+             xiaoLog("4K marker resolve Native ticket=" + xiaoPreview(ticket, 160));
+             var nativePl = xiaoResolveNative(ticket);
+             if (nativePl && (nativePl.content || nativePl.url)) {
+                 var playUrl = nativePl.baseUrl || nativePl.url || BASEURL + "/";
+                 var headers = {};
+                 var nativeHeaders = nativePl.headers || {};
+                 Object.keys(nativeHeaders).forEach(function(k) { headers[k] = nativeHeaders[k]; });
+                  headers.Referer = headers.Referer || (BASEURL + "/xem-phim/" + (info.slug || ""));
+                  headers.Origin = headers.Origin || BASEURL;
+                  if (XIAO_CONFIG.COOKIE && !headers.Cookie) headers.Cookie = XIAO_CONFIG.COOKIE;
+
+                 if (nativePl.context && !headers["X-Playback-Context"]) headers["X-Playback-Context"] = nativePl.context;
+                 return JSON.stringify({
+                     url: playUrl,
+                     baseUrl: playUrl,
+                     m3u8Content: nativePl.content || "",
+                     isEmbed: false,
+                     mimeType: "application/x-mpegURL",
+                     headers: headers,
+                     subtitles: xiaoSubtitle(datasend)
+                 });
+             }
+             xiaoLog("4K Native resolve thất bại, fallback direct ticket");
+         }
+         var playerUrl = BASEURL + "/xem-phim/" + encodeURIComponent(info.slug || "") +
+             "?ver=7&sv=2&eid=" + encodeURIComponent(info.eid || "") +
+             "&sid=" + encodeURIComponent(info.sid || "") + "&sn=" + encodeURIComponent(info.name || "");
+         xiaoLog("4K fallback player=" + playerUrl + " | eid=" + (info.eid || "missing") +
+             " sid=" + (info.sid || "missing"));
+        var nextEpisodeUrl = xiaoFindNextEpisode(info);
         return JSON.stringify({
             url: playerUrl,
-            isEmbed: false,
-            mimeType: "text/html",
-            sniffer: false,
-            headers: {
-                Referer: BASEURL + "/",
-                "Block-AutoClick": "true",
-                "Custom-Js": xiaoWebPlayerScript()
-            },
+            isEmbed: true,
+            mimeType: "",
+            sniffer: true,
+              headers: {
+                  Referer: BASEURL + "/",
+                  Cookie: XIAO_CONFIG.COOKIE,
+                  "Custom-Js": xiaoSniffer4kScript()
+              },
+
             subtitles: []
         });
-    }
+
+     }
+
 
     var streamUrl = String(episodeId || "").replace(/^xiaofilm:/, "");
     xiaoLog("getStreamLink url=" + xiaoPreview(streamUrl, 180));
@@ -1042,7 +1333,8 @@ function getStreamLink(episodeId, datasend) {
         mimeType: "application/x-mpegURL",
         headers: {
             Referer: BASEURL + "/",
-            Origin: BASEURL
+            Origin: BASEURL,
+            Cookie: XIAO_CONFIG.COOKIE
         },
         subtitles: xiaoSubtitle(datasend)
     });
@@ -1052,28 +1344,15 @@ function parseDetailResponse(raw, apiUrl, datasend) {
     xiaoLog("parseDetailResponse rawLen=" + String(raw || "").length + " url=" + apiUrl);
 
     var episodeMarker = String(apiUrl || "").match(/\/xiaofilm_episode\/([^/?#|]+)/i);
-    if (episodeMarker) {
-        try {
-            var episodeInfo = JSON.parse(decodeURIComponent(episodeMarker[1]));
-            var playerUrl = BASEURL + "/xem-phim/" + encodeURIComponent(episodeInfo.slug || "") +
-                "?ver=7&sv=2&eid=" + encodeURIComponent(episodeInfo.eid || "") +
-                "&sid=" + encodeURIComponent(episodeInfo.sid || "") + "&sn=" + encodeURIComponent(episodeInfo.name || "");
-            xiaoLog("parseDetailResponse episode chuyển WebView player=" + playerUrl);
-            return JSON.stringify({
-                url: playerUrl,
-                isEmbed: false,
-                mimeType: "text/html",
-                sniffer: false,
-                headers: {
-                    Referer: BASEURL + "/",
-                    "Custom-Js": xiaoWebPlayerScript()
-                },
-                subtitles: []
-            });
-        } catch (e) {
-            xiaoLog("Native episode marker lỗi: " + e.message);
-        }
-    }
+     if (episodeMarker) {
+         try {
+             var episodeInfo = JSON.parse(decodeURIComponent(episodeMarker[1]));
+             return getStreamLink(apiUrl, datasend);
+         } catch (e) {
+             xiaoLog("Native episode marker lỗi: " + e.message);
+         }
+     }
+
 
     var resultMarker = String(apiUrl || "").match(/\/xiaofilm_result\/([^/?#|]+)/i);
     if (resultMarker) {
@@ -1087,7 +1366,16 @@ function parseDetailResponse(raw, apiUrl, datasend) {
                 baseUrl: cached.baseUrl || BASEURL + "/",
                 isEmbed: false,
                 mimeType: "application/x-mpegURL",
-                headers: { Referer: BASEURL + "/", Origin: BASEURL },
+                 headers: (function() {
+                     var h = {};
+                     var source = cached.headers || {};
+                     Object.keys(source).forEach(function(k) { h[k] = source[k]; });
+                     h.Referer = h.Referer || BASEURL + "/";
+                     h.Origin = h.Origin || BASEURL;
+                     if (cached.context && !h["X-Playback-Context"]) h["X-Playback-Context"] = cached.context;
+                     return h;
+                 })(),
+
                 subtitles: xiaoSubtitle(datasend)
             };
             xiaoLog("parseDetailResponse trả Native m3u8Content=" +
