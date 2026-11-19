@@ -1,18 +1,28 @@
-/* VAX GAME - plugin native WebView (Tối ưu tải 10 game trang chủ) */
+/* VAX GAME - plugin native WebView (Tối ưu tải 10 game trang chủ & Hỗ trợ Google OAuth) */
 var GAME_LIST_URL = "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/list.txt";
 var GAME_CACHE = [];
+
+function getPipeData(raw) {
+    if (!raw) return "";
+    var i = String(raw).indexOf("|");
+    if (i < 0) return "";
+    var s = String(raw).substring(i + 1).replace(/^\s+/, "");
+    if (s.toLowerCase().indexOf("data:") === 0) s = s.substring(5);
+    return s;
+}
 
 function getManifest() {
     return JSON.stringify({
         id: "game",
         name: "GAME [LX]",
-        version: "1.0.1",
-        BASEURL: GAME_LIST_URL,
+        version: "1.0.2",
+        baseUrl: GAME_LIST_URL,
         iconUrl: "https://vaxplugin.alokillgtv02.workers.dev/img/icon/vaxgame.png",
         isEnabled: true,
         isAdult: false,
+        adblock: false,
         type: "VIDEO",
-        layoutType: "Horizontal",
+        layoutType: "HORIZONTAL",
         playerType: "embed"
     });
 }
@@ -50,7 +60,7 @@ function getLISTmenu() {
             { "link": "Giải Trí", "name": "Giải Trí"},
             { "link": "Mô Phỏng", "name": "Mô Phỏng"}
         ]`;
-    } catch(e) {
+    } catch (e) {
         return `[{"link":"/","name":"Đang lỗi getLISTmenu()"}]`;
     }
 }
@@ -60,33 +70,49 @@ function getPrimaryCategories() {
     catch (e) { return JSON.stringify([]); }
 }
 
+function getFilterConfig() {
+    try { return JSON.stringify({ category: JSON.parse(getLISTmenu()) }); }
+    catch (e) { return JSON.stringify({ category: [] }); }
+}
+
 function getUrlList(slug, filtersJson) {
     var category = String(slug || "all");
     var page = 1;
     if (filtersJson) {
         try {
-            var f = JSON.parse(filtersJson);
+            var fixedJson = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":').replace(/:,/g, ':');
+            var f = JSON.parse(fixedJson);
             page = parseInt(f.page) || 1;
+            if (f.category) {
+                if (Array.isArray(f.category) && f.category.length > 0) {
+                    category = f.category[0].slug || category;
+                } else if (typeof f.category === "string") {
+                    category = f.category;
+                }
+            }
         } catch (e) {}
     }
-    // Gắn |data:page=... để parseListResponse biết trang hiện tại mà không gửi rác lên server
-    var url = GAME_LIST_URL + (category !== "all" ? "?category=" + encodeURIComponent(category) : "");
-    return url + "|data:page=" + page;
+    var payload = "page=" + page + (category !== "all" ? "&category=" + encodeURIComponent(category) : "");
+    return GAME_LIST_URL + "|data:" + payload;
 }
 
 function getUrlSearch(keyword, filtersJson) {
     var page = 1;
     if (filtersJson) {
         try {
-            var f = JSON.parse(filtersJson);
+            var fixedJson = filtersJson.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":').replace(/:,/g, ':');
+            var f = JSON.parse(fixedJson);
             page = parseInt(f.page) || 1;
         } catch (e) {}
     }
-    return GAME_LIST_URL + "?q=" + encodeURIComponent(keyword || "") + "|data:page=" + page;
+    var payload = "page=" + page + "&q=" + encodeURIComponent(keyword || "");
+    return GAME_LIST_URL + "|data:" + payload;
 }
 
-function getUrlDetail(slug) {
-    return String(slug || "");
+function getUrlDetail(slug, datasend) {
+    var cleanUrl = String(slug || "").split("|")[0];
+    var data = datasend || getPipeData(slug);
+    return data ? (cleanUrl + "|data:" + data) : cleanUrl;
 }
 
 function parseGames(raw) {
@@ -98,8 +124,14 @@ function parseGames(raw) {
 
 function cleanGame(game) {
     if (!game || !game.name || !game.url) return null;
+    var cleanUrl = String(game.url).split("|")[0];
+    var meta = encodeURIComponent(JSON.stringify({
+        title: String(game.name),
+        posterUrl: String(game.image || ""),
+        description: String(game.desc || "")
+    }));
     return {
-        id: String(game.url),
+        id: cleanUrl + "|data:" + meta,
         title: String(game.name),
         originName: String(game.category || game.tag || ""),
         posterUrl: String(game.image || ""),
@@ -108,15 +140,13 @@ function cleanGame(game) {
         quality: String(game.category || "GAME"),
         lang: "HTML5",
         category: String(game.category || game.tag || ""),
-        url: String(game.url)
+        url: cleanUrl,
+        datasend: meta
     };
 }
 
-function filterGames(raw, apiUrl) {
+function filterGames(raw, category) {
     var games = parseGames(raw);
-    var query = String(apiUrl || "");
-    var match = query.match(/[?&]category=([^&|]+)/i);
-    var category = match ? decodeURIComponent(match[1]) : "";
     var out = [];
     GAME_CACHE = [];
     for (var i = 0; i < games.length; i++) {
@@ -131,28 +161,21 @@ function filterGames(raw, apiUrl) {
 }
 
 function parseListResponse(raw, apiUrl, datasend) {
-    var allItems = filterGames(raw, apiUrl);
-    
-    // Đọc số trang từ datasend hoặc apiUrl
+    var dataStr = String(datasend || getPipeData(apiUrl) || "");
+    var catMatch = dataStr.match(/(?:^|&)category=([^&]+)/i) || String(apiUrl || "").match(/[?&]category=([^&|]+)/i);
+    var category = catMatch ? decodeURIComponent(catMatch[1]) : "";
+
+    var allItems = filterGames(raw, category);
+
     var page = 1;
-    var dataStr = String(datasend || "");
-    if (!dataStr && apiUrl && apiUrl.indexOf("|") > -1) {
-        dataStr = apiUrl.substring(apiUrl.indexOf("|") + 1);
-    }
-    var pageMatch = dataStr.match(/page=(\d+)/i);
+    var pageMatch = dataStr.match(/(?:^|&)page=(\d+)/i);
     if (pageMatch) {
         page = parseInt(pageMatch[1], 10) || 1;
     }
 
-    var pageSize = 10; // Trang chủ chỉ load 10 game đầu cho nhẹ
-    if (page > 1) {
-        pageSize = 20; // Khi vào Xem Thêm (Category) tải 20 game mỗi trang
-    }
-
+    var pageSize = page > 1 ? 20 : 10;
     var totalItems = allItems.length;
     var totalPages = Math.ceil(totalItems / pageSize) || 1;
-    
-    // Cắt lát danh sách game theo trang
     var startIndex = (page - 1) * pageSize;
     var pagedItems = allItems.slice(startIndex, startIndex + pageSize);
 
@@ -168,9 +191,11 @@ function parseListResponse(raw, apiUrl, datasend) {
 }
 
 function parseSearchResponse(raw, apiUrl, datasend) {
-    var all = filterGames(raw, apiUrl);
-    var q = ((String(apiUrl || "").match(/[?&]q=([^&|]+)/i) || [])[1] || "");
-    q = decodeURIComponent(q).toLowerCase();
+    var dataStr = String(datasend || getPipeData(apiUrl) || "");
+    var all = filterGames(raw, "");
+
+    var qMatch = dataStr.match(/(?:^|&)q=([^&]+)/i) || String(apiUrl || "").match(/[?&]q=([^&|]+)/i);
+    var q = qMatch ? decodeURIComponent(qMatch[1]).toLowerCase() : "";
     if (q) {
         all = all.filter(function (g) {
             return (g.title + " " + g.description + " " + g.category).toLowerCase().indexOf(q) >= 0;
@@ -178,11 +203,7 @@ function parseSearchResponse(raw, apiUrl, datasend) {
     }
 
     var page = 1;
-    var dataStr = String(datasend || "");
-    if (!dataStr && apiUrl && apiUrl.indexOf("|") > -1) {
-        dataStr = apiUrl.substring(apiUrl.indexOf("|") + 1);
-    }
-    var pageMatch = dataStr.match(/page=(\d+)/i);
+    var pageMatch = dataStr.match(/(?:^|&)page=(\d+)/i);
     if (pageMatch) {
         page = parseInt(pageMatch[1], 10) || 1;
     }
@@ -202,47 +223,51 @@ function parseSearchResponse(raw, apiUrl, datasend) {
     });
 }
 
-function parseMovieDetail(html, apiUrl) {
-    var url = String(apiUrl || "");
+function parseMovieDetail(html, apiUrl, datasend) {
+    var cleanUrl = String(apiUrl || "").split("|")[0];
+    var data = datasend || getPipeData(apiUrl);
     var found = null;
-    for (var i = 0; i < GAME_CACHE.length; i++) {
-        if (GAME_CACHE[i].url === url) {
-            found = GAME_CACHE[i];
-            break;
+
+    if (data) {
+        try { found = JSON.parse(decodeURIComponent(data)); } catch (e) {}
+    }
+    if (!found) {
+        for (var i = 0; i < GAME_CACHE.length; i++) {
+            if (GAME_CACHE[i].url === cleanUrl) {
+                found = GAME_CACHE[i];
+                break;
+            }
         }
     }
+
+    var epId = data ? (cleanUrl + "|data:" + data) : cleanUrl;
     return JSON.stringify({
-        id: url,
+        id: cleanUrl,
         title: found ? found.title : "VAX GAME",
         posterUrl: found ? found.posterUrl : "",
-        backdropUrl: found ? found.backdropUrl : "",
+        backdropUrl: found ? found.posterUrl : "",
         description: found ? found.description : "",
-        servers: [{ name: "WebView", episodes: [{ id: url, name: "Chơi ngay", slug: url }] }]
+        servers: [{ name: "WebView", episodes: [{ id: epId, name: "Chơi ngay", slug: "play-1" }] }]
     });
 }
 
-function getJS(apiUrl){
-    if (apiUrl.indexOf("https://www.crazygames.com") > -1){
+function getJS(apiUrl) {
+    if (String(apiUrl || "").indexOf("crazygames.com") > -1) {
         return crazyJS();
     }
+    return "";
 }
 
-function crazyJS(){
+function crazyJS() {
     return `
 (function () {
   'use strict';
   if (window.__GLS_INIT) { return; }
   window.__GLS_INIT = true;
 
-  var TAG = '[GLS]';
   var STYLE_ID = '__gls_loader_style';
-  var ROOT_ID = '__gls_iframe_root';
   var IFRAME_SEL = 'iframe#game-iframe, iframe.GameContainerMobile_gameIframe__kYvt0, iframe.bs-GameContainer--game';
   var AUTO_HIDE_MS = 3000;
-
-  function log() { try { var a=[].slice.call(arguments); a.unshift(TAG); console.log.apply(console,a); } catch(e){} }
-  function warn() { try { var a=[].slice.call(arguments); a.unshift(TAG); console.warn.apply(console,a); } catch(e){} }
-  function error() { try { var a=[].slice.call(arguments); a.unshift(TAG); console.error.apply(console,a); } catch(e){} }
 
   var LOADER_CSS = ''
     + 'html::before{content:"ĐANG TẢI GAME";'
@@ -275,7 +300,7 @@ function crazyJS(){
   }
 
   var hidden = false;
-  function hideLoader(reason) {
+  function hideLoader() {
     if (hidden) return;
     hidden = true;
     try {
@@ -284,17 +309,16 @@ function crazyJS(){
     } catch (e) {}
   }
 
-  var autoHideTimer = setTimeout(function () { hideLoader('auto-30s'); }, AUTO_HIDE_MS);
+  var autoHideTimer = setTimeout(function () { hideLoader(); }, AUTO_HIDE_MS);
 
   var swapped = false;
   var watching = false;
-  var mo = null, pollId = 0, heartbeatId = 0;
+  var mo = null, pollId = 0;
   function findIframe() { try { return document.querySelector(IFRAME_SEL); } catch (e) { return null; } }
 
   function stopWatching() {
     if (mo) { try { mo.disconnect(); } catch (e) {} mo = null; }
     if (pollId) { clearInterval(pollId); pollId = 0; }
-    if (heartbeatId) { clearInterval(heartbeatId); heartbeatId = 0; }
     watching = false;
   }
 
@@ -303,50 +327,19 @@ function crazyJS(){
     swapped = true;
     stopWatching();
     clearTimeout(autoHideTimer);
+    hideLoader();
 
-    try { hideLoader('swap-pre-hide'); } catch (e) {}
-
-    var root = null;
+    // Phóng to iframe đè lên trên nhưng GIỮ NGUYÊN DOM và SDK để Google OAuth postMessage/popup hoạt động
     try {
-      root = document.getElementById(ROOT_ID);
-      if (!root) {
-        root = document.createElement('div');
-        root.id = ROOT_ID;
-        root.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;'
-          + 'width:100vw;height:100vh;margin:0;padding:0;border:0;'
-          + 'background:#000;z-index:2147483646;overflow:hidden;';
-        document.documentElement.appendChild(root);
-      }
-    } catch (e) {}
+      iframe.style.cssText = 'position:fixed !important;top:0 !important;left:0 !important;'
+        + 'width:100vw !important;height:100vh !important;border:0 !important;'
+        + 'margin:0 !important;padding:0 !important;z-index:2147483640 !important;background:#000 !important;';
 
-    if (root) {
-      try {
-        root.appendChild(iframe);
-        iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;'
-          + 'border:0;margin:0;padding:0;display:block;';
-      } catch (e) {}
-    }
-
-    try {
-      if (document.body) { document.body.innerHTML = ''; }
-    } catch (e) {}
-
-    try {
-      var head = document.head;
-      if (head) {
-        var scripts = head.querySelectorAll('script');
-        for (var i = 0; i < scripts.length; i++) {
-          try { var sc = scripts[i]; if (sc.parentNode) sc.parentNode.removeChild(sc); } catch (e2) {}
-        }
-      }
-    } catch (e) {}
-
-    try {
       var d = document.documentElement.style;
-      d.margin='0'; d.padding='0'; d.overflow='hidden'; d.width='100%'; d.height='100%'; d.background='#000';
+      d.margin='0'; d.padding='0'; d.overflow='hidden'; d.width='100%'; d.height='100%';
       if (document.body) {
         var b = document.body.style;
-        b.margin='0'; b.padding='0'; b.overflow='hidden'; b.width='100%'; b.height='100%'; b.background='#000';
+        b.margin='0'; b.padding='0'; b.overflow='hidden'; b.width='100%'; b.height='100%';
       }
     } catch (e) {}
   }
@@ -382,18 +375,24 @@ function crazyJS(){
     `;
 }
 
-function parseDetailResponse(html, apiUrl) {
-    var rawJS = getJS(apiUrl);
+function parseDetailResponse(html, apiUrl, datasend) {
+    var cleanUrl = String(apiUrl || "").split("|")[0];
+    var rawJS = getJS(cleanUrl);
+    var referer = cleanUrl.indexOf("crazygames.com") > -1
+        ? "https://www.crazygames.com/"
+        : "https://vaxplugins.alokillgtv05.workers.dev/";
+
     return JSON.stringify({
-        url: apiUrl,
+        url: cleanUrl,
         isEmbed: false,
         orientation: "auto",
         headers: {
-            "Referer": "https://vaxplugins.alokillgtv05.workers.dev/",
-            "User-Agent": "Mozilla/5.0",
+            "Referer": referer,
+            "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
             "Sniffer": false,
-            "Block-AutoClick": "true",
-            "Block-Ads": false,
+            "Block-AutoClick": "false",
+            "Block-Redirects": "false",
+            "Block-Ads": "false",
             "Block-Css": "",
             "Custom-Js": rawJS
         },
@@ -404,3 +403,6 @@ function parseDetailResponse(html, apiUrl) {
 function getUrlCategories() { return ""; }
 function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; }
+function parseCategoriesResponse() { return "[]"; }
+function parseCountriesResponse() { return "[]"; }
+function parseYearsResponse() { return "[]"; }
