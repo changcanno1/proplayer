@@ -10605,6 +10605,13 @@
     "category": "Chơi Online"
   },
   {
+    "name": "Cờ Game",
+    "url": "https://www.sanco.games/",
+    "image": "https://www.sanco.games/thumbs/sanco-brand.jpg",
+    "tag": "Chơi Online",
+    "category": "Chơi Online"
+  },
+  {
     "name": "Board Game",
     "url": "https://boardgamevui.com/",
     "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9iHZr_04-jtAyv91SonvTHaxaZsoq7ZSZOHjrx-n8gw&s=10",
