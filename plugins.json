@@ -199,6 +199,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/netshort.png"
     },
     {
+      "id": "tutientv",
+      "name": "TuTiênTV",
+      "version": "1.0.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/tutientv_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/tutientv.png"
+    },
+    {
       "id": "yanhh3d",
       "name": "Yanhh3d [ANIME]",
       "version": "3.4.0",
