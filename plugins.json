@@ -65,13 +65,6 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
-      "id": "film3",
-      "name": "Film 3",
-      "version": "1.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film3_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film3.png"
-    },
-    {
       "id": "film4",
       "name": "Film 4 [MOVIE]",
       "version": "1.1.2",
@@ -183,6 +176,13 @@
       "version": "1.0.2",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/pinedrama_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/shortflix/pinedrama.jpg"
+    },
+    {
+      "id": "freereels",
+      "name": "FreeReels [SHORT]",
+      "version": "1.0.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/freereels_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/freeReels.png"
     },
     {
       "id": "yini",
