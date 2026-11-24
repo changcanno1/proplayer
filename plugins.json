@@ -9,6 +9,13 @@
       "iconUrl": "https://cdn-icons-png.flaticon.com/512/10339/10339556.png"
     },
     {
+      "id": "thieunhi",
+      "name": "Thiếu Nhi [ANIME]",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Thieunhi_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/thieunhi.png"
+    },
+    {
       "id": "vsmov",
       "name": "vsmov",
       "version": "2.1.0",
