@@ -65,13 +65,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/kkphim.png"
     },
     {
-      "id": "film1",
-      "name": "Film 1",
-      "version": "1.0.5",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film1_plugin.js",
-      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
-    },
-    {
       "id": "film4",
       "name": "Film 4 [MOVIE]",
       "version": "1.1.2",
@@ -153,6 +146,13 @@
       "name": "Nova-Pick VSub 2",
       "version": "2.6.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup3_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
+    {
+      "id": "film1",
+      "name": "Film 1",
+      "version": "1.0.5",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film1_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
