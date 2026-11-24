@@ -255,13 +255,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film2.png"
     },
     {
-      "id": "cartoon",
-      "name": "Cartoon [ANIME]",
-      "version": "3.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Cartoon_plugins.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/cartoon.png"
-    },
-    {
       "id": "Anime47",
       "name": "Anime47",
       "version": "1.3.2",
