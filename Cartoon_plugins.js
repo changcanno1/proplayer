@@ -1,279 +1,383 @@
-// ===== TOPCARTOONS.TV VAX PLUGIN v2.0 =====
-// Rewrite based on CloudStream 3 TopCartoons.cs3 approach.
-// - List selectors: div.series-items a.series-item[href], .widget .post-listing-item a.blog-img[href], a.blog-img[data-post-id], h3.post-title a[href]
-// - Detail: h1.entry-title + parseSeasonBlocks (regex season \d+)
-// - Stream: og:video meta + "single_video_url" regex + Abyss/Hydrax embed (abysscdn.com, playhydrax.com, abyssplayer.com, zplayer.io)
-// - Luôn dùng httpRequest() (đi qua vax.local native) khi HTML bị chặn/rỗng
+// ===== TOPCARTOONS.TV VAX PLUGIN v3.0 (NATIVE) =====
+// Lý do viết lại:
+//  - Certificate của site CHỈ hợp lệ cho apex `topcartoons.tv`, KHÔNG có `www`.
+//    Toàn bộ HTML/link/poster dùng `www.topcartoons.tv` → OkHttp native fail TLS.
+//  - `/serie/` và trang detail trả 301 sang `www...` → cũng fail TLS.
+//  - `www...` còn bị Cloudflare chặn khi gọi từ worker (error 1102).
+// Giải pháp: chỉ dùng endpoint 200 trực tiếp trên apex:
+//  - WP REST API:  /wp-json/wp/v2/posts?...  (list, search, detail phim lẻ)
+//  - Sitemap:      /vid_series-sitemap.xml (danh sách series)
+//                  /sitemap_index.xml → video-sitemap*.xml (tập của series + mp4)
+//  - Stream mp4:   ww.topcartoons.tv (cert riêng hợp lệ, không cần Referer)
+// Không dùng `_$()`/scrape HTML để tránh phụ thuộc domain www.
 
 var iddomain = "topcartoons";
-BASEURL = "https://www.topcartoons.tv";
+BASEURL = "https://topcartoons.tv";
 NEWDDOMAIN = false;
 var popup_html = "";
 
 var CT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+var CT_PER_PAGE = 24;
+var CT_VIDEO_CACHE_TTL = 6 * 3600 * 1000;
 
 function CT_LOG() {
-  try { console.log.apply(console, ['[CartoonPlugin]'].concat([].slice.call(arguments))); } catch(e) {}
-  try { if (typeof log === 'function') log('[CartoonPlugin] ' + [].slice.call(arguments).join(' ')); } catch(e) {}
+  try { console.log.apply(console, ['[CartoonPlugin]'].concat([].slice.call(arguments))); } catch (e) {}
+  try { if (typeof log === 'function') log('[CartoonPlugin] ' + [].slice.call(arguments).join(' ')); } catch (e) {}
 }
 
-CT_LOG("===== PLUGIN LOADED =====", BASEURL);
+CT_LOG("===== PLUGIN v3.0 LOADED =====", BASEURL);
 
-function _cartoonHeaders() {
-  return "Referer=" + encodeURIComponent(BASEURL + "/") + "&Origin=" + encodeURIComponent(BASEURL) + "&User-Agent=" + encodeURIComponent(CT_UA);
-}
-
-// Fetch HTML qua httpRequest (vax.local native), có log. Trả string hoặc "".
-function _ctFetch(url, opts) {
-  CT_LOG("_ctFetch:", url);
+// =============================================================================
+// HTTP
+// =============================================================================
+function _ctGet(url) {
   try {
     var clean = String(url || "").split('|')[0];
-    if (!/^https?:/i.test(clean)) clean = BASEURL + clean;
-    var res = httpRequest(clean, opts || { method: "GET", headers: { "Referer": BASEURL + "/", "Origin": BASEURL, "User-Agent": CT_UA } });
-    CT_LOG("_ctFetch result: isSuccessful=" + (res && res.isSuccessful) + " status=" + (res && res.status) + " bodyLen=" + (res && res.body ? res.body.length : 0) + " deferred=" + (res && res.deferred));
-    if (res && res.isSuccessful && res.body) return res.body;
-    if (res && res.deferred) return ""; // sẽ fetch lại qua async prefetch
+    if (!/^https?:/i.test(clean)) clean = BASEURL + (clean.charAt(0) === '/' ? '' : '/') + clean;
+    var res = httpRequest(clean, {
+      method: "GET",
+      headers: {
+        "User-Agent": CT_UA,
+        "Accept": "application/json, text/xml, */*",
+        "Accept-Language": "en-US,en;q=0.9"
+      }
+    });
+    if (res && res.isSuccessful && res.body) return String(res.body);
+    if (res && res.deferred) CT_LOG("_ctGet deferred:", clean);
+    else CT_LOG("_ctGet fail:", clean, "status=" + (res && res.status));
     return "";
   } catch (e) {
-    CT_LOG("_ctFetch error:", e && e.message || e);
+    CT_LOG("_ctGet err:", e && e.message || e);
     return "";
   }
 }
 
-// ===== MANIFEST =====
-function getManifest() {
-  CT_LOG("getManifest() called");
+function _ctJson(text) {
+  if (!text) return null;
+  var s = String(text).replace(/^\uFEFF/, "").trim();
+  var a = s.indexOf('['), o = s.indexOf('{');
+  if (a === -1 && o === -1) return null;
+  if (a !== -1 && (o === -1 || a < o)) s = s.substring(a, s.lastIndexOf(']') + 1);
+  else s = s.substring(o, s.lastIndexOf('}') + 1);
+  try { return JSON.parse(s); } catch (e) { return null; }
+}
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+function _ctDecode(s) {
   try {
-    var manifest = {
+    if (typeof decodeHTMLtext === 'function') return decodeHTMLtext(String(s || ''));
+  } catch (e) {}
+  return String(s || '')
+    .replace(/&#(\d+);/g, function (m, d) { return String.fromCharCode(parseInt(d, 10)); })
+    .replace(/&#x([0-9a-f]+);/gi, function (m, h) { return String.fromCharCode(parseInt(h, 16)); })
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#0?39;/g, "'");
+}
+
+function _ctStripTags(s) {
+  return _ctDecode(String(s || '').replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+}
+
+// Chuẩn hoá tên để so slug ↔ tag sitemap ("What’s New, Scooby-Doo?" == whats-new-scooby-doo)
+function _ctNorm(s) {
+  s = String(s || '').toLowerCase();
+  s = s.replace(/[\u00e0-\u00e5\u0103\u0102\u00e2\u00c2]/g, 'a')
+       .replace(/[\u00e8-\u00eb\u0113]/g, 'e')
+       .replace(/[\u00ec-\u00ef]/g, 'i')
+       .replace(/[\u00f2-\u00f6\u01a1]/g, 'o')
+       .replace(/[\u00f9-\u00fc\u01b0]/g, 'u')
+       .replace(/[\u00fd\u1ef3]/g, 'y')
+       .replace(/[\u0111]/g, 'd');
+  return s.replace(/[^a-z0-9]/g, '');
+}
+
+function _ctSlugOf(url) {
+  var s = String(url || '').split('?')[0].split('#')[0].replace(/\/+$/, '');
+  var p = s.split('/');
+  return p[p.length - 1] || '';
+}
+
+function _ctHostApex(u) {
+  return String(u || '').replace(/^https?:\/\/www\./i, 'https://');
+}
+
+// =============================================================================
+// MANIFEST / MENU
+// =============================================================================
+function getManifest() {
+  CT_LOG("getManifest()");
+  try {
+    return JSON.stringify({
       "id": "cartoon",
       "name": "Cartoon [ANIME]",
-      "version": "2.0",
-      "author": "VAX",
-      "info": "Nguồn cartoon topcartoons.tv (Abyss/Hydrax stream).",
+      "version": "3.1",
+      "author": "Alokillgtv",
+      "info": "TopCartoons.tv — Series + Cartoons, stream MP4 trực tiếp (native).",
       "baseUrl": BASEURL,
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/cartoon.png",
+      "iconUrl": "https://vaxplugins.alokillgtv05.workers.dev/img/icon/cartoon.png",
       "isEnabled": true,
       "isAdult": false,
-      "adblock": true,
+      "adblock": false,
       "type": "ANIME",
       "layoutType": "HORIZONTAL",
-      "subtitleCat": true,
-      "playerType": "exoplayer"
-    };
-    return JSON.stringify(manifest);
+      "subtitleCat": false,
+      "playerType": "exoplayer",
+      "headers": { "Referer": BASEURL + "/", "Origin": BASEURL }
+    });
   } catch (e) {
-    CT_LOG("getManifest error:", e);
     return JSON.stringify({ id: "loi", name: "Plugin lỗi: " + e, baseUrl: BASEURL });
   }
 }
 
-// ===== MENU =====
 function getHomeSections() {
-  CT_LOG("getHomeSections() called");
-  var sections = [
-    { slug: "/serie/", title: "Series", type: "Grid" },
-    { slug: "/cartoons/category/cartoons/", title: "Cartoons", type: "Grid" }
-  ];
-  return JSON.stringify(sections);
+  return JSON.stringify([
+    { slug: "series", title: "Series", type: "Grid", path: "anime" },
+    { slug: "cartoons", title: "Cartoons", type: "Grid", path: "anime" }
+  ]);
 }
 
 function getLISTmenu() {
   return JSON.stringify([
-    { link: "/serie/", name: "All Series" },
-    { link: "/cartoons/category/cartoons/", name: "Cartoons" }
+    { link: "series", name: "Series" },
+    { link: "cartoons", name: "Cartoons" }
   ]);
 }
 
-// ===== URL BUILDERS =====
-function getUrlList(slug, filtersJson) {
-  CT_LOG("getUrlList() slug=" + slug + " filters=" + filtersJson);
+function getPrimaryCategories() {
+  return getLISTmenu();
+}
+
+function getFilterConfig() {
+  try { return JSON.stringify({ category: JSON.parse(getLISTmenu()) }); } catch (e) { return JSON.stringify({ category: [] }); }
+}
+
+// =============================================================================
+// URL BUILDERS
+// =============================================================================
+function _ctPostFields() {
+  /* Phải xin cả _links + _embedded, nếu chỉ xin field con lồng nhau WP trả
+     _embedded rỗng → mất poster. 16KB/24 bài là chấp nhận được. */
+  return "id,slug,link,title,excerpt,date,cmb2,_links,_embedded";
+}
+
+function _ctListUrl(page) {
+  return BASEURL + "/wp-json/wp/v2/posts?per_page=" + CT_PER_PAGE +
+         "&page=" + (page || 1) +
+         "&_embed=wp:featuredmedia" +
+         "&_fields=" + encodeURIComponent(_ctPostFields());
+}
+
+function _ctSearchUrl(kw, page) {
+  return BASEURL + "/wp-json/wp/v2/posts?search=" + encodeURIComponent(kw || "") +
+         "&per_page=" + CT_PER_PAGE +
+         "&page=" + (page || 1) +
+         "&_embed=wp:featuredmedia" +
+         "&_fields=" + encodeURIComponent(_ctPostFields());
+}
+
+/* Tổng số trang do WP trả trong header X-WP-TotalPages. httpRequest native
+   có res.headers nên đọc được; cache RAM 10 phút, chỉ tốn 1 request nhỏ. */
+var _ctTotalPagesCache = {};
+function _ctTotalPages(kw) {
+  var key = kw ? ('s:' + kw) : 'all';
+  var c = _ctTotalPagesCache[key];
+  if (c && (Date.now() - c.ts) < 10 * 60 * 1000) return c.v;
+  var url = BASEURL + "/wp-json/wp/v2/posts?per_page=1&_fields=id" +
+            (kw ? ("&search=" + encodeURIComponent(kw)) : "");
+  var v = 0;
   try {
-    if (slug && slug.indexOf("http") === 0) return slug;
-    var page = 1;
-    var path = slug || "/serie/";
-    if (filtersJson) {
-      try {
-        var f = JSON.parse(filtersJson);
-        page = parseInt(f.page) || 1;
-        if (f.category) path = Array.isArray(f.category) ? f.category[0].slug : f.category;
-      } catch (e) { CT_LOG("getUrlList parse:", e); }
-    }
-    var url = BASEURL + (path.indexOf("/") === 0 ? "" : "/") + path;
-    if (page > 1) url = url.replace(/\/?$/, "/") + "page/" + page + "/";
-    var clean = url.replace(/([^:]\/)\/+/g, "$1");
-    var result = clean + "|" + _cartoonHeaders();
-    CT_LOG("getUrlList returning:", result);
-    return result;
-  } catch (e) {
-    CT_LOG("getUrlList[err]:", e);
-    return BASEURL + "/serie/|" + _cartoonHeaders();
-  }
-}
-
-function getUrlSearch(keyword, filtersJson) {
-  CT_LOG("getUrlSearch() keyword=" + keyword);
-  try {
-    var kw = encodeURIComponent(keyword || "");
-    return BASEURL + "/?s=" + kw + "|" + _cartoonHeaders();
-  } catch (e) {
-    CT_LOG("getUrlSearch[err]:", e);
-    return BASEURL + "/?s=" + encodeURIComponent(keyword || "") + "|" + _cartoonHeaders();
-  }
-}
-
-function getUrlDetail(slug) {
-  CT_LOG("getUrlDetail() slug=" + slug);
-  if (!slug) return "";
-  if (slug.indexOf("http") === 0) return slug;
-  var url = BASEURL + "/" + slug.replace(/^\//, "");
-  return url + "|" + _cartoonHeaders();
-}
-
-// ===== HELPERS SELECTOR =====
-function _getAttr($el, sel, attr) {
-  if (!$el || !$el.length) return "";
-  var v = $el.attr(attr) || "";
+    var res = httpRequest(url, { method: "GET", headers: { "User-Agent": CT_UA, "Accept": "application/json" } });
+    var h = (res && res.headers) || {};
+    var total = 0;
+    try {
+      if (typeof h.get === "function") {
+        total = parseInt(h.get("x-wp-total"), 10) || 0;
+        if (!total) total = (parseInt(h.get("x-wp-totalpages"), 10) || 0) * 1;
+      }
+    } catch (e) {}
+    if (!total) total = parseInt(h["x-wp-total"] || h["X-WP-Total"] || 0, 10) || 0;
+    /* URL dùng per_page=1 → X-WP-Total là tổng bài, tự chia theo CT_PER_PAGE */
+    if (total > 0) v = Math.max(1, Math.ceil(total / CT_PER_PAGE));
+  } catch (e) {}
+  if (v > 0) _ctTotalPagesCache[key] = { v: v, ts: Date.now() };
   return v;
 }
 
-// Lấy poster: ưu tiên srcset (lấy URL lớn nhất), rồi data-src, rồi src
-function _imgPoster($img) {
-  if (!$img || !$img.length) return "";
-  var srcset = _getAttr($img, null, "srcset") || "";
-  if (srcset && srcset.indexOf(",") > -1) {
-    var best = "";
-    var parts = srcset.split(",");
-    for (var i = 0; i < parts.length; i++) {
-      var p = parts[i].trim().split(/\s+/)[0];
-      if (p && /^https?:/i.test(p)) best = p;
-    }
-    if (best) return best;
-  }
-  var one = srcset ? srcset.split(",")[0].trim().split(/\s+/)[0] : "";
-  return one || _getAttr($img, null, "data-src") || _getAttr($img, null, "src") || _getAttr($img, null, "data-lazy-src") || "";
+function _ctPostDetailUrl(slug) {
+  return BASEURL + "/wp-json/wp/v2/posts?slug=" + encodeURIComponent(slug) +
+         "&_embed=wp:featuredmedia" +
+         "&_fields=" + encodeURIComponent(_ctPostFields());
 }
 
-// ===== LIST PARSER =====
-function parseListResponse(html, url) {
-  CT_LOG("parseListResponse() called url=" + url + " htmlLen=" + (html ? html.length : 0));
-  try {
-    if (!html || typeof html !== 'string' || html.length < 100) {
-      CT_LOG("parseListResponse: HTML rỗng/bị chặn, tải lại bằng httpRequest");
-      var cleanUrl = url ? url.split('|')[0] : (BASEURL + "/serie/");
-      html = _ctFetch(cleanUrl);
-      if (!html || typeof html !== 'string' || html.length < 100) {
-        CT_LOG("parseListResponse: vẫn rỗng sau khi httpRequest");
-        return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
-      }
-      CT_LOG("parseListResponse: httpRequest OK len=" + html.length);
-    }
-    CT_LOG("parseListResponse: HTML preview: " + String(html).slice(0, 400));
+function getUrlList(slug, filtersJson) {
+  var page = 1;
+  try { page = parseInt(JSON.parse(filtersJson || "{}").page, 10) || 1; } catch (e) {}
+  var s = String(slug || "");
+  CT_LOG("getUrlList() slug=" + s + " page=" + page);
 
-    var $doc = _$(html);
-    var items = [];
-    var seen = {};
+  if (s.indexOf("series") === 0) return BASEURL + "/vid_series-sitemap.xml";
+  if (s.indexOf("cartoons") === 0) return _ctListUrl(page);
+  if (s.indexOf("http") === 0) return s;
+  return _ctListUrl(page);
+}
 
-    function pushItem(href, title, poster) {
-      if (!href || !title || seen[href]) return;
-      if (/^(#|javascript:|mailto:)/i.test(href)) return;
-      seen[href] = 1;
-      // Normalize href
-      if (href.indexOf("http") !== 0) href = BASEURL + (href.indexOf("/") === 0 ? "" : "/") + href;
-      if (poster && poster.indexOf("http") !== 0) poster = BASEURL + (poster.indexOf("/") === 0 ? "" : "/") + poster;
-      items.push({
-        id: href,
-        title: title,
-        quality: "HD",
-        episode_current: "",
-        posterUrl: poster,
-        backdropUrl: poster,
-        year: "",
-        lang: "English ESub"
-      });
-    }
+function getUrlSearch(keyword, filtersJson) {
+  var page = 1;
+  try { page = parseInt(JSON.parse(filtersJson || "{}").page, 10) || 1; } catch (e) {}
+  return _ctSearchUrl(keyword, page);
+}
 
-    // 1. Style "series items" : div.series-items a.series-item[href]
-    var $seriesItems = $doc.find("a.series-item[href]");
-    CT_LOG("parseListResponse: a.series-item count=" + $seriesItems.length);
-    $seriesItems.each(function() {
-      var href = this.attr("href") || "";
-      var title = (this.attr("title") || this.text().trim() || "").trim();
-      if (!title) {
-        // tìm img src trong thẻ
-        var $im = this.find("img").first();
-        title = this.attr("title") || $im.attr("alt") || "";
-      }
-      var poster = _imgPoster(this.find("img").first());
-      pushItem(href, title, poster);
-    });
+function getUrlDetail(slug) {
+  var s = String(slug || "");
+  CT_LOG("getUrlDetail() slug=" + s.slice(0, 120));
 
-    // 2. Style "post listing": .widget .post-listing-item a.blog-img[href]
-    var $blogImgs = $doc.find("a.blog-img[href]");
-    CT_LOG("parseListResponse: a.blog-img count=" + $blogImgs.length);
-    $blogImgs.each(function() {
-      var href = this.attr("href") || "";
-      var $im = this.find("img").first();
-      var title = $im.attr("alt") || this.attr("title") || "";
-      var poster = _imgPoster($im);
-      if (!title && this.attr("data-post-id")) {
-        // try h3.post-title bên trong parent
-        var parent = this;
-        // fallback: tìm sibling
-        var $parentEl = new this.constructor([this.elements[0]], this.nodes);
-        var $pt = $parentEl.parent().find("h3.post-title a[href]");
-        if ($pt.length) title = $pt.text().trim();
-      }
-      pushItem(href, title, poster);
-    });
-
-    // 3. Style "post title": h3.post-title a[href]
-    if (!items.length) {
-      var $postTitle = $doc.find("h3.post-title a[href]");
-      CT_LOG("parseListResponse: h3.post-title count=" + $postTitle.length);
-      $postTitle.each(function() {
-        var href = this.attr("href") || "";
-        var title = this.text().trim();
-        var poster = "";
-        // tìm img trong các thẻ lân cận
-        pushItem(href, title, poster);
-      });
-    }
-
-    // 4. Fallback generic: article/post-item + entry-title a
-    if (!items.length) {
-      CT_LOG("parseListResponse: fallback generic post-item");
-      $doc.find("article.post-item, .post-item").each(function() {
-        var $art = this;
-        var $link = $art.find("a[href]").first();
-        var href = $link.attr("href") || "";
-        var title = $art.find("h3.entry-title a").text().trim() || $link.attr("title") || "";
-        var poster = $art.find("img").first() ? _imgPoster($art.find("img").first()) : "";
-        pushItem(href, title, poster);
-      });
-    }
-
-    // Pagination
-    var currentPage = 1;
-    var totalPages = 9999;
-    var urlClean = String(url || "").split('|')[0];
-    if (urlClean.indexOf("/serie/") > -1) totalPages = 1;
-    var $nav = $doc.find(".blog-pagination .wp-pagenavi, .blog-pagination");
-    if ($nav.length) {
-      var $cur = $nav.find(".current").first();
-      if ($cur.length) currentPage = parseInt($cur.text()) || 1;
-      var $last = $nav.find("a.page-numbers").last();
-      if ($last.length) {
-        var m2 = ($last.attr("href") || "").match(/page[/=](\d+)/);
-        if (m2) totalPages = parseInt(m2[1], 10);
-      }
-    }
-
-    CT_LOG("parseListResponse: RETURN " + items.length + " items (page " + currentPage + "/" + totalPages + ")");
-    if (items.length && items[0]) CT_LOG("parseListResponse: first=" + items[0].title + " | " + items[0].id.slice(0, 90));
+  // Series: dựng MovieDetail JSON trực tiếp (native + WebView đều bỏ qua fetch)
+  if (/\/serie\/[^/]+\/?$/i.test(s)) {
+    var seriesUrl = _ctHostApex(s);
+    var got = _ctEpisodesOfSeries(seriesUrl);
+    var sname = got.name || _ctSlugOf(seriesUrl).replace(/-/g, ' ');
+    var poster = _ctSeriesPoster(seriesUrl) || (got.episodes[0] && got.episodes[0].poster) || "";
+    var servers = [{ name: sname || "Server", episodes: got.episodes.map(function (ep) {
+      return { id: ep.id, name: ep.name, slug: ep.slug };
+    }) }];
+    if (!servers[0].episodes.length) servers = [];
+    CT_LOG("getUrlDetail series JSON: " + sname + " eps=" + (servers[0] ? servers[0].episodes.length : 0));
     return JSON.stringify({
-      items: items,
-      pagination: { currentPage: currentPage, totalPages: totalPages }
+      id: seriesUrl,
+      title: sname,
+      originName: sname,
+      posterUrl: poster,
+      backdropUrl: poster,
+      description: "",
+      quality: "HD",
+      year: "",
+      rating: "",
+      status: (servers[0] ? servers[0].episodes.length : 0) + " episodes",
+      episode_current: (servers[0] ? servers[0].episodes.length : 0) + " episodes",
+      servers: servers,
+      duration: "", casts: "", director: "", country: "US", lang: "", category: "", extra: ""
     });
+  }
+  // Phim lẻ: id là URL REST detail (đã dựng sẵn ở parseList)
+  if (s.indexOf("http") === 0) return s;
+
+  // Fallback: slug thuần
+  return _ctPostDetailUrl(s);
+}
+
+// =============================================================================
+// LIST PARSER
+// =============================================================================
+function _ctItemFromPost(p) {
+  var title = _ctStripTags(p && p.title && p.title.rendered);
+  if (!title && p && p.slug) title = String(p.slug).replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  var featured = "";
+  try {
+    var emb = p && p._embedded && p._embedded["wp:featuredmedia"];
+    if (emb && emb[0]) {
+      featured = emb[0].source_url || "";
+      if (!featured && emb[0].media_details && emb[0].media_details.sizes) {
+        var sz = emb[0].media_details.sizes;
+        featured = (sz.medium_large && sz.medium_large.source_url) ||
+                   (sz.medium && sz.medium.source_url) ||
+                   (sz.full && sz.full.source_url) || "";
+      }
+    }
+  } catch (e) {}
+  /* Ảnh nằm trên www (cert lỗi) → đổi sang apex */
+  featured = _ctHostApex(featured);
+
+  var excerpt = _ctStripTags(p && p.excerpt && p.excerpt.rendered);
+  var video = "";
+  try { video = (p.cmb2.video_player_settings.vm_video_url) || ""; } catch (e) {}
+
+  var slug = p && p.slug ? p.slug : "";
+  return {
+    id: slug ? _ctPostDetailUrl(slug) : "",
+    title: title,
+    quality: video ? "MP4" : "HD",
+    episode_current: "Full",
+    posterUrl: featured,
+    backdropUrl: featured,
+    year: (p && p.date ? String(p.date).slice(0, 4) : ""),
+    lang: "English",
+    description: excerpt
+  };
+}
+
+function _ctParseRestList(j, page, kw) {
+  var items = [];
+  if (Array.isArray(j)) {
+    for (var i = 0; i < j.length; i++) {
+      var it = _ctItemFromPost(j[i]);
+      if (it && it.id && it.title) items.push(it);
+    }
+  }
+  var total = _ctTotalPages(kw);
+  var totalPages = total > 0 ? total : (items.length >= CT_PER_PAGE ? (page + 1) : page);
+  var currentPage = page;
+  if (total > 0 && currentPage > total) currentPage = total;
+  CT_LOG("parseList REST page=" + currentPage + "/" + totalPages + " items=" + items.length);
+  return JSON.stringify({ items: items, pagination: { currentPage: currentPage, totalPages: totalPages } });
+}
+
+function _ctParseSeriesSitemap(xml) {
+  var items = [];
+  if (!xml) return items;
+  var blocks = String(xml).match(/<url>[\s\S]*?<\/url>/g) || [];
+  for (var i = 0; i < blocks.length; i++) {
+    var b = blocks[i];
+    var loc = (b.match(/<loc>([\s\S]*?)<\/loc>/) || [])[1] || '';
+    loc = _ctDecode(loc.trim());
+    if (!/\/serie\/[^/]+\/?$/i.test(loc)) continue;   // bỏ trang /serie/ gốc
+    var img = (b.match(/<image:loc>([\s\S]*?)<\/image:loc>/) || [])[1] || '';
+    img = _ctHostApex(_ctDecode(img.trim()));
+    var slug = _ctSlugOf(loc);
+    var title = slug.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+    items.push({
+      id: _ctHostApex(loc),
+      title: title,
+      quality: "Series",
+      episode_current: "",
+      posterUrl: img,
+      backdropUrl: img,
+      year: "",
+      lang: "English"
+    });
+  }
+  CT_LOG("parseList series sitemap items=" + items.length);
+  return items;
+}
+
+function parseListResponse(html, url) {
+  var u = String(url || "").split('|')[0];
+  CT_LOG("parseListResponse() url=" + u.slice(0, 100) + " htmlLen=" + (html ? String(html).length : 0));
+  try {
+    if (/vid_series-sitemap\.xml/i.test(u)) {
+      var seriesItems = _ctParseSeriesSitemap(html || _ctGet(u));
+      return JSON.stringify({ items: seriesItems, pagination: { currentPage: 1, totalPages: 1 } });
+    }
+
+    var page = 1;
+    try { page = parseInt((u.match(/[?&]page=(\d+)/) || [])[1], 10) || 1; } catch (e) {}
+
+    var kw = "";
+    try { kw = decodeURIComponent((u.match(/[?&]search=([^&]*)/) || [])[1] || ""); } catch (e) { kw = ""; }
+
+    var j = _ctJson(html);
+    if (!j) {
+      CT_LOG("parseListResponse: body rỗng/không phải JSON → tự fetch");
+      j = _ctJson(_ctGet(u));
+    }
+    if (!j) return JSON.stringify({ items: [], pagination: { currentPage: page, totalPages: page } });
+    /* WP trả object lỗi khi vượt trang cuối */
+    if (!Array.isArray(j) && j && (j.code || j.data)) {
+      var last = Math.max(1, page - 1);
+      return JSON.stringify({ items: [], pagination: { currentPage: last, totalPages: last } });
+    }
+    return _ctParseRestList(j, page, kw);
   } catch (e) {
     CT_LOG("parseListResponse[err]:", e && e.message || e);
     return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
@@ -281,269 +385,283 @@ function parseListResponse(html, url) {
 }
 
 function parseSearchResponse(html, url) {
-  CT_LOG("parseSearchResponse() called");
   return parseListResponse(html, url);
 }
 
-// ===== DETAIL PARSER (trang series) =====
-function parseMovieDetail(html, url) {
-  CT_LOG("parseMovieDetail() called url=" + url + " htmlLen=" + (html ? html.length : 0));
-  try {
-    if (!html || typeof html !== 'string' || html.length < 100) {
-      CT_LOG("parseMovieDetail: HTML rỗng/bị chặn, tải lại");
-      var cleanUrl = url ? url.split('|')[0] : BASEURL;
-      html = _ctFetch(cleanUrl);
-      if (!html || typeof html !== 'string' || html.length < 100) {
-        CT_LOG("parseMovieDetail: vẫn rỗng");
-        return JSON.stringify({ id: url, title: "error", servers: [{ name: "Error", episodes: [] }] });
-      }
-    }
-    CT_LOG("parseMovieDetail: HTML preview: " + String(html).slice(0, 400));
-    var $doc = _$(html);
+// =============================================================================
+// SERIES INDEX (video sitemaps) — cache RAM
+// =============================================================================
+var _ctVideoEntries = null;
+var _ctVideoIndex = null;      /* { normTag: [entry,...] } — tránh quét 3000 entry mỗi lần */
+var _ctVideoEntriesTs = 0;
+var _ctVideoEntriesLoading = false;
 
-    var title = $doc.find("h1.entry-title").first().text().trim()
-             || $doc.find('meta[property="og:title"]').attr("content") || "";
+function _ctExtractVideoSitemaps(indexXml) {
+  var urls = [];
+  var locs = String(indexXml || "").match(/<loc>([\s\S]*?)<\/loc>/g) || [];
+  for (var i = 0; i < locs.length; i++) {
+    var loc = (locs[i].match(/<loc>([\s\S]*?)<\/loc>/) || [])[1] || '';
+    loc = _ctDecode(loc.trim());
+    if (/\/video-sitemap[^\/]*\.xml/i.test(loc)) urls.push(_ctHostApex(loc));
+  }
+  return urls;
+}
+/* Sitemap video của Yoast đặt <loc> dạng https://www.topcartoons.tv/...
+   → mọi dữ liệu trong đó (poster, series URL) phải đổi sang apex. */
 
-    // Poster: header-img img / single-feature-image img / og:image
-    var poster = _imgPoster($doc.find("*.header-img img, .single-feature-image img").first());
-    if (!poster) poster = $doc.find('meta[property="og:image"]').attr("content") || "";
-
-    var description = $doc.find(".entry-content, .series-description, .movie-desc").first().text().trim();
-
-    var episodes = [];
-    var numbermv = 0;
-    var titless = $doc.find('meta[property="og:title"]').attr("content") || title || "";
-
-    // ---- parseSeasonBlocks: tìm heading chứa "Season N" / "Movie" / "Cartoons", rồi episodes bên dưới ----
-    var $headings = $doc.find(".archive-heading, h2, h3, h4");
-    CT_LOG("parseMovieDetail: scan " + $headings.length + " heading candidates");
-    $headings.each(function(index) {
-      var $h = this;
-      var htext = $h.text().trim();
-      if (!htext) return;
-      var isSeason = /season\s*(\d+)/i.test(htext);
-      var isMovie = /movie|film|bản movie|movies/i.test(htext);
-      var isEpisodeHeading = /episode|all episodes|tập|episodes/i.test(htext);
-      if (!isSeason && !isMovie && !isEpisodeHeading) return;
-      CT_LOG("parseMovieDetail: heading text='" + htext.slice(0, 60) + "' season=" + isSeason + " movie=" + isMovie);
-
-      // season number
-      var seasonNum = 1;
-      var sm = htext.match(/season\s*(\d+)/i);
-      if (sm) seasonNum = parseInt(sm[1], 10) || 1;
-      if (isMovie) { numbermv++; seasonNum = numbermv; }
-
-      var namess = htext.replace(/season\s*(\d+)/i, "Phần $1").replace(/(?:movie|films?)/i, "Bản Movie").replace(/cartoons?/i, "").trim() || "Tập";
-
-      // Episodes = các link blog-img / video-thumb sau heading
-      var $box = $h.next();
-      if (!$box || !$box.length) {
-        // fallback sibling
-        var el = $h.elements && $h.elements[0];
-        if (el && $h.nodes && el.parentId) {
-          var parent = $h.nodes[el.parentId];
-          if (parent && parent.childrenIds) {
-            var idx = parent.childrenIds.indexOf(el.id);
-            if (idx !== -1 && idx + 1 < parent.childrenIds.length) {
-              var nx = $h.nodes[parent.childrenIds[idx + 1]];
-              if (nx && nx.tag !== "#text") $box = new $h.constructor([nx], $h.nodes);
-            }
-          }
-        }
-      }
-      if (!$box || !$box.length) return;
-
-      var $eps = $box.find("a.blog-img[href], a[href*='/watch/'], a[href*='episode'], a.series-item[href]");
-      var _epCount = $eps.length;
-      CT_LOG("parseMovieDetail: found " + _epCount + " episode links under heading");
-      $eps.each(function(idx) {
-        var link = this.attr("href") || "";
-        if (!link || /^(#|javascript:)/i.test(link)) return;
-        var epTitle = this.attr("title") || (this.find ? this.find("img").first().attr("alt") : "") || ("Tập " + (idx + 1));
-        var epNum = idx + 1;
-        var typeStr = isMovie ? "movie" : "tv";
-        var id = link + "&season=" + seasonNum + "&episode=" + epNum + "&namemv=" + encodeURIComponent(titless) + "&type=" + typeStr;
-        var name = (isMovie ? "Bản Movie: " : "Phần " + seasonNum + " Tập " + epNum + " - ") + epTitle;
-        var slug = isMovie ? ("mv-" + numbermv) : ("ss-" + seasonNum + "-ep-" + epNum);
-        episodes.push({ id: id, name: name, slug: slug });
-      });
+function _ctParseVideoSitemap(xml, out) {
+  var blocks = String(xml || "").match(/<url>[\s\S]*?<\/url>/g) || [];
+  for (var i = 0; i < blocks.length; i++) {
+    var b = blocks[i];
+    var loc = (b.match(/<loc>([\s\S]*?)<\/loc>/) || [])[1] || '';
+    if (!loc) continue;
+    var title = (b.match(/<video:title><!\[CDATA\[([\s\S]*?)\]\]><\/video:title>/) || [])[1] ||
+                (b.match(/<video:title>([\s\S]*?)<\/video:title>/) || [])[1] || '';
+    var vid = (b.match(/<video:content_loc>([\s\S]*?)<\/video:content_loc>/) || [])[1] || '';
+    var thumb = (b.match(/<video:thumbnail_loc>([\s\S]*?)<\/video:thumbnail_loc>/) || [])[1] || '';
+    var tag = (b.match(/<video:tag><!\[CDATA\[([\s\S]*?)\]\]><\/video:tag>/) || [])[1] ||
+              (b.match(/<video:tag>([\s\S]*?)<\/video:tag>/) || [])[1] || '';
+    var date = (b.match(/<video:publication_date>([\s\S]*?)<\/video:publication_date>/) || [])[1] || '';
+    out.push({
+      loc: _ctDecode(loc.trim()),
+      title: _ctStripTags(title),
+      video: _ctDecode(vid.trim()),
+      thumb: _ctHostApex(_ctDecode(thumb.trim())),
+      tag: _ctDecode(tag.trim()),
+      date: date.trim()
     });
+  }
+}
 
-    if (!episodes.length) {
-      // Fallback: mọi link chứa /serie/ và có vẻ là episode (blog-img trên trang detail)
-      CT_LOG("parseMovieDetail: no season blocks, fallback scan all blog-img");
-      $doc.find("a.blog-img[href]").each(function(idx) {
-        var link = this.attr("href") || "";
-        if (!link || /^(#|javascript:)/i.test(link)) return;
-        var epTitle = this.attr("title") || (this.find ? this.find("img").first().attr("alt") : "") || ("Tập " + (idx + 1));
-        var id = link + "&season=1&episode=" + (idx + 1) + "&namemv=" + encodeURIComponent(titless) + "&type=tv";
-        episodes.push({ id: id, name: "Tập " + (idx + 1) + " - " + epTitle, slug: "ep-" + (idx + 1) });
+function _ctLoadVideoEntries() {
+  if (_ctVideoEntries && (Date.now() - _ctVideoEntriesTs) < CT_VIDEO_CACHE_TTL) return _ctVideoEntries;
+  if (_ctVideoEntriesLoading) return _ctVideoEntries || [];
+  _ctVideoEntriesLoading = true;
+  var out = [];
+  try {
+    var indexXml = _ctGet(BASEURL + "/sitemap_index.xml");
+    var parts = _ctExtractVideoSitemaps(indexXml);
+    if (!parts.length) {
+      parts = [
+        BASEURL + "/video-sitemap.xml",
+        BASEURL + "/video-sitemap2.xml",
+        BASEURL + "/video-sitemap3.xml",
+        BASEURL + "/video-sitemap4.xml"
+      ];
+    }
+    CT_LOG("_ctLoadVideoEntries: " + parts.length + " sitemap files");
+    for (var i = 0; i < parts.length; i++) {
+      var xml = _ctGet(parts[i]);
+      if (xml) _ctParseVideoSitemap(xml, out);
+    }
+    var idx = {};
+    for (var n = 0; n < out.length; n++) {
+      var key = _ctNorm(out[n].tag || "");
+      if (!key) continue;
+      (idx[key] || (idx[key] = [])).push(out[n]);
+    }
+    _ctVideoEntries = out;
+    _ctVideoIndex = idx;
+    _ctVideoEntriesTs = Date.now();
+    CT_LOG("_ctLoadVideoEntries: " + out.length + " entries / " + Object.keys(idx).length + " series");
+  } catch (e) {
+    CT_LOG("_ctLoadVideoEntries err:", e && e.message || e);
+    _ctVideoEntries = out;
+  }
+  _ctVideoEntriesLoading = false;
+  return out;
+}
+
+/* Poster của series lấy từ vid_series-sitemap.xml (ảnh 16:9 gốc của series).
+   Cache RAM theo slug; file chỉ ~9KB. */
+var _ctSeriesPosterMap = null;
+function _ctSeriesPoster(seriesUrl) {
+  try {
+    if (!_ctSeriesPosterMap) {
+      _ctSeriesPosterMap = {};
+      var xml = _ctGet(BASEURL + "/vid_series-sitemap.xml");
+      var blocks = String(xml || "").match(/<url>[\s\S]*?<\/url>/g) || [];
+      for (var i = 0; i < blocks.length; i++) {
+        var loc = (blocks[i].match(/<loc>([\s\S]*?)<\/loc>/) || [])[1] || '';
+        var img = (blocks[i].match(/<image:loc>([\s\S]*?)<\/image:loc>/) || [])[1] || '';
+        if (!loc) continue;
+        _ctSeriesPosterMap[_ctNorm(_ctSlugOf(_ctDecode(loc.trim())))] = _ctHostApex(_ctDecode(img.trim()));
+      }
+      CT_LOG("_ctSeriesPoster map=" + Object.keys(_ctSeriesPosterMap).length);
+    }
+    return _ctSeriesPosterMap[_ctNorm(_ctSlugOf(seriesUrl))] || "";
+  } catch (e) { return ""; }
+}
+
+function _ctEpisodesOfSeries(seriesUrl) {
+  var slugNorm = _ctNorm(_ctSlugOf(seriesUrl));
+  _ctLoadVideoEntries();
+  var list = (_ctVideoIndex && _ctVideoIndex[slugNorm]) || [];
+  var eps = [];
+  var tagName = "";
+  for (var i = 0; i < list.length; i++) {
+    var e = list[i];
+    if (!e.video || !e.tag) continue;
+    tagName = e.tag;
+    var name = e.title;
+    if (name && e.tag && name.length > e.tag.length + 3 &&
+        name.slice(-(e.tag.length + 3)) === " - " + e.tag) {
+      name = name.slice(0, name.length - (e.tag.length + 3));
+    }
+    eps.push({
+      id: e.video,
+      name: name || e.title,
+      slug: "ep-" + (eps.length + 1),
+      poster: e.thumb,
+      date: e.date
+    });
+  }
+  eps.sort(function (a, b) {
+    if (a.date && b.date && a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return 0;
+  });
+  for (var k = 0; k < eps.length; k++) eps[k].slug = "ep-" + (k + 1);
+  CT_LOG("_ctEpisodesOfSeries " + seriesUrl + " → " + eps.length + " tập (" + tagName + ")");
+  return { name: tagName, episodes: eps };
+}
+
+// =============================================================================
+// DETAIL PARSER
+// =============================================================================
+function parseMovieDetail(html, url) {
+  /* getUrlDetail có thể trả JSON MovieDetail trực tiếp (series) → passthrough */
+  var _htmlStr = String(html || "").trim();
+  if (_htmlStr.indexOf('{"id"') === 0 && _htmlStr.indexOf('"servers"') > -1) {
+    CT_LOG("parseMovieDetail: passthrough JSON detail");
+    return _htmlStr;
+  }
+
+  var raw = String(url || "");
+  var parts = raw.split('|');
+  var cleanUrl = parts[0];
+  var datasend = parts.slice(1).join('|').replace(/^data:/, '');
+  try { if (datasend && datasend.indexOf('%') > -1) datasend = decodeURIComponent(datasend); } catch (e) {}
+  CT_LOG("parseMovieDetail() url=" + cleanUrl.slice(0, 100) + " datasend=" + datasend.slice(0, 80) + " htmlLen=" + (html ? String(html).length : 0));
+
+  try {
+    // ===== SERIES (sitemap) =====
+    var seriesUrl = datasend ? _ctDecode(datasend) : "";
+    if (/\/serie\//i.test(seriesUrl)) {
+      if (!seriesUrl) return JSON.stringify({ id: "", title: "Lỗi: thiếu series URL", servers: [] });
+      var got = _ctEpisodesOfSeries(seriesUrl);
+      var sname = got.name || _ctSlugOf(seriesUrl).replace(/-/g, ' ');
+      var poster = _ctSeriesPoster(seriesUrl) || (got.episodes[0] && got.episodes[0].poster) || "";
+      return JSON.stringify({
+        id: seriesUrl,
+        title: sname,
+        originName: sname,
+        posterUrl: poster,
+        backdropUrl: poster,
+        description: "",
+        quality: "HD",
+        year: "",
+        rating: "",
+        status: got.episodes.length + " episodes",
+        episode_current: got.episodes.length + " episodes",
+        servers: [{ name: sname || "Server", episodes: got.episodes.map(function (ep) {
+          return { id: ep.id, name: ep.name, slug: ep.slug };
+        }) }],
+        duration: "", casts: "", director: "", country: "US", lang: "", category: "", extra: ""
       });
     }
 
-    CT_LOG("parseMovieDetail: TOTAL episodes=" + episodes.length + " title=" + title);
-    var servers = [{ name: "Server", episodes: episodes }];
+    // ===== PHIM LẺ (WP REST) =====
+    var j = _ctJson(html);
+    if (!j) {
+      CT_LOG("parseMovieDetail: body rỗng → tự fetch");
+      j = _ctJson(_ctGet(cleanUrl));
+    }
+    var post = Array.isArray(j) ? j[0] : (j && j.id ? j : null);
+    if (!post) {
+      return JSON.stringify({ id: cleanUrl, title: "Không tải được chi tiết", servers: [] });
+    }
+
+    var item = _ctItemFromPost(post);
+    var video = "";
+    try { video = post.cmb2.video_player_settings.vm_video_url || ""; } catch (e) {}
+
+    var eps = [];
+    if (video) {
+      eps.push({ id: video, name: item.title || "Full", slug: "full" });
+    }
+
     return JSON.stringify({
-      id: url, title: title, originName: title,
-      posterUrl: poster, backdropUrl: poster,
-      description: description, quality: "HD", year: "",
-      rating: "", status: episodes.length + " episodes", category: "",
-      episode_current: episodes.length + " episodes",
-      servers: servers, duration: "", casts: "", director: "",
-      country: "US", lang: "", extra: ""
+      id: String(post.id || cleanUrl),
+      title: item.title,
+      originName: item.title,
+      posterUrl: item.posterUrl,
+      backdropUrl: item.backdropUrl,
+      description: _ctStripTags(post.content && post.content.rendered) || item.description || "",
+      quality: "MP4",
+      year: item.year || "",
+      rating: "",
+      status: eps.length ? "1 episode" : "no stream",
+      episode_current: eps.length ? "Full" : "",
+      servers: [{ name: "TopCartoons", episodes: eps }],
+      duration: "", casts: "", director: "", country: "US", lang: "English", category: "", extra: ""
     });
   } catch (e) {
     CT_LOG("parseMovieDetail[err]:", e && e.message || e);
-    return JSON.stringify({ id: "error", title: "error", description: url + "\n" + e, servers: [{ name: "Error", episodes: [] }] });
+    return JSON.stringify({ id: "error", title: "error", servers: [] });
   }
 }
 
-// ===== STREAM PARSER =====
+// =============================================================================
+// STREAM PARSER
+// =============================================================================
 function parseDetailResponse(html, url) {
-  CT_LOG("parseDetailResponse() called url=" + url + " htmlLen=" + (html ? html.length : 0));
-  // Trang embed có thể rất ngắn (chỉ 1 iframe) → ngưỡng thấp hơn
-  if (!html || typeof html !== 'string' || html.length < 20) {
-    CT_LOG("parseDetailResponse: HTML rỗng/bị chặn, tải lại");
-    var cleanUrl = url ? url.split('|')[0] : "";
-    if (cleanUrl && /^https?:/i.test(cleanUrl)) {
-      html = _ctFetch(cleanUrl);
-      if (html && html.length > 20) CT_LOG("parseDetailResponse: httpRequest OK len=" + html.length);
-    }
+  var raw = String(url || "");
+  var clean = raw.split('|')[0].split('#')[0];
+  CT_LOG("parseDetailResponse() url=" + clean.slice(0, 120) + " htmlLen=" + (html ? String(html).length : 0));
+
+  var headers = { "User-Agent": CT_UA };
+
+  // URL đã là media (id tập = link mp4 từ sitemap / REST)
+  if (/\.(mp4|m3u8)([?#]|$)/i.test(clean)) {
+    return JSON.stringify({
+      url: clean,
+      mimeType: /\.m3u8([?#]|$)/i.test(clean) ? "application/x-mpegURL" : "video/mp4",
+      isEmbed: false,
+      headers: headers,
+      subtitles: []
+    });
   }
-  if (!html || typeof html !== 'string' || html.length < 20) {
-    CT_LOG("parseDetailResponse: vẫn rỗng, trả blank");
-    return JSON.stringify({ url: "", mimeType: "", isEmbed: false, headers: {}, subtitles: [] });
+
+  // Body là JSON WP REST (phòng khi app gọi thẳng)
+  var j = _ctJson(html);
+  var post = Array.isArray(j) ? j[0] : (j && j.id ? j : null);
+  if (post && post.cmb2 && post.cmb2.video_player_settings && post.cmb2.video_player_settings.vm_video_url) {
+    var v = post.cmb2.video_player_settings.vm_video_url;
+    return JSON.stringify({ url: v, mimeType: "video/mp4", isEmbed: false, headers: headers, subtitles: [] });
   }
-  CT_LOG("parseDetailResponse: HTML preview: " + String(html).slice(0, 500));
-  try {
-    var season = getparam(url, "season");
-    var episode = getparam(url, "episode");
-    var type = getparam(url, "type");
-    var namemv = getparam(url, "namemv");
 
-    var subtitleList = [];
-    var stream = "";
-    var mimeType = "video/mp4";
-    var isEmbed = false;
-    var embedReferer = BASEURL + "/";
+  // Thử tìm mp4 trong HTML (trang detail nếu có)
+  var m = String(html || '').match(/https?:\/\/[^\s"'<>\\]+\.mp4[^\s"'<>\\]*/i);
+  if (m) return JSON.stringify({ url: m[0], mimeType: "video/mp4", isEmbed: false, headers: headers, subtitles: [] });
 
-    // 1. og:video meta (ưu tiên cao)
-    var $doc = _$(html);
-    var ogVideo = $doc.find('meta[property="og:video:url"]').attr("content")
-               || $doc.find('meta[property="og:video"]').attr("content");
-    if (ogVideo) {
-      stream = ogVideo;
-      if (/\.m3u8/i.test(stream)) {
-        mimeType = "application/x-mpegURL";
-      } else if (/abysscdn\.com|playhydrax\.com|abyssplayer\.com|zplayer\.io|player-cdn\.com|hydrax/i.test(stream)) {
-        // Abyss/Hydrax embed → VAX View HydraxSupport sẽ unwrap
-        mimeType = "";
-        isEmbed = true;
-      } else {
-        mimeType = "video/mp4";
-      }
-      CT_LOG("parseDetailResponse: og:video = " + stream.slice(0, 120) + " isEmbed=" + isEmbed);
-    }
-
-    // 2. single_video_url regex ("single_video_url":"...")
-    if (!stream) {
-      var sv = String(html).match(/"single_video_url"\s*:\s*"([^"]+)"/i);
-      if (sv) {
-        stream = sv[1];
-        if (/abysscdn\.com|playhydrax\.com|abyssplayer\.com|zplayer\.io|player-cdn\.com|hydrax/i.test(stream)) {
-          mimeType = "";
-          isEmbed = true;
-        } else if (/\.m3u8/i.test(stream)) {
-          mimeType = "application/x-mpegURL";
-        } else {
-          mimeType = "video/mp4";
-        }
-        CT_LOG("parseDetailResponse: single_video_url = " + stream.slice(0, 120) + " isEmbed=" + isEmbed);
-      }
-    }
-
-    // 3. video/source
-    if (!stream) {
-      var $src = $doc.find("video source[src], video[src]").first();
-      if ($src && $src.length) {
-        stream = $src.attr("src") || $src.attr("data-src") || "";
-        if (stream) CT_LOG("parseDetailResponse: video/source = " + stream.slice(0, 120));
-      }
-    }
-
-    // 4. regex m3u8
-    if (!stream) {
-      var m3u8 = String(html).match(/https?:\/\/[^\s"'<>\\]+\.m3u8[^\s"'<>\\]*/i);
-      if (m3u8) { stream = m3u8[0]; mimeType = "application/x-mpegURL"; CT_LOG("parseDetailResponse: m3u8 regex = " + stream.slice(0, 120)); }
-    }
-
-    // 5. regex mp4
-    if (!stream) {
-      var mp4 = String(html).match(/https?:\/\/[^\s"'<>\\]+\.mp4[^\s"'<>\\]*/i);
-      if (mp4) { stream = mp4[0]; CT_LOG("parseDetailResponse: mp4 regex = " + stream.slice(0, 120)); }
-    }
-
-    // 6. iframe embed (Abyss/Hydrax chủ yếu)
-    if (!stream) {
-      var iframe = String(html).match(/<iframe[^>]+src\s*=\s*["']([^"']+)["']/i);
-      if (iframe) {
-        stream = iframe[1];
-        isEmbed = true;
-        mimeType = "";
-        CT_LOG("parseDetailResponse: iframe embed = " + stream.slice(0, 150));
-      }
-    }
-
-    // 7. a[href] trỏ tới player (video-watch link)
-    if (!stream) {
-      var links = $doc.find("a[href]");
-      var foundPlayer = "";
-      links.each(function() {
-        var h = this.attr("href") || "";
-        if (/abysscdn\.com|playhydrax\.com|abyssplayer\.com|zplayer\.io|player-cdn\.com|\.m3u8|\.mp4/i.test(h)) {
-          foundPlayer = h;
-        }
-      });
-      if (foundPlayer) {
-        stream = foundPlayer;
-        isEmbed = /abysscdn|hydrax|abyss|zplayer|player-cdn/i.test(stream);
-        if (/\.m3u8/i.test(stream)) { mimeType = "application/x-mpegURL"; isEmbed = false; }
-        else if (isEmbed) mimeType = "";
-        else mimeType = "video/mp4";
-        CT_LOG("parseDetailResponse: player link = " + stream.slice(0, 150));
-      }
-    }
-
-    // Headers chuẩn
-    var headers = {
-      "User-Agent": CT_UA,
-      "Referer": embedReferer,
-      "Origin": BASEURL,
-      "Block-Ads": false,
-      "Block-Css": ""
-    };
-
-    var result = JSON.stringify({ url: stream, mimeType: mimeType, isEmbed: isEmbed, headers: headers, subtitles: subtitleList });
-    CT_LOG("parseDetailResponse: RETURN stream='" + stream.slice(0, 100) + "' mime=" + mimeType + " isEmbed=" + isEmbed);
-    return result;
-  } catch (e) {
-    CT_LOG("parseDetailResponse[err]:", e && e.message || e);
-    return JSON.stringify({ url: "https://vaxplugin.alokillgtv.workers.dev/blankvd.mp4", mimeType: "video/mp4", isEmbed: false, headers: {}, subtitles: [] });
-  }
+  CT_LOG("parseDetailResponse: không tìm thấy stream");
+  return JSON.stringify({ url: "", mimeType: "", isEmbed: false, headers: headers, subtitles: [] });
 }
 
 function parseEmbedResponse(html, url) {
-  CT_LOG("parseEmbedResponse() called");
   return parseDetailResponse(html, url);
 }
 
-// ===== HELPERS =====
-function getUrlCategories() { return BASEURL; }
+// =============================================================================
+// CATEGORIES (compat)
+// =============================================================================
+function getUrlCategories() { return BASEURL + "/vid_series-sitemap.xml"; }
 function getUrlCountries() { return ""; }
 function getUrlYears() { return ""; }
 
 function buildMenu(menuStr, type) {
-  var arr = JSON.parse(menuStr);
+  var arr = [];
+  try { arr = JSON.parse(menuStr); } catch (e) { return []; }
   var out = [];
   if (!arr || !Array.isArray(arr)) return out;
   var t = type !== undefined ? String(type).trim() : undefined;
@@ -559,17 +677,7 @@ function buildMenu(menuStr, type) {
 }
 
 function parseCategoriesResponse() {
-  try { return JSON.stringify(buildMenu(getLISTmenu())); }
-  catch (e) { return JSON.stringify([]); }
+  try { return JSON.stringify(buildMenu(getLISTmenu())); } catch (e) { return JSON.stringify([]); }
 }
 function parseCountriesResponse() { return "[]"; }
 function parseYearsResponse() { return "[]"; }
-
-function getPrimaryCategories() {
-  try { return JSON.stringify(buildMenu(getLISTmenu())); }
-  catch (e) { return JSON.stringify([]); }
-}
-function getFilterConfig() {
-  try { return JSON.stringify({ category: buildMenu(getLISTmenu()) }); }
-  catch (e) { return JSON.stringify({ category: [] }); }
-}
