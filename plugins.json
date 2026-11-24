@@ -100,13 +100,6 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
     },
     {
-      "id": "saigonphim",
-      "name": "[MOVIE] Sài Gòn Phim",
-      "version": "1.5.2",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/saigonfilm_plugin.js",
-      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAvC1dIB0emUqIfQbIFdMc0K-utn3P_x5KpqZs0LA6GQ&s=10"
-    },
-    {
       "id": "cityphim",
       "name": "City Phim [MOVIE]",
       "version": "1.0.0",
@@ -142,18 +135,18 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/film4k.png"
     },
     {
-      "id": "clbpxVIP",
-      "name": "CLB Phim Xưa VIP",
-      "version": "2.3.1",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/CLBphimxua_plugins.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/clbpxVIP.png"
-    },
-    {
       "id": "rophim",
       "name": "RP Mới [MOVIE]",
       "version": "2.4.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Rophim_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/rophim.png"
+    },
+    {
+      "id": "clbpxVIP",
+      "name": "CLB Phim Xưa VIP",
+      "version": "2.3.1",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/CLBphimxua_plugins.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/clbpxVIP.png"
     },
      {
       "id": "novahd",
@@ -161,6 +154,13 @@
       "version": "2.6.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup3_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
+    {
+      "id": "saigonphim",
+      "name": "[MOVIE] Sài Gòn Phim",
+      "version": "1.5.2",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/saigonfilm_plugin.js",
+      "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAvC1dIB0emUqIfQbIFdMc0K-utn3P_x5KpqZs0LA6GQ&s=10"
     },
     {
       "id": "shortflix",
