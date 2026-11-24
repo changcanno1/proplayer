@@ -250,7 +250,7 @@
     {
       "id": "cartoon",
       "name": "Cartoon [ANIME]",
-      "version": "2.0.0",
+      "version": "3.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Cartoon_plugins.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/cartoon.png"
     },
