@@ -227,6 +227,13 @@
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/hhpanda.png"
     },
     {
+      "id": "hoathinh3",
+      "name": "Hoạt Hình 3 [ANIME]",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Hoathinh3_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/hoathinh3.png"
+    },
+    {
       "id": "hoathinh1",
       "name": "Hoạt Hình 1 [ANIME]",
       "version": "1.6.2",
