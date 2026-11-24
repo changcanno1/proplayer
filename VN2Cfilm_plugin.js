@@ -43,10 +43,8 @@ function getManifest() {
   function getHomeSections() {
       localStorage.clear();
       return JSON.stringify([
-          {"slug": "/phim-hay-vn2-duoc-xem-nhieu/top","title": "Xem Nhiều","type": "Horizontal"},
           {"slug": "/the-loai/phim-le-33","title": "Phim Lẻ","type": "Horizontal"},
           {"slug": "/the-loai2/hoat-hinh-anime-29","title": "Phim Hoạt Hình","type": "Horizontal"},
-          {"slug": "/the-loai3/top-drama-youtube-35","title": "Phim Ngắn","type": "Horizontal"},
           {"slug": "/danh-sach-phim/","title": "Phim Mới","type": "Grid"}
       ]);
   }
