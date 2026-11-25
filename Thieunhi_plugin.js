@@ -20,12 +20,185 @@ var DEVICE = "web(version:19.3.0)";
 var popup_html = "";
 var UA = "Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
 
+// =============================================================================
+// NGUỒN PHỤ: TopCartoons (mp4 tĩnh, không token) — chỉ 3 bộ hoạt hình kinh điển
+//   Plugins/movie/kids_cartoons.json      : 3 card series (351B, đã cào sẵn)
+//   Plugins/movie/cartoon_eps/<slug>.json : tập + thumb từng tập
+// =============================================================================
+var CT_CDN = "https://vaxplugins.alokillgtv05.workers.dev/Plugins/movie/";
+var CT_CDN_FALLBACK = "https://raw.githubusercontent.com/alokillgtv04/vaxplugins/main/Plugins/movie/";
+var CT_IMG_PROXY = "https://img.alokillgtv03.workers.dev/?url=";
+var CT_IMG_BASE = "https://topcartoons.tv/wp-content/uploads/";
+var CT_VID_BASE = "https://ww.topcartoons.tv/video/";
+var CT_PREFIX = "cartoon:";        /* đánh dấu id thuộc topcartoon */
+var CT_SLUG = "kids-cartoons";     /* slug section Hoạt Hình */
+var CT_YT_SLUG = "kids-youtube";   /* slug section Hoạt Hình YouTube */
+var YT_RESOLVER_URL = CT_CDN + "yt_resolver.js?v=1";
+var YT_RESOLVER_FALLBACK = CT_CDN_FALLBACK + "yt_resolver.js?v=1";
+
 // Token đang dùng trong RAM (mỗi phiên). Không lưu bền — lấy lại từ Worker khi cần.
 var AUTH_TOKEN = "";
 // Đánh dấu token đã được kiểm tra sống trong phiên này chưa
 var _tokenChecked = false;
 
 function log(m) { try { console.log("[thieunhi] " + m); } catch (e) {} }
+
+/* ⭐ Xoá cache detail/list CŨ khi schema nội dung thay đổi.
+   Vì sao cần: plugin-loader cache detail 24h. Nếu người dùng mở 1 mục (vd Shin)
+   trong lúc plugin/data cũ chưa có → app cache lại {servers:[]} và giữ 24h,
+   bấm vào sẽ "không có tập phim nào" dù CDN đã cập nhật.
+   Dùng localStorage (chỉ WebView có); native không cache kiểu này. */
+(function _tnMigrateCache() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    var SCHEMA = 'tn_schema_v5';           /* tăng khi thêm/bớt nguồn nội dung */
+    if (localStorage.getItem(SCHEMA) === '1') return;
+    var kill = [];
+    for (var i = localStorage.length - 1; i >= 0; i--) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf('plgc') === 0 && k.indexOf('thieunhi') > -1) kill.push(k);
+    }
+    for (var j = 0; j < kill.length; j++) localStorage.removeItem(kill[j]);
+    localStorage.setItem(SCHEMA, '1');
+    log("cache cũ đã xoá: " + kill.length + " entries");
+  } catch (e) {}
+})();
+
+// =============================================================================
+// TOPCARTOON HELPERS
+// =============================================================================
+function ctLog(m) { try { console.log("[thieunhi/cartoon] " + m); } catch (e) {} }
+
+function ctDecode(s) {
+  try { if (typeof decodeHTMLtext === 'function') return decodeHTMLtext(String(s || '')); } catch (e) {}
+  return String(s || '')
+    .replace(/&#(\d+);/g, function (m, d) { return String.fromCharCode(parseInt(d, 10)); })
+    .replace(/&#x([0-9a-f]+);/gi, function (m, h) { return String.fromCharCode(parseInt(h, 16)); })
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#0?39;/g, "'");
+}
+
+/* Ảnh đi qua worker cache ảnh của VAX (Edge 30 ngày). */
+function ctImg(file) {
+  if (!file) return "";
+  var full = /^https?:\/\//i.test(file) ? file : (CT_IMG_BASE + file);
+  /* Ảnh đã nằm trên worker/CDN của VAX (logo, icon, poster tự lưu) → không bọc
+     lại qua worker ảnh, tránh proxy 2 lớp và tránh 404 nếu file chưa push. */
+  if (/alokillgtv[^/]*\.workers\.dev/i.test(full)) return full;
+  if (full.indexOf('vax.local') > -1) return full;
+  return CT_IMG_PROXY + encodeURIComponent(full);
+}
+
+function ctVid(file) {
+  if (!file) return "";
+  return /^https?:\/\//i.test(file) ? file : (CT_VID_BASE + file);
+}
+
+/* Đọc JSON tĩnh: native httpRequest trước, fallback XHR sync (WebView). */
+function ctGetText(url) {
+  try {
+    if (typeof httpRequest === 'function') {
+      var res = httpRequest(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+      if (res && res.isSuccessful && res.body) return String(res.body);
+      if (res && res.body) return String(res.body);
+    }
+  } catch (e) { ctLog("httpRequest err: " + (e && e.message || e)); }
+  try {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, false);
+    xhr.send(null);
+    if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) return xhr.responseText;
+  } catch (e2) {}
+  return "";
+}
+
+function ctGetJson(path) {
+  var bases = [CT_CDN, CT_CDN_FALLBACK];
+  for (var i = 0; i < bases.length; i++) {
+    var txt = ctGetText(bases[i] + path);
+    if (!txt || txt.length < 3) continue;
+    try {
+      var j = JSON.parse(txt.replace(/^\uFEFF/, "").trim());
+      if (j) return j;
+    } catch (e) { ctLog("JSON parse fail " + path); }
+  }
+  return null;
+}
+
+/* =============================================================================
+   YOUTUBE RESOLVER — nạp rời bằng httpRequest + new Function (như bilibili).
+   Giữ closure riêng, không làm bẩn global. Cache RAM theo phiên.
+   ============================================================================= */
+var _ytApi = null;
+var _ytApiFailed = false;
+
+function ytApi() {
+  if (_ytApi) return _ytApi;
+  if (_ytApiFailed) return null;      /* tránh spam tải lại khi CDN lỗi */
+  var urls = [YT_RESOLVER_URL, YT_RESOLVER_FALLBACK];
+  for (var i = 0; i < urls.length; i++) {
+    var code = ctGetText(urls[i]);
+    if (!code || code.length < 5000) continue;
+    try {
+      var factory = new Function(code);
+      var api = factory();
+      if (api && typeof api.resolve === 'function') {
+        _ytApi = api;
+        ctLog("yt resolver loaded " + Math.round(code.length / 1024) + "KB");
+        return _ytApi;
+      }
+    } catch (e) {
+      ctLog("yt resolver eval fail: " + (e && e.message || e));
+      try {
+        /* fallback: eval trong scope hiện tại rồi lấy global (một số engine chặn new Function) */
+        eval(code);
+        if (typeof ytvipResolve === 'function') {
+          _ytApi = { resolve: ytvipResolve, playUrl: ytvipPlayUrl, videoId: ytvipVideoId, embed: ytvipEmbedSpec };
+          ctLog("yt resolver eval fallback OK");
+          return _ytApi;
+        }
+      } catch (e2) { ctLog("yt resolver eval fallback fail: " + (e2 && e2.message || e2)); }
+    }
+  }
+  _ytApiFailed = true;
+  ctLog("yt resolver KHÔNG nạp được");
+  return null;
+}
+
+/* id dạng "cartoon:<slug>" → {slug} ; không phải topcartoon → null */
+function ctParseId(id) {
+  var s = String(id || "");
+  if (s.indexOf(CT_PREFIX) === 0) return { slug: s.substring(CT_PREFIX.length) };
+  return null;
+}
+
+function ctIsSection(slug) {
+  return String(slug || "") === CT_SLUG;
+}
+
+/* 3 card series cho section Hoạt Hình (trả JSON Movie list trực tiếp — native
+   chỉ cho phép điều này với các slug nội bộ của chính plugin; nhưng getUrlList
+   bắt buộc trả URL, nên đây là hàm dựng item dùng trong parseListResponse). */
+function ctBuildSeriesCards(kidsJson) {
+  var items = [];
+  var src = (kidsJson && kidsJson.items) ? kidsJson.items : [];
+  for (var i = 0; i < src.length; i++) {
+    var it = src[i];
+    if (!it || !it.slug) continue;
+    items.push({
+      id: CT_PREFIX + it.slug,
+      title: ctDecode(it.title || it.slug),
+      posterUrl: ctImg(it.poster),
+      backdropUrl: ctImg(it.poster),
+      year: "",
+      quality: "Series",
+      episode_current: (it.eps || 0) + " tập",
+      lang: "English",
+      description: ""
+    });
+  }
+  return items;
+}
 
 try {
     console.log("[thieunhi] ===== FILE ĐÃ NẠP & THỰC THI (top-level) =====");
@@ -287,7 +460,7 @@ function getManifest() {
         return JSON.stringify({
             "id": "thieunhi",
             "name": "Thiếu Nhi [ANIME]",
-            "version": "1.0.0",
+            "version": "1.3.3",
             "author": "alokillgtv",
             "info": "Kho phim thiếu nhi: hoạt hình, ca nhạc, kể chuyện, học tiếng Anh cho bé. Server nhanh, mượt.",
             BASEURL: WEB,
@@ -336,6 +509,8 @@ var HOME_BLOCKS = [
 function getHomeSections() {
     try { console.log("[thieunhi] >>> getHomeSections() được gọi"); } catch (e) {}
     var arr = [];
+    // ⭐ Section Hoạt Hình (TopCartoons: Tom & Jerry, Looney Tunes, Courage) — đầu danh sách
+    arr.push({ slug: CT_SLUG, title: "🐭 Hoạt Hình Kinh Điển", type: "Horizontal", path: "children" });
     // Các mục thể loại/nổi bật dạng Horizontal
     for (var i = 0; i < HOME_BLOCKS.length; i++) {
         var b = HOME_BLOCKS[i];
@@ -357,6 +532,7 @@ var ANIME_GENRES = [
 
 function getPrimaryCategories() {
     var arr = [{ name: "Tổng Hợp Thiếu Nhi", slug: "home" }];
+    arr.push({ name: "🐭 Hoạt Hình Kinh Điển", slug: CT_SLUG });
     // Thể loại (category_vod, phân trang đầy đủ)
     for (var i = 0; i < ANIME_GENRES.length; i++) {
         arr.push({ name: "📁 " + ANIME_GENRES[i].name, slug: "cat:" + ANIME_GENRES[i].id });
@@ -419,6 +595,14 @@ function parseSlug(slug) {
 
 function getUrlList(slug, filtersJson) {
     try { console.log("[thieunhi] >>> getUrlList() slug=" + slug + " filters=" + filtersJson); } catch (e) {}
+
+    /* ⭐ Section Hoạt Hình (TopCartoons): native bắt buộc trả URL string.
+       Trả URL file kids_cartoons.json (351B, đã live) + data để parser biết. */
+    if (ctIsSection(slug)) {
+        ctLog("getUrlList kids-cartoons");
+        return CT_CDN + "kids_cartoons.json|data:" + encodeURIComponent("ct=kids");
+    }
+
     var f = {};
     try { f = JSON.parse(filtersJson || "{}"); } catch (e) {}
     var page = parseInt(f.page, 10) || 1;
@@ -455,8 +639,171 @@ function getUrlSearch(keyword, filtersJson) {
     return "https://example.com/?q=" + kw + "&page=" + page + "|data:k=" + kw + "&p=" + page;
 }
 
+/* =============================================================================
+   TOPCARTOON DETAIL
+   ============================================================================= */
+var _ctEpCache = {};
+var _ctKids = null;
+var _ctKidsTs = 0;
+
+function ctKidsJson() {
+  if (_ctKids && (Date.now() - _ctKidsTs) < 6 * 3600 * 1000) return _ctKids;
+  var j = ctGetJson("kids_cartoons.json");
+  if (j && j.items) { _ctKids = j; _ctKidsTs = Date.now(); }
+  return _ctKids;
+}
+
+function ctEpisodesList(slug) {
+    var c = _ctEpCache[slug];
+    if (c && (Date.now() - c.ts) < 6 * 3600 * 1000) return c.v;
+    /* ?v=2: bust bản cũ chỉ có [name, mp4] (chưa có ảnh tập) */
+    var j = ctGetJson("cartoon_eps/" + slug + ".json?v=2");
+    var eps = (j && j.eps) ? j.eps : [];
+    _ctEpCache[slug] = { v: eps, ts: Date.now() };
+    return eps;
+}
+
+/* Doraemon: gộp 2 mùa FPT thành 1 bộ (file kids_doraemon.json).
+   Mỗi mùa = 1 server; episode.id = "<vodId>|data:<epIndex>" (chuẩn FPT của
+   hoathinh3) nên getUrlDetail + parseDetailResponse dùng lại nguyên luồng có sẵn. */
+function ctDoraemonDetail() {
+    var d = ctGetJson("kids_doraemon.json");
+    if (!d || !d.eps || !d.eps.length) return null;
+
+    /* File đã gộp PHẲNG: Mùa 12 (52 tập) nối Mùa 13 (52 tập) thành
+       MỘT danh sách duy nhất Tập 1..104 — không tách server theo mùa. */
+    var episodes = [];
+    for (var i = 0; i < d.eps.length; i++) {
+        var e = d.eps[i];
+        /* episode.id chuẩn FPT: "<vodId>|data:<epIndex>" */
+        var epObj = {
+            id: String(e.vod) + "|data:" + e.i,
+            name: e.name || ("Tập " + (i + 1)),
+            slug: "ep-" + (i + 1)
+        };
+        if (e.t) {
+            var th = ctImg(e.t);
+            epObj.thumb = th; epObj.thumbUrl = th; epObj.image = th; epObj.backdrop = th;
+        }
+        episodes.push(epObj);
+    }
+    if (!episodes.length) return null;
+
+    return {
+        id: CT_PREFIX + "doraemon",
+        title: d.title || "Doraemon",
+        originName: d.title || "Doraemon",
+        posterUrl: ctImg(d.poster),
+        backdropUrl: ctImg(d.poster),
+        description: "",
+        quality: "HD", year: "", rating: "",
+        status: episodes.length + " episodes",
+        episode_current: episodes.length + " episodes",
+        servers: [{ name: "Doraemon", episodes: episodes }],
+        duration: "", casts: "", director: "", country: "Nhật Bản", lang: "Vietsub", category: "Hoạt hình", extra: ""
+    };
+}
+
+/* Shin - Cậu Bé Bút Chì: 16 phim lẻ (mỗi phim 1 tập "Full").
+   Episode id chuẩn FPT "<vodId>|data:<epIndex>". */
+function ctShinDetail() {
+    var d = ctGetJson("kids_shin.json");
+    if (!d || !d.movies || !d.movies.length) return null;
+    var episodes = [];
+    for (var i = 0; i < d.movies.length; i++) {
+        var m = d.movies[i];
+        var epObj = {
+            id: String(m.vod) + "|data:" + (m.i || "0"),
+            name: ctDecode(m.title) || ("Phim " + (i + 1)),
+            slug: "mv-" + (i + 1)
+        };
+        var th = m.thumb ? ctImg(m.thumb) : (m.poster ? ctImg(m.poster) : "");
+        if (th) { epObj.thumb = th; epObj.thumbUrl = th; epObj.image = th; epObj.backdrop = th; }
+        episodes.push(epObj);
+    }
+    return {
+        id: CT_PREFIX + "shin",
+        title: d.title || "Shin - Cậu Bé Bút Chì",
+        originName: d.title || "Shin",
+        posterUrl: d.movies[0].poster ? ctImg(d.movies[0].poster) : "",
+        backdropUrl: d.movies[0].poster ? ctImg(d.movies[0].poster) : "",
+        description: "",
+        quality: "HD", year: "", rating: "",
+        status: episodes.length + " movies",
+        episode_current: episodes.length + " phim",
+        servers: episodes.length ? [{ name: "Phim lẻ", episodes: episodes }] : [],
+        duration: "", casts: "", director: "", country: "Nhật Bản", lang: "Vietsub", category: "Hoạt hình", extra: ""
+    };
+}
+
+function ctDetailFor(slug) {
+    if (String(slug) === "doraemon") return ctDoraemonDetail();
+    if (String(slug) === "shin") return ctShinDetail();
+
+    var kids = ctKidsJson();
+    var meta = null;
+    if (kids && kids.items) {
+        for (var i = 0; i < kids.items.length; i++) {
+            if (kids.items[i].slug === slug) { meta = kids.items[i]; break; }
+        }
+    }
+    if (!meta) { ctLog("ctDetailFor: slug không có trong kids (" + slug + ")"); return null; }
+    if (meta.src === "fpt") return ctDoraemonDetail();
+    if (meta.src === "fpt-collection") return ctShinDetail();
+
+    var eps = ctEpisodesList(slug);
+    var episodes = [];
+    for (var k = 0; k < eps.length; k++) {
+        var v = ctVid(eps[k][1]);
+        if (!v) continue;
+        /* row = [name, videoFile, thumbFile]
+           Native đọc thumb/thumbUrl/image; WebView chỉ đọc backdrop → gán cả 4. */
+        var thumb = eps[k][2] ? ctImg(eps[k][2]) : "";
+        var epObj = {
+            id: v,
+            name: ctDecode(eps[k][0]) || ("Tập " + (k + 1)),
+            slug: "ep-" + (k + 1)
+        };
+        if (thumb) {
+            epObj.thumb = thumb;
+            epObj.thumbUrl = thumb;
+            epObj.image = thumb;
+            epObj.backdrop = thumb;
+        }
+        episodes.push(epObj);
+    }
+
+    var title = ctDecode(meta.title || slug);
+    var poster = ctImg(meta.poster);
+    return {
+        id: CT_PREFIX + slug,
+        title: title,
+        originName: title,
+        posterUrl: poster,
+        backdropUrl: poster,
+        description: "",
+        quality: "HD",
+        year: "",
+        rating: "",
+        status: episodes.length + " episodes",
+        episode_current: episodes.length + " episodes",
+        servers: episodes.length ? [{ name: title || "Server", episodes: episodes }] : [],
+        duration: "", casts: "", director: "", country: "US", lang: "English", category: "", extra: ""
+    };
+}
+
 function getUrlDetail(slug) {
     try { console.log("[thieunhi] >>> getUrlDetail() slug=" + slug); } catch (e) {}
+
+    /* ⭐ TopCartoons: trả JSON MovieDetail trực tiếp (native hỗ trợ riêng cho
+       getUrlDetail) → bấm card series là ra playlist tập ngay, 0ms fetch. */
+    var ct = ctParseId(slug);
+    if (ct) {
+        var d = ctDetailFor(ct.slug);
+        if (d) { ctLog("getUrlDetail JSON " + ct.slug + " eps=" + (d.servers[0] ? d.servers[0].episodes.length : 0)); return JSON.stringify(d); }
+        return JSON.stringify({ id: slug, title: "Không tìm thấy", servers: [] });
+    }
+
     var vid = extractVodId(slug);
     return buildUrl("content/vod/" + vid);
 }
@@ -595,6 +942,23 @@ function doSearch(kw, page) {
 }
 function parseListResponse(html, apiUrl) {
     try { console.log("[thieunhi] >>> parseListResponse() html.len=" + (html ? String(html).length : 0) + " url=" + apiUrl); } catch (e) {}
+
+    /* ⭐ TopCartoons: dựng 3 card series từ body (kids_cartoons.json) hoặc tự tải */
+    try {
+        if (String(apiUrl || "").indexOf("kids_cartoons.json") > -1 ||
+            String(apiUrl || "").indexOf("ct=kids") > -1) {
+            var kj = null;
+            if (html && String(html).trim()) {
+                try { kj = JSON.parse(String(html).replace(/^\uFEFF/, "").trim()); } catch (e0) {}
+            }
+            if (!kj || !kj.items) kj = ctKidsJson();
+            var cards = ctBuildSeriesCards(kj);
+            ctLog("parseList kids cards=" + cards.length);
+            if (!cards.length) return JSON.stringify({ items: [], pagination: { currentPage: 1, totalPages: 1 } });
+            return JSON.stringify({ items: cards, pagination: { currentPage: 1, totalPages: 1 } });
+        }
+    } catch (eCt) { ctLog("parseList kids err: " + (eCt && eCt.message || eCt)); }
+
     // ⭐ Nếu là search ảo (getUrlSearch) → POST mnemosyne
     try {
         var sq = parseSearchUrl(apiUrl);
@@ -806,6 +1170,20 @@ function checkEpisodeAlive(vodId, epId) {
 
 function parseMovieDetail(html, apiUrl) {
     try { console.log("[thieunhi] >>> parseMovieDetail() url=" + apiUrl); } catch (e) {}
+
+    /* ⭐ App gọi parser lần 2 với body là JSON MovieDetail do getUrlDetail trả
+       → passthrough (nếu không sẽ rơi vào nhánh FPT và ra lỗi). */
+    var _ctBody = String(html || "").trim();
+    if (_ctBody.indexOf('{"id"') === 0 && _ctBody.indexOf('"servers"') > -1) {
+        return _ctBody;
+    }
+    /* body rỗng nhưng apiUrl là id topcartoon → dựng lại từ dữ liệu tĩnh */
+    var _ctId = ctParseId(String(apiUrl || "").split('|')[0]);
+    if (_ctId && !_ctBody) {
+        var _ctD = ctDetailFor(_ctId.slug);
+        if (_ctD) return JSON.stringify(_ctD);
+    }
+
     try {
         var vid = extractVodId(apiUrl);
         var data = null;
@@ -976,6 +1354,19 @@ function genUuid() {
 
 function parseDetailResponse(html, apiUrl, datasend) {
     try { console.log("[thieunhi] >>> parseDetailResponse() url=" + apiUrl + " datasend=" + datasend); } catch (e) {}
+
+    /* ⭐ TopCartoons: episode.id chính là URL .mp4 → trả thẳng cho ExoPlayer */
+    var _ctClean = String(apiUrl || "").split('|')[0].split('#')[0];
+    if (/\.(mp4|m3u8)([?#]|$)/i.test(_ctClean)) {
+        return JSON.stringify({
+            url: _ctClean,
+            mimeType: /\.m3u8([?#]|$)/i.test(_ctClean) ? "application/x-mpegURL" : "video/mp4",
+            isEmbed: false,
+            headers: { "User-Agent": UA },
+            subtitles: []
+        });
+    }
+
     var _retried = false;
     try {
         // apiUrl ở đây là URL detail ĐÃ FETCH (vd: https://.../content/vod/ID?st=...)
