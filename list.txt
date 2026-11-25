@@ -10590,13 +10590,6 @@
     "tag": "Chơi Online",
     "category": "Chơi Online"
   },
-{
-    "name": "Tô màu",
-    "url": "https://kid3k.space/",
-    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSe04G2-XgU9oo0fn3S6KEREDFIuxBB6wy5k0Oz8i2q4A&s=10",
-    "tag": "Chơi Online",
-    "category": "Chơi Online"
-  },
   {
     "name": "Board Game",
     "url": "https://boardgamevui.com/",
