@@ -121,20 +121,6 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
-      "id": "dexter",
-      "name": "Dexter",
-      "version": "1.3.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/dexter_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/dexter.png"
-    },
-    {
-      "id": "film4k",
-      "name": "Film4K",
-      "version": "2.1.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/film4K_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/film4k.png"
-    },
-    {
       "id": "rophim",
       "name": "RP Mới [MOVIE]",
       "version": "2.4.0",
@@ -148,12 +134,26 @@
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/CLBphimxua_plugins.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/clbpxVIP.png"
     },
+    {
+      "id": "dexter",
+      "name": "Dexter",
+      "version": "1.3.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/dexter_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/dexter.png"
+    },
      {
       "id": "novahd",
       "name": "Nova-Pick VSub 2",
       "version": "2.6.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup3_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
+    {
+      "id": "film4k",
+      "name": "Film4K",
+      "version": "2.1.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/film4K_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/film4k.png"
     },
     {
       "id": "film1",
