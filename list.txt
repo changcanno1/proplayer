@@ -27,13 +27,6 @@
     "tag": "Game Tiếng Việt",
     "category": "Game Tiếng Việt"
   },
-  {
-    "name": "Niệm Phật Online",
-    "url": "https://www.niemphat.online/",
-    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJsZgybxj3Eb2ArytBsQfDVHuF384yZ0G6gfuGuJYr3A&s=10",
-    "tag": "Game Tiếng Việt",
-    "category": "Game Tiếng Việt"
-  },
 {
     "name": "Hầu đồng Online",
     "url": "https://haudong.online/ban-do",
@@ -59,13 +52,6 @@
     "name": "Đế Chế Vỉa Hè",
     "url": "https://g.vkey.vn/dcvh/",
     "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/decheviahe.jpg",
-    "tag": "Game Tiếng Việt",
-    "category": "Game Tiếng Việt"
-  },
-{
-    "name": "Trả Nghiệp Online",
-    "url": "https://play.tranghiep.com/",
-    "image": "https://daibaothapmandalataythien.org/sites/default/files/images/hell_realm.jpg",
     "tag": "Game Tiếng Việt",
     "category": "Game Tiếng Việt"
   },
