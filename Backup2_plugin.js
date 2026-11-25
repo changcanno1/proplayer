@@ -6,7 +6,7 @@ function getManifest() {
     return JSON.stringify({
         "id": "phimhdcs",
         "name": "PhimHDCS",
-        "version": "1.2.4",
+        "version": "1.2.5",
         "baseUrl": "https://phimhdcss.com",
         "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/phimhdcs.png",
         "isEnabled": true,
@@ -677,6 +677,51 @@ function _phcsJsonRequest(url, method, body, headers) {
     } catch (e) { return ""; }
 }
 
+// Gọi request nhưng trả full response (để lấy setCookies)
+function _phcsRawRequest(url, method, body, headers) {
+    if (typeof httpRequest !== "function") return null;
+    try {
+        return httpRequest(url, {
+            method: method || "GET",
+            body: body || undefined,
+            headers: headers || { "User-Agent": "Mozilla/5.0", "Accept": "application/json,*/*" }
+        });
+    } catch (e) { return null; }
+}
+
+function _phcsExtractCookies(res, jar) {
+    jar = jar || {};
+    if (!res) return jar;
+    var setC = [];
+    if (res.setCookies && res.setCookies instanceof Array) setC = res.setCookies;
+    else if (res.setCookies && typeof res.setCookies === "string") setC = [res.setCookies];
+    else if (res.headers && res.headers["set-cookie"]) {
+        setC = res.headers["set-cookie"] instanceof Array ? res.headers["set-cookie"] : [res.headers["set-cookie"]];
+    } else if (res.headers && res.headers["Set-Cookie"]) {
+        setC = res.headers["Set-Cookie"] instanceof Array ? res.headers["Set-Cookie"] : [res.headers["Set-Cookie"]];
+    }
+    for (var i = 0; i < setC.length; i++) {
+        var item = String(setC[i] || "").split(";")[0];
+        var eq = item.indexOf("=");
+        if (eq > 0) {
+            var k = item.substring(0, eq).trim();
+            var v = item.substring(eq + 1).trim();
+            if (k) jar[k] = v;
+        }
+    }
+    return jar;
+}
+
+function _phcsCookieHeader(jar) {
+    var parts = [];
+    for (var k in jar) {
+        if (jar.hasOwnProperty(k) && jar[k] !== undefined && jar[k] !== null && jar[k] !== "") {
+            parts.push(k + "=" + jar[k]);
+        }
+    }
+    return parts.join("; ");
+}
+
 function _phcsAbsolutizeUrl(baseUrl, rel) {
     rel = String(rel || "").trim();
     if (!rel) return "";
@@ -820,18 +865,34 @@ function _phcsResolveHdcDirect(hdcUrl, pageRef) {
 
     var origin = "https://play.streamxemphimhd.site";
     var ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+    var jar = {};
 
-    // Bước 1: Tải trang iframe để lấy danh sách phụ đề SRT
-    var subtitles = _phcsFetchHdcSubtitlesOnly(hdcUrl);
+    // Bước 1: Warm GET trang iframe → nhận cookie fireplayer_player + lấy phụ đề
+    var warmRes = _phcsRawRequest(hdcUrl, "GET", "", {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "vi-VN,vi;q=0.9,en;q=0.8",
+        "Referer": "https://phimhdcss.com/",
+        "Sec-Fetch-Dest": "iframe",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "cross-site",
+        "Upgrade-Insecure-Requests": "1"
+    });
+    jar = _phcsExtractCookies(warmRes, jar);
+    var warmHtml = warmRes ? String(warmRes.body || "") : "";
+    var subtitles = _phcsExtractHdcSubtitlesFromHtml(warmHtml);
 
-    // Bước 2: Gọi guard_issue.php với fp_runtime (protocol mới)
+    // Bước 2: Gọi guard_issue.php với fp_runtime (protocol mới) + cookie jar
+    // QUAN TRỌNG: sxd_cap phải = 0 → server trả HLS thật.
+    // Nếu gửi sxd_cap=1 (mô phỏng browser decode decoy) → server trả HLS giả
+    // với segment /_sxd/*.ts luôn 403, native player không phát được.
     var fpRuntime = _phcsBuildFpRuntime(videoId);
     var guardBody = "t=" + encodeURIComponent(String(Date.now()))
         + "&fp_runtime=" + encodeURIComponent(fpRuntime)
         + "&id=" + encodeURIComponent(videoId)
-        + "&sxd_cap=1";
+        + "&sxd_cap=0";
 
-    var guardRaw = _phcsJsonRequest(origin + "/player/guard_issue.php", "POST", guardBody, {
+    var guardRes = _phcsRawRequest(origin + "/player/guard_issue.php", "POST", guardBody, {
         "User-Agent": ua,
         "Accept": "application/json, text/javascript, */*; q=0.01",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -841,23 +902,25 @@ function _phcsResolveHdcDirect(hdcUrl, pageRef) {
         "X-FP-Runtime": fpRuntime,
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin"
+        "Sec-Fetch-Site": "same-origin",
+        "Cookie": _phcsCookieHeader(jar)
     });
+    jar = _phcsExtractCookies(guardRes, jar);
 
     var guardToken = "";
-    try { guardToken = JSON.parse(guardRaw).token || ""; } catch (e) {}
+    try { guardToken = JSON.parse(String(guardRes && guardRes.body || "")).token || ""; } catch (e) {}
     if (!guardToken) {
         log("PHIMHDCS_DEBUG HDC guard_issue empty token, subtitles=" + subtitles.length);
         return { subtitlesOnly: true, subtitles: subtitles };
     }
 
-    // Bước 3: Gọi do=getVideo với X-FP-Guard (không còn fp_sid)
+    // Bước 3: Gọi do=getVideo với X-FP-Guard + cookie jar
     var getVideoUrl = origin + "/player/index.php?data=" + encodeURIComponent(videoId) + "&do=getVideo";
     var getVideoBody = "hash=" + encodeURIComponent(videoId)
         + "&r=" + encodeURIComponent("https://phimhdcss.com/")
         + "&fp_guard=" + encodeURIComponent(guardToken);
 
-    var videoRaw = _phcsJsonRequest(getVideoUrl, "POST", getVideoBody, {
+    var videoRes = _phcsRawRequest(getVideoUrl, "POST", getVideoBody, {
         "User-Agent": ua,
         "Accept": "application/json, text/javascript, */*; q=0.01",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -867,12 +930,14 @@ function _phcsResolveHdcDirect(hdcUrl, pageRef) {
         "X-FP-Guard": guardToken,
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin"
+        "Sec-Fetch-Site": "same-origin",
+        "Cookie": _phcsCookieHeader(jar)
     });
+    jar = _phcsExtractCookies(videoRes, jar);
 
     var securedLink = "";
     try {
-        var vJson = JSON.parse(videoRaw);
+        var vJson = JSON.parse(String(videoRes && videoRes.body || ""));
         securedLink = vJson.securedLink || vJson.videoSource || (vJson.videoSources && vJson.videoSources[0] ? vJson.videoSources[0].file : "");
     } catch (e) {}
 
@@ -890,7 +955,8 @@ function _phcsResolveHdcDirect(hdcUrl, pageRef) {
         "Origin": origin,
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin"
+        "Sec-Fetch-Site": "same-origin",
+        "Cookie": _phcsCookieHeader(jar)
     };
 
     // Bước 4: Tải master.m3u8 và variant playlist
@@ -909,6 +975,7 @@ function _phcsResolveHdcDirect(hdcUrl, pageRef) {
         };
     }
 
+    var variantText = "";
     var variantUrl = "";
     var mLines = masterText.split(/\r?\n/);
     for (var mi = 0; mi < mLines.length; mi++) {
@@ -919,7 +986,7 @@ function _phcsResolveHdcDirect(hdcUrl, pageRef) {
     }
 
     if (variantUrl) {
-        var variantText = _phcsJsonRequest(variantUrl, "GET", "", m3u8Headers);
+        variantText = _phcsJsonRequest(variantUrl, "GET", "", m3u8Headers);
         if (variantText && variantText.indexOf("#EXTM3U") !== -1) {
             var rewrittenVariant = _phcsRewriteManifestUrls(variantText, variantUrl);
             var safeVariantUrl = variantUrl.indexOf(".m3u8") !== -1 ? variantUrl : (variantUrl + "#.m3u8");
@@ -929,11 +996,7 @@ function _phcsResolveHdcDirect(hdcUrl, pageRef) {
                 m3u8Content: rewrittenVariant,
                 isEmbed: false,
                 mimeType: "application/x-mpegURL",
-                headers: {
-                    "User-Agent": ua,
-                    "Referer": hdcUrl,
-                    "Origin": origin
-                },
+                headers: m3u8Headers,
                 subtitles: subtitles
             };
         }
@@ -946,11 +1009,7 @@ function _phcsResolveHdcDirect(hdcUrl, pageRef) {
         m3u8Content: rewrittenMaster,
         isEmbed: false,
         mimeType: "application/x-mpegURL",
-        headers: {
-            "User-Agent": ua,
-            "Referer": hdcUrl,
-            "Origin": origin
-        },
+        headers: m3u8Headers,
         subtitles: subtitles
     };
 }
