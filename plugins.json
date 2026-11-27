@@ -23,6 +23,13 @@
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
+      "id": "film5",
+      "name": "Film 5 [MOVIE]",
+      "version": "1.0.3",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film5_plugin.js",
+      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film5.png"
+    },
+    {
       "id": "vsmov",
       "name": "vsmov",
       "version": "2.1.0",
@@ -56,13 +63,6 @@
       "version": "3.2.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/NguoncApknew_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/nguoncnew.png"
-    },
-    {
-      "id": "film5",
-      "name": "Film 5 [MOVIE]",
-      "version": "1.0.3",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film5_plugin.js",
-      "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film5.png"
     },
     {
       "id": "vn2c",
@@ -105,13 +105,6 @@
       "version": "2.1.0",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/7f551d9d1c99f77e1f12ee8d72daf4cd3079aa55/OnflixHT_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/onflix.png"
-    },
-    {
-      "id": "cityphim",
-      "name": "City Phim [MOVIE]",
-      "version": "1.0.0",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup1_plugin.js",
-      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
       "id": "phimlongtieng",
@@ -168,6 +161,13 @@
       "version": "1.5.2",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/saigonfilm_plugin.js",
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAvC1dIB0emUqIfQbIFdMc0K-utn3P_x5KpqZs0LA6GQ&s=10"
+    },
+    {
+      "id": "cityphim",
+      "name": "City Phim [MOVIE]",
+      "version": "1.0.0",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup1_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
       "id": "shortflix",
