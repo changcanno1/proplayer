@@ -1,4 +1,4 @@
-/* VAX GAME - plugin native WebView (Tối ưu tải 10 game trang chủ & Hỗ trợ Google OAuth) */
+/* VAX GAME - plugin native WebView (Hỗ trợ Học Bài Online & Đăng nhập Google OAuth mượt mà) */
 var GAME_LIST_URL = "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/list.txt";
 var GAME_CACHE = [];
 
@@ -15,7 +15,7 @@ function getManifest() {
     return JSON.stringify({
         id: "game",
         name: "GAME [LX]",
-        version: "1.0.2",
+        version: "1.0.3",
         baseUrl: GAME_LIST_URL,
         iconUrl: "https://vaxplugin.alokillgtv02.workers.dev/img/icon/vaxgame.png",
         isEnabled: true,
@@ -29,6 +29,7 @@ function getManifest() {
 
 function getHomeSections() {
     return JSON.stringify([
+        { slug: "Học Bài Online", title: "Học Bài Online", type: "Horizontal" },
         { slug: "Game Tiếng Việt", title: "Game Tiếng Việt", type: "Horizontal" },
         { slug: "Chơi Online", title: "Chơi Online", type: "Horizontal" },
         { slug: "Hành Động", title: "Hành Động", type: "Horizontal" },
@@ -47,6 +48,7 @@ function getHomeSections() {
 function getLISTmenu() {
     try {
         return `[
+            { "link": "Học Bài Online", "name": "Học Bài Online"},
             { "link": "Game Tiếng Việt", "name": "Game Tiếng Việt"},
             { "link": "Chơi Online", "name": "Chơi Online"},
             { "link": "Hành Động", "name": "Hành Động"},
@@ -125,6 +127,7 @@ function parseGames(raw) {
 function cleanGame(game) {
     if (!game || !game.name || !game.url) return null;
     var cleanUrl = String(game.url).split("|")[0];
+    var catLabel = String(game.category || game.tag || "");
     var meta = encodeURIComponent(JSON.stringify({
         title: String(game.name),
         posterUrl: String(game.image || ""),
@@ -133,16 +136,32 @@ function cleanGame(game) {
     return {
         id: cleanUrl + "|data:" + meta,
         title: String(game.name),
-        originName: String(game.category || game.tag || ""),
+        originName: catLabel,
         posterUrl: String(game.image || ""),
         backdropUrl: String(game.image || ""),
         description: String(game.desc || ""),
-        quality: String(game.category || "GAME"),
+        quality: catLabel || "GAME",
         lang: "HTML5",
-        category: String(game.category || game.tag || ""),
+        category: catLabel,
         url: cleanUrl,
         datasend: meta
     };
+}
+
+function matchCategoryOrTag(game, targetCat) {
+    if (!targetCat) return true;
+    var target = String(targetCat).trim().toLowerCase();
+    var cat = String(game.category || "").trim().toLowerCase();
+    var tag = String(game.tag || "").trim().toLowerCase();
+
+    if (cat === target || tag === target) return true;
+
+    // Hỗ trợ trường hợp tag/category chứa nhiều mục cách nhau bởi dấu phẩy
+    var combined = (cat + "," + tag).split(",");
+    for (var i = 0; i < combined.length; i++) {
+        if (combined[i].trim() === target) return true;
+    }
+    return false;
 }
 
 function filterGames(raw, category) {
@@ -150,7 +169,7 @@ function filterGames(raw, category) {
     var out = [];
     GAME_CACHE = [];
     for (var i = 0; i < games.length; i++) {
-        if (category && String(games[i].category || games[i].tag || "") !== category) continue;
+        if (!matchCategoryOrTag(games[i], category)) continue;
         var item = cleanGame(games[i]);
         if (item) {
             out.push(item);
@@ -247,15 +266,59 @@ function parseMovieDetail(html, apiUrl, datasend) {
         posterUrl: found ? found.posterUrl : "",
         backdropUrl: found ? found.posterUrl : "",
         description: found ? found.description : "",
-        servers: [{ name: "WebView", episodes: [{ id: epId, name: "Chơi ngay", slug: "play-1" }] }]
+        servers: [{ name: "WebView", episodes: [{ id: epId, name: "Mở ngay", slug: "play-1" }] }]
     });
 }
 
-function getJS(apiUrl) {
-    if (String(apiUrl || "").indexOf("crazygames.com") > -1) {
-        return crazyJS();
+function googleAuthFixJS() {
+    return `
+(function () {
+  'use strict';
+  if (window.__VAX_GAUTH_FIX) return;
+  window.__VAX_GAUTH_FIX = true;
+
+  // 1. Giả lập môi trường trình duyệt chuẩn để Google OAuth không báo lỗi disallowed_useragent
+  try {
+    Object.defineProperty(navigator, 'webdriver', { get: function () { return false; } });
+  } catch (e) {}
+
+  // 2. Xử lý window.open cho luồng đăng nhập Google trong WebView (tránh kẹt popup)
+  var origOpen = window.open;
+  window.open = function (url, target, features) {
+    var u = String(url || '');
+    if (u.indexOf('accounts.google.com') > -1 || u.indexOf('oauth') > -1 || u.indexOf('login') > -1 || u.indexOf('auth') > -1) {
+      // Lưu URL gốc để quay lại nếu cần và mở trực tiếp trên WebView hiện tại
+      try { sessionStorage.setItem('__vax_return_url', window.location.href); } catch (e) {}
+      window.location.href = u;
+      return window;
     }
-    return "";
+    return origOpen ? origOpen.apply(this, arguments) : null;
+  };
+
+  // 3. Tự động ép các thẻ <a> đăng nhập Google mở cùng tab (_self) thay vì _blank
+  document.addEventListener('click', function (e) {
+    var el = e.target;
+    while (el && el !== document.body) {
+      if (el.tagName === 'A' && el.href) {
+        var href = String(el.href);
+        if (href.indexOf('accounts.google.com') > -1 || href.indexOf('/auth/google') > -1) {
+          el.setAttribute('target', '_self');
+        }
+        break;
+      }
+      el = el.parentElement;
+    }
+  }, true);
+})();
+    `;
+}
+
+function getJS(apiUrl) {
+    var baseJS = googleAuthFixJS();
+    if (String(apiUrl || "").indexOf("crazygames.com") > -1) {
+        return baseJS + "\n" + crazyJS();
+    }
+    return baseJS;
 }
 
 function crazyJS() {
@@ -329,7 +392,6 @@ function crazyJS() {
     clearTimeout(autoHideTimer);
     hideLoader();
 
-    // Phóng to iframe đè lên trên nhưng GIỮ NGUYÊN DOM và SDK để Google OAuth postMessage/popup hoạt động
     try {
       iframe.style.cssText = 'position:fixed !important;top:0 !important;left:0 !important;'
         + 'width:100vw !important;height:100vh !important;border:0 !important;'
@@ -388,7 +450,7 @@ function parseDetailResponse(html, apiUrl, datasend) {
         orientation: "auto",
         headers: {
             "Referer": referer,
-            "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
             "Sniffer": false,
             "Block-AutoClick": "false",
             "Block-Redirects": "false",
