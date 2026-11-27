@@ -14,7 +14,7 @@
     "category": "Học Bài Online"
 },
 {
-    "name": "Toan tư duy",
+    "name": "Toán tư duy",
     "url": "https://octokidsmath.com/Exam?competitionId=12&gradeId=6",
     "image": "https://octokidsmath.com/images/octokids/logo.png",
     "tag": "Học Bài Online",
