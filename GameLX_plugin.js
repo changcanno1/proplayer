@@ -31,7 +31,6 @@ function getHomeSections() {
     return JSON.stringify([
         { slug: "Game Tiếng Việt", title: "Game Tiếng Việt", type: "Horizontal" },
         { slug: "Chơi Online", title: "Chơi Online", type: "Horizontal" },
-        { slug: "Học Bài Online", title: "Học Bài Online", type: "Horizontal" },
         { slug: "Hành Động", title: "Hành Động", type: "Horizontal" },
         { slug: "Chiến Thuật", title: "Chiến Thuật", type: "Horizontal" },
         { slug: "Giải Đố", title: "Giải Đố", type: "Horizontal" },
@@ -50,7 +49,6 @@ function getLISTmenu() {
         return `[
             { "link": "Game Tiếng Việt", "name": "Game Tiếng Việt"},
             { "link": "Chơi Online", "name": "Chơi Online"},
-            { "link": "Học Bài Online", "name": "Học Bài Online"},
             { "link": "Hành Động", "name": "Hành Động"},
             { "link": "Chiến Thuật", "name": "Chiến Thuật"},
             { "link": "Giải Đố", "name": "Giải Đố"},
