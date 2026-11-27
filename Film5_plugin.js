@@ -287,11 +287,11 @@ function getManifest() {
         return JSON.stringify({
             "id": "film5",
             "name": "Film 5 [MOVIE]",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "author": "aokillgtv",
             "info": "Kho phim tổng hợp. Xem thuyết minh và vietsub siêu hay. Server siêu nhanh và mượt. Tuy nhiên vài phim bị đánh bản quyền không xem được, bạn lưu ý cái này.",
             "baseUrl": WEB,
-            "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film5.png",
+            "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon2/film5.png",
             "isEnabled": true,
             "isAdult": false,
             "adblock": false,
