@@ -60,7 +60,7 @@
     {
       "id": "film5",
       "name": "Film 5 [MOVIE]",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film5_plugin.js",
       "iconUrl": "https://vaxplugin.alokillgtv.workers.dev/img/icon/film5.png"
     },
