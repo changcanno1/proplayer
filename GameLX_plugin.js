@@ -50,6 +50,7 @@ function getLISTmenu() {
         return `[
             { "link": "Game Tiếng Việt", "name": "Game Tiếng Việt"},
             { "link": "Chơi Online", "name": "Chơi Online"},
+            { "link": "Học Bài Online", "name": "Học Bài Online"},
             { "link": "Hành Động", "name": "Hành Động"},
             { "link": "Chiến Thuật", "name": "Chiến Thuật"},
             { "link": "Giải Đố", "name": "Giải Đố"},
