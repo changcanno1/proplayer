@@ -31,6 +31,7 @@ function getHomeSections() {
     return JSON.stringify([
         { slug: "Game Tiếng Việt", title: "Game Tiếng Việt", type: "Horizontal" },
         { slug: "Chơi Online", title: "Chơi Online", type: "Horizontal" },
+       { slug: "Học Bài Online", title: "Học Bài Online", type: "Horizontal" },
         { slug: "Hành Động", title: "Hành Động", type: "Horizontal" },
         { slug: "Chiến Thuật", title: "Chiến Thuật", type: "Horizontal" },
         { slug: "Giải Đố", title: "Giải Đố", type: "Horizontal" },
