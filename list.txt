@@ -15,7 +15,7 @@
 },
 {
     "name": "Toán tư duy",
-    "url": "https://octokidsmath.com/Exam?competitionId=12&gradeId=6",
+    "url": "https://octokidsmath.com",
     "image": "https://octokidsmath.com/images/octokids/logo.png",
     "tag": "Học Bài Online",
     "category": "Học Bài Online"
@@ -38,6 +38,13 @@
     "name": "Bé Học Vui",
     "url": "https://bevuihoc-vn.pages.dev/",
     "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ5m9OWkoLrqnbSRI2juPphXxe2cgEgFDmLGIFaB791-w&s",
+    "tag": "Học Bài Online",
+    "category": "Học Bài Online"
+},
+{
+    "name": "ezmath",
+    "url": "https://ezmath.online/",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlgzWTjrzNiaqZX2xITqxjZ0n_quvUQqmyfL1TxlxHwA&s=10",
     "tag": "Học Bài Online",
     "category": "Học Bài Online"
 },
