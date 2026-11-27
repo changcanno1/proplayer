@@ -35,6 +35,13 @@
     "category": "Học Bài Online"
 },
 {
+    "name": "Bé Học Vui",
+    "url": "https://bevuihoc-vn.pages.dev/",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ5m9OWkoLrqnbSRI2juPphXxe2cgEgFDmLGIFaB791-w&s",
+    "tag": "Học Bài Online",
+    "category": "Học Bài Online"
+},
+{
     "name": "Ngắm Sao Online",
     "url": "https://vnstella.io.vn",
     "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8fDHwQwt3BTwXxeQHTbuPyadVfnSnA4jM7pmo1Xh1vQ&s=10",
