@@ -7,33 +7,6 @@
     "category": "Game Tiếng Việt"
 },
 {
-    "name": "edu.imath",
-    "url": "https://edu.imath.vn/",
-    "image": "https://edu.imath.vn/giao-dien-moi-app/imath-owl-3d-2026.webp",
-    "tag": "Học Bài Online",
-    "category": "Học Bài Online"
-},
-{
-    "name": "Toan tư duy",
-    "url": "https://octokidsmath.com/Exam?competitionId=12&gradeId=6",
-    "image": "https://octokidsmath.com/images/octokids/logo.png",
-    "tag": "Học Bài Online",
-    "category": "Học Bài Online"
-},
-{
-    "name": "Sound Lab",
-    "url": "https://sound-lab-app.netlify.app/",
-    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvGwUxrjc9-TeJ94NRlgZvpLyKisIaQTHElH1wo1b8UBaIwjebWZnBrOK8&s=10",
-    "tag": "Học Bài Online",
-    "category": "Học Bài Online"
-},
-{
-    "name": "Stress Lab",
-    "url": "https://stress-lab-app.netlify.app/",
-    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQDgGSj4KmPknsWMTEPq8jKhO3dv3Jm53re6qYEFxaHQA&s=10",
-    "tag": "Học Bài Online",
-    "category": "Học Bài Online"
-{
     "name": "Ngắm Sao Online",
     "url": "https://vnstella.io.vn",
     "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8fDHwQwt3BTwXxeQHTbuPyadVfnSnA4jM7pmo1Xh1vQ&s=10",
