@@ -12,7 +12,7 @@
  */
 
 var XIAO_CONFIG = {
-    BASE_URL: "https://xiaofilm.online",
+    BASE_URL: "https://xiaophim.site",
     EMAIL: "drivepcthuan@gmail.com",
     PASSWORD: "Vaxplayer",
     LOGIN_TOKEN: "bypass",
@@ -25,6 +25,39 @@ var BASEURL = XIAO_CONFIG.BASE_URL;
 var XIAO_ACCESS_TOKEN = "";
 var XIAO_NATIVE_CACHE = {};
 var XIAO_EPISODE_NEXT = {};
+/* device_id cố định (UUID) cho native_playback_grant.php — app dùng UUID lưu SharedPreferences. */
+var XIAO_DEVICE_ID = (function () {
+    try {
+        var k = "xiao_device_id";
+        var v = (typeof localStorage !== "undefined") ? localStorage.getItem(k) : "";
+        if (v && /^[0-9a-f-]{20,}$/i.test(v)) return v;
+        var gen = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16 | 0, x = c === "x" ? r : ((r & 3) | 8);
+            return x.toString(16);
+        });
+        try { if (typeof localStorage !== "undefined") localStorage.setItem(k, gen); } catch (e) {}
+        return gen;
+    } catch (e) { return "00000000-0000-4000-8000-000000000000"; }
+})();
+
+/* Tự cập nhật server_origin từ config worker (giống app 8.x). Chỉ chạy 1 lần/lần nạp.
+   Nếu fetch fail -> giữ BASE_URL hardcode. */
+(function xiaoSyncServerOrigin() {
+    try {
+        if (typeof httpRequest !== "function") return;
+        var r = httpRequest("https://api1.xiaofilm.workers.dev/config.json", {
+            method: "GET",
+            headers: { "Accept": "application/json", "User-Agent": XIAO_CONFIG.USER_AGENT }
+        });
+        if (!r || !r.body) return;
+        var cfg = JSON.parse(String(r.body));
+        if (cfg && cfg.server_origin) {
+            BASEURL = String(cfg.server_origin).replace(/\/+$/, "");
+            XIAO_CONFIG.BASE_URL = BASEURL;
+            xiaoLog("server_origin cập nhật: " + BASEURL);
+        }
+    } catch (e) { xiaoLog("sync server_origin lỗi (dùng mặc định): " + e.message); }
+})();
 
 /* _zGkKfTdV1x là JWT access token được WebView gửi lại dưới dạng Bearer. */
 function xiaoTokenFromCookie() {
@@ -72,6 +105,7 @@ function xiaoHeaders(includeAuth) {
     };
     if (includeAuth && XIAO_ACCESS_TOKEN) {
         headers.Authorization = "Bearer " + XIAO_ACCESS_TOKEN;
+        headers["X-Auth-Token"] = XIAO_ACCESS_TOKEN;
     }
     if (XIAO_CONFIG.COOKIE) headers.Cookie = XIAO_CONFIG.COOKIE;
     return headers;
@@ -149,11 +183,11 @@ function getManifest() {
     return JSON.stringify({
         id: "film1",
         name: "Film 1",
-        version: "1.0.5",
+        version: "1.0.7",
         author: "VAX",
         description: "Film 1, nguồn phim chất lượng có 4K.",
         BASEURL: BASEURL,
-        iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/icon/film1.png",
+        iconUrl: "https://vaxplugin.alokillgtv.workers.dev/img/icon2/film1.png",
         isEnabled: true,
         isAdult: false,
         type: "MOVIE",
@@ -166,30 +200,62 @@ function getManifest() {
 
 function getHomeSections() {
     return JSON.stringify([
-        { slug: "sort=imdb_rating", title: "Đánh giá cao", type: "Horizontal" },
-         { slug: "home", title: "Mới cập nhật", type: "Grid" }
+        { slug: "col=4k", title: "4K Ultra HD", type: "Horizontal" },
+        { slug: "col=top-tmdb", title: "Top IMDb", type: "Horizontal" },
+        { slug: "col=netflix", title: "Kho Phim Netflix", type: "Horizontal" },
+        { slug: "col=anime", title: "Anime", type: "Horizontal" },
+        { slug: "sort=release_date", title: "Mới cập nhật", type: "Grid" }
     ]);
 }
 
 function getPrimaryCategories() {
     return JSON.stringify([
-        { name: "Mới cập nhật", slug: "home" },
-        { name: "Phim lẻ", slug: "type=1" },
-        { name: "Phim bộ", slug: "type=2" },
-        { name: "Hành động", slug: "genre=hanh-dong" },
-        { name: "Tình cảm", slug: "genre=tinh-cam" },
-        { name: "Kinh dị", slug: "genre=kinh-di" },
-        { name: "Hài hước", slug: "genre=hai-huoc" },
-        { name: "Hoạt hình", slug: "genre=hoat-hinh" },
-        { name: "Viễn tưởng", slug: "genre=vien-tuong" }
+        { name: "Mới cập nhật", slug: "sort=release_date" },
+        { name: "4K Ultra HD", slug: "col=4k" },
+        { name: "Top IMDb", slug: "col=top-tmdb" },
+        { name: "Kho Phim Netflix", slug: "col=netflix" },
+        { name: "Anime", slug: "col=anime" },
+        { name: "Marvel", slug: "col=marvel" },
+        { name: "Châu Tinh Trì", slug: "col=chau-tinh-tri" },
+        { name: "Thế Giới Phép Thuật", slug: "col=the-gioi-phep-thuat" },
+        { name: "Nhện Nhọ", slug: "col=nhen-nho" },
+        { name: "Viễn Tưởng", slug: "col=vien-tuong" },
+        { name: "Hài", slug: "col=hai-huoc" },
+        { name: "Phiêu Lưu", slug: "col=phieu-luu" },
+        { name: "Hình Sự", slug: "col=hinh-su" },
+        { name: "Bí ẩn", slug: "col=bi-an" },
+        { name: "Kinh Dị", slug: "col=kinh-di" }
     ]);
 }
+
+/* Map slug collection -> filter query của API (từ /api/collections.php). */
+var XIAO_COLLECTIONS = {
+    "top-tmdb": "sort=imdb",
+    "4k": "quality=4K",
+    "netflix": "topic=netflix",
+    "the-gioi-phep-thuat": "topic=the-gioi-phep-thuat",
+    "chau-tinh-tri": "topic=chau-tinh-tri",
+    "marvel": "topic=marvel",
+    "anime": "topic=anime",
+    "nhen-nho": "topic=nhen-nho",
+    "vien-tuong": "genres=vien-tuong",
+    "hai-huoc": "genres=hai-huoc",
+    "phieu-luu": "genres=phieu-luu",
+    "hinh-su": "genres=hinh-su",
+    "bi-an": "genres=bi-an",
+    "kinh-di": "genres=kinh-di"
+};
 
 function getUrlList(slug, filtersJson) {
     var filters = xiaoParseJson(filtersJson, {});
     var page = parseInt(filters.page, 10) || 1;
     var category = String(slug || "home");
 
+    /* col=<slug> -> tra filter thật (vd 4k => quality=4K) */
+    if (category.indexOf("col=") === 0) {
+        var colKey = category.substring(4);
+        category = XIAO_COLLECTIONS[colKey] || ("topic=" + colKey);
+    }
     if (category === "home") category = "sort=release_date";
 
     var url = BASEURL + "/v1/movie/filterV2?" + category +
@@ -338,7 +404,7 @@ function xiaoSniffer4kScript() {
     return "(function(){" +
         "if(window.__XIAO_4K_SNIFFER__)return;window.__XIAO_4K_SNIFFER__=1;" +
         "var sent=false,lastCtx='',bearer='" + bearerToken + "';" +
-        "try{if(location.hostname.indexOf('xiaofilm')>=0){var cps=JSON.parse('" + cookieJson + "');for(var ci=0;ci<cps.length;ci++){var eq=cps[ci].indexOf('=');var ck=eq>0?cps[ci].slice(0,eq).trim():'';if(ck&&document.cookie.indexOf(ck+'=')<0){document.cookie=cps[ci]+'; path=/; domain=.xiaofilm.online';}}}}catch(e){}" +
+        "try{if(location.hostname.indexOf('xiaofilm')>=0||location.hostname.indexOf('xiaophim')>=0){var cps=JSON.parse('" + cookieJson + "');for(var ci=0;ci<cps.length;ci++){var eq=cps[ci].indexOf('=');var ck=eq>0?cps[ci].slice(0,eq).trim():'';if(ck&&document.cookie.indexOf(ck+'=')<0){document.cookie=cps[ci]+'; path=/; domain=.xiaophim.site';}}}}catch(e){}" +
         "function log(s){try{console.log('[Xiao4KSniff] '+s);if(window.SnifferBridge&&window.SnifferBridge.log)window.SnifferBridge.log('[Xiao4KSniff] '+s);}catch(e){}}" +
         "function decodePack(raw){" +
             "var t=String(raw||'').trim();" +
@@ -355,7 +421,7 @@ function xiaoSniffer4kScript() {
         "}" +
         "function sendStream(m3u8OrUrl,baseUrl,ctx,isPlaylist){" +
             "if(sent)return;sent=true;" +
-            "var hdrs={Referer:location.href,Origin:'https://xiaofilm.online','User-Agent':navigator.userAgent};" +
+            "var hdrs={Referer:location.href,Origin:'https://xiaophim.site','User-Agent':navigator.userAgent};" +
             "if(document.cookie)hdrs.Cookie=document.cookie;" +
             "if(bearer)hdrs.Authorization='Bearer '+bearer;" +
             "if(ctx||lastCtx)hdrs['X-Playback-Context']=ctx||lastCtx;" +
@@ -1139,10 +1205,31 @@ function xiaoResolveNative(ticket) {
         return XIAO_NATIVE_CACHE[ticketUrl];
     }
     xiaoLog("Native xin playback grant ticket=" + xiaoPreview(ticketUrl, 160));
-    var grantResponse = xiaoHttp(BASEURL + "/api/playback_grant.php", "POST", {
+    /* App 8.x dùng native_playback_grant.php: body {ticket, device_id, client:android_tv}
+       + header Authorization/X-Auth-Token Bearer. Trả m3u8 PLAIN (không pack). */
+    xiaoEnsureToken();
+    var gHeaders = xiaoHeaders(false);
+    if (XIAO_ACCESS_TOKEN) {
+        gHeaders["Authorization"] = "Bearer " + XIAO_ACCESS_TOKEN;
+        gHeaders["X-Auth-Token"] = XIAO_ACCESS_TOKEN;
+    }
+    gHeaders["User-Agent"] = "XiaoFilm-TV/8.1.0";
+    gHeaders["Accept"] = "application/json";
+    var grantBody = JSON.stringify({
         ticket: ticketUrl,
-        transport: "hlsjs"
-    }, true);
+        device_id: XIAO_DEVICE_ID,
+        client: "android_tv"
+    });
+    var grantResponse = null;
+    try {
+        grantResponse = httpRequest(BASEURL + "/api/native_playback_grant.php", {
+            method: "POST",
+            headers: gHeaders,
+            body: grantBody
+        });
+        xiaoLog("grant(native) status=" + (grantResponse && grantResponse.status) +
+            " bodyLen=" + (grantResponse && grantResponse.body ? grantResponse.body.length : 0));
+    } catch (e) { xiaoLog("grant(native) exception: " + e.message); }
     var grant = xiaoParseJson(grantResponse && grantResponse.body, {});
     xiaoLog("Native grant ok=" + !!(grant && grant.success) +
         " url=" + xiaoPreview(grant && grant.url, 220) +
@@ -1275,8 +1362,8 @@ function getStreamLink(episodeId, datasend) {
              }
          }
          var ticket = info.ticket || "";
-          /* Test WebView 4K trước khi hoàn thiện chuyển tập bằng Custom-JS. */
-          if (ticket && /\/secure-play\//i.test(ticket) && false) {
+          /* 4K /secure-play: resolve trực tiếp qua native_playback_grant.php (không iframe/sniffer). */
+          if (ticket && /\/secure-play\//i.test(ticket)) {
 
              xiaoLog("4K marker resolve Native ticket=" + xiaoPreview(ticket, 160));
              var nativePl = xiaoResolveNative(ticket);
@@ -1334,6 +1421,7 @@ function getStreamLink(episodeId, datasend) {
         headers: {
             Referer: BASEURL + "/",
             Origin: BASEURL,
+            "User-Agent": XIAO_CONFIG.USER_AGENT,
             Cookie: XIAO_CONFIG.COOKIE
         },
         subtitles: xiaoSubtitle(datasend)
