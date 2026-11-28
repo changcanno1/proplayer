@@ -16,13 +16,6 @@
       "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0aBBZlEU3Q5jDxjp6EokR2eUMzbbnBhkQTMZlg5b23Q&s=10"
     },
     {
-      "id": "film1",
-      "name": "Film 1",
-      "version": "1.0.7",
-      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film1_plugin.js",
-      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
-    },
-    {
       "id": "film5",
       "name": "Film 5 [MOVIE]",
       "version": "1.0.3",
@@ -48,6 +41,13 @@
       "name": "PhimHDCS",
       "version": "1.2.6",
       "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Backup2_plugin.js",
+      "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
+    },
+    {
+      "id": "film1",
+      "name": "Film 1",
+      "version": "1.0.7",
+      "scriptUrl": "https://raw.githubusercontent.com/changcanno1/proplayer/refs/heads/main/Film1_plugin.js",
       "iconUrl": "https://www.freepnglogos.com/uploads/film-reel-png/film-reel-the-movies-owens-valley-12.png"
     },
     {
