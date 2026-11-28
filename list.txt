@@ -9,7 +9,7 @@
 {
     "name": "Synapp Tool",
     "url": "https://mobile.synapp.vn",
-    "image": "https://vaxplugins.alokillgtv05.workers.dev/tv/game/img/chuaonline.png",
+    "image": "https://fuezftbwehepqddwneaz.supabase.co/storage/v1/object/public/admin-images/assets/seo/1793607030664-synapp-og-image.jpg",
     "tag": "Game Tiếng Việt",
     "category": "Game Tiếng Việt"
 },
