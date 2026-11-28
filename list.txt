@@ -7,13 +7,6 @@
     "category": "Game Tiếng Việt"
 },
 {
-    "name": "Gửi Thư Vào Biển",
-    "url": "https://bienxanhchualanh.vercel.app",
-    "image": "https://photo.znews.vn/w660/Uploaded/ngtmns/2015_01_12/Messageinabottle.jpg",
-    "tag": "Game Tiếng Việt",
-    "category": "Game Tiếng Việt"
-},
-{
     "name": "edu.imath",
     "url": "https://edu.imath.vn/",
     "image": "https://edu.imath.vn/giao-dien-moi-app/imath-owl-3d-2026.webp",
